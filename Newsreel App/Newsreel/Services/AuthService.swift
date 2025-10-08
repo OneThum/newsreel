@@ -13,10 +13,23 @@ import AuthenticationServices
 import CryptoKit
 
 /// Authentication state for the app
-enum AuthState {
+enum AuthState: Equatable {
     case authenticated(User)
     case unauthenticated
     case loading
+    
+    static func == (lhs: AuthState, rhs: AuthState) -> Bool {
+        switch (lhs, rhs) {
+        case (.authenticated(let lUser), .authenticated(let rUser)):
+            return lUser.id == rUser.id
+        case (.unauthenticated, .unauthenticated):
+            return true
+        case (.loading, .loading):
+            return true
+        default:
+            return false
+        }
+    }
 }
 
 /// Authentication errors

@@ -8,6 +8,9 @@
 
 import SwiftUI
 
+// Convenient typealias
+typealias AppBackground = AppBackgroundView
+
 struct AppBackgroundView: View {
     @Environment(\.colorScheme) var colorScheme
     
