@@ -1,0 +1,50 @@
+# Azure Subscription
+subscription_id = "d4abcc64-9e59-4094-8d89-10b5d36b6d4c"
+
+# Environment
+environment = "prod"
+location    = "westus2"
+
+# External API Keys (DO NOT COMMIT ACTUAL VALUES)
+anthropic_api_key     = "sk-ant-your-key-here"
+twitter_bearer_token  = "your-twitter-bearer-token"
+firebase_credentials  = "{\"type\":\"service_account\",\"project_id\":\"newsreel-865a5\",...}"
+
+# Resource naming
+resource_group_name = "newsreel-prod-rg"
+cosmos_account_name = "newsreel-prod-cosmos"
+function_app_name   = "newsreel-prod-func"
+container_app_name  = "story-api"
+
+# Cosmos DB Configuration
+cosmos_database_name = "newsapp-db"
+cosmos_containers = [
+  {
+    name               = "raw_articles"
+    partition_key_path = "/published_date"
+    default_ttl        = 2592000  # 30 days
+  },
+  {
+    name               = "story_clusters"
+    partition_key_path = "/category"
+    default_ttl        = 7776000  # 90 days
+  },
+  {
+    name               = "user_profiles"
+    partition_key_path = "/id"
+    default_ttl        = -1  # No TTL
+  },
+  {
+    name               = "user_interactions"
+    partition_key_path = "/user_id"
+    default_ttl        = 15552000  # 180 days
+  }
+]
+
+# Tags
+tags = {
+  Project     = "Newsreel"
+  Environment = "Production"
+  ManagedBy   = "Terraform"
+}
+
