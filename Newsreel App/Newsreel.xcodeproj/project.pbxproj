@@ -26,6 +26,7 @@
 		4A1000020 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A2000020 /* AuthService.swift */; };
 		4A1000021 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A2000021 /* LoginView.swift */; };
 		4A1000022 /* MainAppView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A2000022 /* MainAppView.swift */; };
+		4A1000023 /* APIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A2000023 /* APIService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -47,6 +48,7 @@
 		4A2000020 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
 		4A2000021 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		4A2000022 /* MainAppView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainAppView.swift; sourceTree = "<group>"; };
+		4A2000023 /* APIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIService.swift; sourceTree = "<group>"; };
 		4A3000001 /* Newsreel.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Newsreel.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -123,6 +125,7 @@
 			isa = PBXGroup;
 			children = (
 				4A2000020 /* AuthService.swift */,
+				4A2000023 /* APIService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -224,6 +227,7 @@
 				4A1000020 /* AuthService.swift in Sources */,
 				4A1000021 /* LoginView.swift in Sources */,
 				4A1000022 /* MainAppView.swift in Sources */,
+				4A1000023 /* APIService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
