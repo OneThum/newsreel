@@ -1,0 +1,96 @@
+# Xcode
+*.xcuserstate
+*.xcuserdatad/
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+DerivedData/
+build/
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+
+# Swift Package Manager
+.swiftpm/
+.build/
+Packages/
+*.xcworkspace
+
+# CocoaPods
+Pods/
+*.xcworkspace
+!default.xcworkspace
+Podfile.lock
+
+# Firebase
+# Keep GoogleService-Info.plist in version control (already configured)
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+*.egg-info/
+dist/
+*.egg
+
+# Azure Functions
+local.settings.json
+.python_packages/
+.vscode/
+.funcignore
+
+# Environment variables
+.env
+.env.local
+*.local
+
+# Secrets
+*.pem
+*.key
+*.p8
+*.p12
+*.mobileprovision
+
+# IDEs
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# Azure
+.azure/
+azuredeploy.parameters.json
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
