@@ -142,7 +142,7 @@ Build core iOS app with feed, authentication, and flip-card UI.
 #### Project Setup
 - [ ] Create Xcode project (Newsreel)
 - [ ] Configure bundle ID: `com.onethum.newsreel`
-- [ ] Set minimum iOS version: 17.0
+- [ ] Set minimum iOS version: 26.0
 - [ ] Add Firebase SDK dependencies
 - [ ] Configure `GoogleService-Info.plist`
 - [ ] Set up folder structure (MVVM)
@@ -334,7 +334,7 @@ Implement subscriptions, push notifications, rate limiting, and prepare for App 
 #### App Polish
 - [x] Implement Liquid Glass gradient background system (from Ticka Currencies)
 - [x] Implement Outfit font system (FontSystem.swift with all weights)
-- [x] Implement iOS 18 scroll transitions and modern SwiftUI patterns
+- [x] Implement iOS 26 scroll transitions and modern SwiftUI patterns
 - [x] Add enhanced materials with subtle tinting (.backgroundStyle)
 - [ ] Create app icon
 - [ ] Design launch screen

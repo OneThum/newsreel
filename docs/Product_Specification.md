@@ -645,7 +645,7 @@ _[Note: This is the first section of the specification. The document continues w
 - **Repository**: https://github.com/OneThum/newsreel.git
 
 ### Tech Stack Summary
-- **Platform**: iOS 17+ (SwiftUI)
+- **Platform**: iOS 26+ (SwiftUI)
 - **Auth**: Firebase Authentication
 - **Backend**: Azure Functions (Python), Azure Container Apps (FastAPI)
 - **Database**: Azure Cosmos DB (Serverless)

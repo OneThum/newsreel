@@ -27,7 +27,7 @@
 - ✅ Bundle ID: **com.onethum.newsreel**
 - ✅ Version: **1.0.0**
 - ✅ Build number: **1**
-- ✅ Platform: **iOS 18.0+**
+- ✅ Platform: **iOS 26.0+**
 - ✅ Repository created: https://github.com/OneThum/newsreel.git
 
 ### Firebase Configuration (100%)
@@ -89,7 +89,7 @@
 1. **Configure Xcode Project**
    - [x] Create project.pbxproj (FIXED!)
    - [x] Configure Info.plist (fonts + version)
-   - [x] Set deployment target to iOS 18.0
+   - [x] Set deployment target to iOS 26.0
    - [ ] Add Firebase SDK via Swift Package Manager
    - [ ] Add capabilities (Push Notifications, Sign in with Apple)
    - [ ] Configure signing
@@ -98,7 +98,7 @@
    - [ ] Open project in Xcode
    - [ ] Test Outfit fonts display correctly
    - [ ] Test Liquid Glass background in light/dark mode
-   - [ ] Run iOS 18 previews
+   - [ ] Run iOS 26 previews
 
 3. **Azure Infrastructure**
    - [ ] Check for existing Azure resources

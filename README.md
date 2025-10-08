@@ -19,7 +19,7 @@ Newsreel is an iOS app that delivers AI-summarized news from multiple trusted so
 - 🚨 **Breaking News** - Real-time detection with 3-source verification
 - 🎯 **Personalized Feed** - Learns from your reading behavior
 - 🚫 **Ad-Free** - Clean, distraction-free reading experience
-- 📱 **iOS 18+ Native** - Built with latest SwiftUI and modern Apple design patterns
+- 📱 **iOS 26+ Native** - Built with latest SwiftUI and modern Apple design patterns
 - ✨ **Liquid Glass Design** - Beautiful gradient backgrounds with Apple-inspired aesthetics
 - 🎨 **Modern iOS 26 UI** - Scroll transitions, materials, and latest HIG guidelines
 
@@ -95,7 +95,7 @@ See the [Product Specification](docs/Product_Specification.md#11-development-pha
 ## Getting Started
 
 ### Prerequisites
-- **iOS 18.0+** / Xcode 16+
+- **iOS 26.0+** / Xcode 18+
 - Azure subscription (Newsreel Subscription)
 - Firebase project (Authentication)
 - RevenueCat account (Subscription management)
