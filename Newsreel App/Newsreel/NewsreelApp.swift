@@ -6,12 +6,21 @@
 //
 
 import SwiftUI
+import FirebaseCore
 
 @main
 struct NewsreelApp: App {
+    @StateObject private var authService = AuthService()
+    
+    init() {
+        // Configure Firebase
+        FirebaseApp.configure()
+    }
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(authService)
         }
     }
 }

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		15C3EF512E96D09E00683DC9 /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = 15C3EF502E96D09E00683DC9 /* RevenueCat */; };
 		4A1000001 /* NewsreelApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A2000001 /* NewsreelApp.swift */; };
 		4A1000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A2000002 /* ContentView.swift */; };
 		4A1000003 /* AppBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A2000003 /* AppBackground.swift */; };
@@ -22,10 +23,12 @@
 		4A1000016 /* Outfit-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 4A2000016 /* Outfit-Bold.ttf */; };
 		4A1000017 /* Outfit-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 4A2000017 /* Outfit-ExtraBold.ttf */; };
 		4A1000018 /* Outfit-Black.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 4A2000018 /* Outfit-Black.ttf */; };
+		4A1000020 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A2000020 /* AuthService.swift */; };
+		4A1000021 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A2000021 /* LoginView.swift */; };
+		4A1000022 /* MainAppView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A2000022 /* MainAppView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		4A3000001 /* Newsreel.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Newsreel.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4A2000001 /* NewsreelApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewsreelApp.swift; sourceTree = "<group>"; };
 		4A2000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		4A2000003 /* AppBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppBackground.swift; sourceTree = "<group>"; };
@@ -41,6 +44,10 @@
 		4A2000016 /* Outfit-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Outfit-Bold.ttf"; sourceTree = "<group>"; };
 		4A2000017 /* Outfit-ExtraBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Outfit-ExtraBold.ttf"; sourceTree = "<group>"; };
 		4A2000018 /* Outfit-Black.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Outfit-Black.ttf"; sourceTree = "<group>"; };
+		4A2000020 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
+		4A2000021 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		4A2000022 /* MainAppView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainAppView.swift; sourceTree = "<group>"; };
+		4A3000001 /* Newsreel.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Newsreel.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -48,6 +55,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				15C3EF512E96D09E00683DC9 /* RevenueCat in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -67,6 +75,8 @@
 			children = (
 				4A2000001 /* NewsreelApp.swift */,
 				4A2000002 /* ContentView.swift */,
+				4A5000020 /* Views */,
+				4A5000021 /* Services */,
 				4A2000003 /* AppBackground.swift */,
 				4A2000004 /* FontSystem.swift */,
 				4A5000010 /* Fonts */,
@@ -98,6 +108,31 @@
 				4A2000018 /* Outfit-Black.ttf */,
 			);
 			path = Fonts;
+			sourceTree = "<group>";
+		};
+		4A5000020 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				4A2000022 /* MainAppView.swift */,
+				4A5000030 /* Auth */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		4A5000021 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				4A2000020 /* AuthService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		4A5000030 /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				4A2000021 /* LoginView.swift */,
+			);
+			path = Auth;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -144,6 +179,9 @@
 				Base,
 			);
 			mainGroup = 4A5000001;
+			packageReferences = (
+				15C3EF4F2E96D09E00683DC9 /* XCRemoteSwiftPackageReference "purchases-ios" */,
+			);
 			productRefGroup = 4A5000003 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -183,6 +221,9 @@
 				4A1000003 /* AppBackground.swift in Sources */,
 				4A1000004 /* FontSystem.swift in Sources */,
 				4A1000001 /* NewsreelApp.swift in Sources */,
+				4A1000020 /* AuthService.swift in Sources */,
+				4A1000021 /* LoginView.swift in Sources */,
+				4A1000022 /* MainAppView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -319,6 +360,7 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Newsreel/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -335,7 +377,6 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				INFOPLIST_FILE = Newsreel/Info.plist;
 			};
 			name = Debug;
 		};
@@ -350,6 +391,7 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Newsreel/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -366,7 +408,6 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				INFOPLIST_FILE = Newsreel/Info.plist;
 			};
 			name = Release;
 		};
@@ -392,7 +433,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		15C3EF4F2E96D09E00683DC9 /* XCRemoteSwiftPackageReference "purchases-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/RevenueCat/purchases-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.41.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		15C3EF502E96D09E00683DC9 /* RevenueCat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 15C3EF4F2E96D09E00683DC9 /* XCRemoteSwiftPackageReference "purchases-ios" */;
+			productName = RevenueCat;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 4A0000001 /* Project object */;
 }
-
