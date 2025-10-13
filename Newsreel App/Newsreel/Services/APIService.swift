@@ -4,18 +4,23 @@
 //
 //  Backend API communication service
 //  Handles all HTTP requests to Azure Container Apps APIs
+//  Supports mock data for development
 //
 
 import Foundation
+import UIKit
+import FirebaseAuth
 
 /// API errors
 enum APIError: LocalizedError {
     case invalidURL
     case invalidResponse
     case unauthorized
+    case rateLimitExceeded
     case serverError(Int)
     case networkError(Error)
     case decodingError(Error)
+    case mockModeEnabled
     
     var errorDescription: String? {
         switch self {
@@ -25,97 +30,28 @@ enum APIError: LocalizedError {
             return "Invalid server response"
         case .unauthorized:
             return "Unauthorized. Please sign in again."
+        case .rateLimitExceeded:
+            return "Daily limit reached. Upgrade to Premium for unlimited stories!"
         case .serverError(let code):
             return "Server error (\(code)). Please try again later."
         case .networkError(let error):
             return "Network error: \(error.localizedDescription)"
         case .decodingError:
             return "Failed to parse server response"
+        case .mockModeEnabled:
+            return "Mock mode is enabled"
         }
     }
 }
 
-/// Story model (from API)
-struct Story: Identifiable, Codable {
-    let id: String
-    let title: String
-    let summary: String
-    let category: String
-    let status: StoryStatus
-    let verificationLevel: Int
-    let firstSeen: Date
-    let lastUpdated: Date
-    let sourceCount: Int
-    let importanceScore: Int
-    let breakingNews: Bool
-    let tags: [String]
-    
-    enum CodingKeys: String, CodingKey {
-        case id, title, summary, category, status, tags
-        case verificationLevel = "verification_level"
-        case firstSeen = "first_seen"
-        case lastUpdated = "last_updated"
-        case sourceCount = "source_count"
-        case importanceScore = "importance_score"
-        case breakingNews = "breaking_news"
-    }
-}
-
-enum StoryStatus: String, Codable {
-    case monitoring = "MONITORING"
-    case developing = "DEVELOPING"
-    case breaking = "BREAKING"
-    case verified = "VERIFIED"
-}
-
-/// Source article model
-struct SourceArticle: Identifiable, Codable {
-    let id: String
-    let source: String
-    let title: String
-    let articleURL: String
-    let publishedAt: Date
-    
-    enum CodingKeys: String, CodingKey {
-        case id, source, title
-        case articleURL = "article_url"
-        case publishedAt = "published_at"
-    }
-}
-
-/// Feed response model
-struct FeedResponse: Codable {
-    let stories: [Story]
-    let totalCount: Int
-    let hasMore: Bool
-    
-    enum CodingKeys: String, CodingKey {
-        case stories
-        case totalCount = "total_count"
-        case hasMore = "has_more"
-    }
-}
-
-/// User interaction request
-struct InteractionRequest: Codable {
-    let storyId: String
-    let interactionType: InteractionType
-    let dwellTime: Int?
-    let cardFlipped: Bool?
-    
-    enum CodingKeys: String, CodingKey {
-        case storyId = "story_id"
-        case interactionType = "interaction_type"
-        case dwellTime = "dwell_time"
-        case cardFlipped = "card_flipped"
-    }
-}
-
-enum InteractionType: String, Codable {
-    case view
-    case like
-    case save
-    case share
+/// Azure API interaction request
+struct AzureInteractionRequest: Codable {
+    let interaction_type: String
+    let session_id: String
+    let dwell_time_seconds: Int
+    let card_flipped: Bool
+    let sources_clicked: [String]
+    let device_info: [String: String]
 }
 
 @MainActor
@@ -124,8 +60,11 @@ class APIService: ObservableObject {
     // MARK: - Configuration
     
     /// Base URL for the Story API (Azure Container Apps)
-    /// TODO: Replace with actual Azure Container App URL after deployment
-    private let baseURL = "https://story-api.newsreel-prod.azurecontainerapps.io"
+    private let baseURL = "https://newsreel-api.thankfulpebble-0dde6120.centralus.azurecontainerapps.io"
+    
+    /// Enable mock data mode for development
+    /// Set to false to use live Azure backend
+    @Published var useMockData: Bool = false
     
     /// URLSession for all network requests
     private let session: URLSession
@@ -149,8 +88,9 @@ class APIService: ObservableObject {
     
     // MARK: - Initialization
     
-    init(authService: AuthService) {
+    init(authService: AuthService, useMockData: Bool = true) {
         self.authService = authService
+        self.useMockData = useMockData
         
         let configuration = URLSessionConfiguration.default
         configuration.timeoutIntervalForRequest = 30
@@ -164,79 +104,279 @@ class APIService: ObservableObject {
     /// - Parameters:
     ///   - offset: Pagination offset (default: 0)
     ///   - limit: Number of stories to fetch (default: 20)
+    ///   - category: Optional category filter
     /// - Returns: Array of Story objects
-    func getFeed(offset: Int = 0, limit: Int = 20) async throws -> [Story] {
-        let endpoint = "/api/stories/feed?offset=\(offset)&limit=\(limit)"
-        let response: FeedResponse = try await request(endpoint: endpoint, method: "GET")
-        return response.stories
+    func getFeed(offset: Int = 0, limit: Int = 20, category: NewsCategory? = nil) async throws -> [Story] {
+        log.section("GET FEED")
+        log.log("Fetching feed - offset: \(offset), limit: \(limit), category: \(category?.displayName ?? "all")", category: .api)
+        
+        if useMockData {
+            log.log("Using mock data mode", category: .api, level: .debug)
+            return await mockGetFeed(offset: offset, limit: limit, category: category)
+        }
+        
+        var endpoint = "/api/stories/feed?limit=\(limit)"
+        if offset > 0 {
+            endpoint += "&offset=\(offset)"
+        }
+        if let category = category {
+            endpoint += "&category=\(category.rawValue)"
+        }
+        
+        log.log("Endpoint: \(endpoint)", category: .api, level: .debug)
+        
+        // Check if user exists
+        guard Auth.auth().currentUser != nil else {
+            log.logAuth("⚠️ No authenticated user, cannot fetch personalized feed", level: .warning)
+            throw APIError.unauthorized
+        }
+        
+        do {
+            // API now returns direct array (not wrapped in FeedResponse)
+            let azureStories: [AzureStoryResponse] = try await request(endpoint: endpoint, method: "GET")
+            let stories = azureStories.map { $0.toStory() }
+            log.log("✅ Feed loaded successfully: \(stories.count) stories", category: .api, level: .info)
+            log.log("   Sources included: \(azureStories.first?.sources?.count ?? 0) sources in first story", category: .api, level: .debug)
+            return stories
+        } catch let error as APIError where error.localizedDescription.contains("Unauthorized") {
+            log.log("⚠️ Authentication failed - Firebase credentials may not be configured on Azure", category: .api, level: .warning)
+            log.log("💡 Falling back to breaking news (public endpoint)", category: .api, level: .info)
+            // Fallback to breaking news if auth fails
+            return try await getBreakingNews()
+        } catch {
+            log.logError(error, context: "getFeed failed")
+            throw error
+        }
+    }
+    
+    /// Search stories by keywords
+    /// - Parameters:
+    ///   - query: Search query string
+    ///   - category: Optional category filter
+    ///   - limit: Maximum number of results
+    /// - Returns: Array of Story objects matching the search
+    func searchStories(query: String, category: NewsCategory? = nil, limit: Int = 20) async throws -> [Story] {
+        guard !query.isEmpty else { return [] }
+        
+        var endpoint = "/api/stories/search?q=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query)&limit=\(limit)"
+        
+        if let category = category {
+            let categoryParam = category.rawValue.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? category.rawValue
+            endpoint += "&category=\(categoryParam)"
+        }
+        
+        log.log("🔍 Searching for: '\(query)' (category: \(category?.displayName ?? "all"))", category: .api, level: .info)
+        
+        let azureStories: [AzureStoryResponse] = try await request(endpoint: endpoint, method: "GET", requiresAuth: false)
+        let stories = azureStories.map { $0.toStory() }
+        
+        log.log("✅ Search returned \(stories.count) results", category: .api, level: .info)
+        return stories
+    }
+    
+    /// Get story clusters (related stories grouped together)
+    /// - Parameters:
+    ///   - offset: Pagination offset
+    ///   - limit: Number of clusters to fetch
+    /// - Returns: Array of StoryCluster objects
+    func getStoryClusters(offset: Int = 0, limit: Int = 10) async throws -> [StoryCluster] {
+        if useMockData {
+            return await mockGetClusters(offset: offset, limit: limit)
+        }
+        
+        let endpoint = "/api/stories/clusters?offset=\(offset)&limit=\(limit)"
+        let response: ClusterResponse = try await request(endpoint: endpoint, method: "GET")
+        return response.clusters
     }
     
     /// Get a single story by ID
     /// - Parameter id: Story ID
     /// - Returns: Story object
     func getStory(id: String) async throws -> Story {
+        if useMockData {
+            return await mockGetStory(id: id)
+        }
+        
         let endpoint = "/api/stories/\(id)"
-        return try await request(endpoint: endpoint, method: "GET")
-    }
-    
-    /// Get source articles for a story
-    /// - Parameter storyId: Story ID
-    /// - Returns: Array of SourceArticle objects
-    func getSources(storyId: String) async throws -> [SourceArticle] {
-        let endpoint = "/api/stories/\(storyId)/sources"
-        let response: [String: [SourceArticle]] = try await request(endpoint: endpoint, method: "GET")
-        return response["sources"] ?? []
+        let azureStory: AzureStoryResponse = try await request(endpoint: endpoint, method: "GET")
+        return azureStory.toStory()
     }
     
     /// Get breaking news stories
     /// - Returns: Array of breaking Story objects
     func getBreakingNews() async throws -> [Story] {
-        let endpoint = "/api/stories/breaking"
-        let response: FeedResponse = try await request(endpoint: endpoint, method: "GET")
-        return response.stories
+        log.log("Fetching breaking news (public endpoint)", category: .api)
+        
+        if useMockData {
+            log.log("Using mock data mode", category: .api, level: .debug)
+            return await mockGetBreakingNews()
+        }
+        
+        let endpoint = "/api/stories/breaking?limit=20"
+        log.log("Endpoint: \(endpoint) (no auth required)", category: .api, level: .debug)
+        
+        do {
+            // API now returns direct array (not wrapped)
+            let azureStories: [AzureStoryResponse] = try await request(endpoint: endpoint, method: "GET", requiresAuth: false)
+            let stories = azureStories.map { $0.toStory() }
+            log.log("✅ Breaking news loaded: \(stories.count) stories", category: .api, level: .info)
+            log.log("   Sources per story: \(azureStories.first?.sources?.count ?? 0)", category: .api, level: .debug)
+            return stories
+        } catch {
+            log.logError(error, context: "getBreakingNews failed")
+            throw error
+        }
     }
     
-    // MARK: - Interactions API
-    
-    /// Record user interaction with a story
+    /// Search stories
     /// - Parameters:
-    ///   - storyId: Story ID
-    ///   - type: Type of interaction
-    ///   - dwellTime: Optional time spent viewing (seconds)
-    ///   - cardFlipped: Whether user flipped the card
-    func recordInteraction(
+    ///   - query: Search query string
+    ///   - offset: Pagination offset
+    ///   - limit: Number of results
+    /// - Returns: Array of matching stories
+    func searchStories(query: String, offset: Int = 0, limit: Int = 20) async throws -> [Story] {
+        if useMockData {
+            return await mockSearchStories(query: query)
+        }
+        
+        let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
+        let endpoint = "/api/stories/search?q=\(encodedQuery)&offset=\(offset)&limit=\(limit)"
+        // API returns direct array
+        let azureStories: [AzureStoryResponse] = try await request(endpoint: endpoint, method: "GET")
+        return azureStories.map { $0.toStory() }
+    }
+    
+    // MARK: - User Interactions API
+    
+    /// Record interaction with story
+    private func recordInteraction(
         storyId: String,
-        type: InteractionType,
-        dwellTime: Int? = nil,
-        cardFlipped: Bool? = nil
+        type: String,
+        dwellTime: Int = 0,
+        cardFlipped: Bool = false
     ) async throws {
         let endpoint = "/api/stories/\(storyId)/interact"
-        let body = InteractionRequest(
-            storyId: storyId,
-            interactionType: type,
-            dwellTime: dwellTime,
-            cardFlipped: cardFlipped
+        
+        let interaction = AzureInteractionRequest(
+            interaction_type: type,
+            session_id: UUID().uuidString,
+            dwell_time_seconds: dwellTime,
+            card_flipped: cardFlipped,
+            sources_clicked: [],
+            device_info: [
+                "platform": "ios",
+                "app_version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0",
+                "os_version": UIDevice.current.systemVersion
+            ]
         )
         
-        let _: EmptyResponse = try await request(
-            endpoint: endpoint,
-            method: "POST",
-            body: body
-        )
+        // Try to record interaction, but don't fail if auth isn't configured yet
+        do {
+            let _: EmptyResponse = try await request(endpoint: endpoint, method: "POST", body: interaction)
+            log.log("✅ Interaction '\(type)' recorded for story", category: .api, level: .info)
+        } catch let error as APIError where error.localizedDescription.contains("Unauthorized") {
+            log.log("⚠️ Interaction tracking unavailable - Firebase credentials not configured on Azure (this is OK)", category: .api, level: .debug)
+            // Silently fail - interactions will work once Firebase is configured
+            // For now, track locally in SwiftData
+        } catch {
+            log.log("⚠️ Failed to record interaction: \(error.localizedDescription)", category: .api, level: .debug)
+            // Non-critical, don't throw
+        }
     }
     
-    // MARK: - User API
+    /// Mark story as read
+    func markAsRead(storyId: String) async throws {
+        if useMockData {
+            await mockMarkAsRead(storyId: storyId)
+            return
+        }
+        
+        try await recordInteraction(storyId: storyId, type: "view")
+    }
     
-    /// Get current user profile
-    /// - Returns: UserProfile object
-    func getUserProfile() async throws -> UserProfile {
-        let endpoint = "/api/user/profile"
+    /// Save story for later
+    func saveStory(storyId: String) async throws {
+        if useMockData {
+            await mockSaveStory(storyId: storyId)
+            return
+        }
+        
+        try await recordInteraction(storyId: storyId, type: "save")
+    }
+    
+    /// Unsave story
+    func unsaveStory(storyId: String) async throws {
+        if useMockData {
+            await mockUnsaveStory(storyId: storyId)
+            return
+        }
+        
+        try await recordInteraction(storyId: storyId, type: "unsave")
+    }
+    
+    /// Like story
+    func likeStory(storyId: String) async throws {
+        if useMockData {
+            await mockLikeStory(storyId: storyId)
+            return
+        }
+        
+        try await recordInteraction(storyId: storyId, type: "like")
+    }
+    
+    /// Unlike story
+    func unlikeStory(storyId: String) async throws {
+        if useMockData {
+            await mockUnlikeStory(storyId: storyId)
+            return
+        }
+        
+        try await recordInteraction(storyId: storyId, type: "unlike")
+    }
+    
+    /// Get saved stories
+    func getSavedStories(offset: Int = 0, limit: Int = 20) async throws -> [Story] {
+        if useMockData {
+            return await mockGetSavedStories()
+        }
+        
+        let endpoint = "/api/user/saved?offset=\(offset)&limit=\(limit)"
+        log.log("Fetching saved stories", category: .api, level: .info)
+        
+        do {
+            // API returns direct array
+            let azureStories: [AzureStoryResponse] = try await request(endpoint: endpoint, method: "GET")
+            let stories = azureStories.map { $0.toStory() }
+            log.log("✅ Saved stories loaded: \(stories.count) stories", category: .api, level: .info)
+            return stories
+        } catch let error as APIError where error.localizedDescription.contains("Unauthorized") {
+            log.log("⚠️ Authentication failed for saved stories - returning empty list", category: .api, level: .warning)
+            return []
+        } catch {
+            log.logError(error, context: "getSavedStories failed")
+            throw error
+        }
+    }
+    
+    // MARK: - User Preferences API
+    
+    /// Get user preferences
+    func getUserPreferences() async throws -> UserPreferences {
+        if useMockData {
+            return authService.isAnonymous ? .anonymous : .default
+        }
+        
+        let endpoint = "/api/user/preferences"
         return try await request(endpoint: endpoint, method: "GET")
     }
     
     /// Update user preferences
-    /// - Parameter preferences: UserPreferences object
-    func updatePreferences(_ preferences: UserPreferences) async throws {
+    func updateUserPreferences(_ preferences: UserPreferences) async throws {
+        if useMockData {
+            await mockUpdatePreferences(preferences)
+            return
+        }
+        
         let endpoint = "/api/user/preferences"
         let _: EmptyResponse = try await request(
             endpoint: endpoint,
@@ -245,137 +385,235 @@ class APIService: ObservableObject {
         )
     }
     
-    /// Register device token for push notifications
-    /// - Parameter token: APNs device token
-    func registerDeviceToken(_ token: String) async throws {
-        let endpoint = "/api/user/device-token"
-        let body = ["token": token, "platform": "ios"]
-        let _: EmptyResponse = try await request(
-            endpoint: endpoint,
-            method: "POST",
-            body: body
-        )
+    // MARK: - Sources API
+    
+    /// Get all available news sources
+    func getSources() async throws -> [Source] {
+        if useMockData {
+            return Source.mockArray
+        }
+        
+        let endpoint = "/api/sources"
+        let response: SourcesResponse = try await request(endpoint: endpoint, method: "GET")
+        return response.sources
     }
     
     // MARK: - Health Check
     
     /// Check API health status
-    /// - Returns: True if API is healthy
     func checkHealth() async throws -> Bool {
+        if useMockData {
+            return true
+        }
+        
         let endpoint = "/health"
-        let response: [String: String] = try await request(
+        let response: HealthResponse = try await request(
             endpoint: endpoint,
             method: "GET",
             requiresAuth: false
         )
-        return response["status"] == "healthy"
+        return response.status == "healthy"
     }
     
     // MARK: - Private Request Method
     
-    /// Generic request method
+    /// Generic request method with retry logic
     private func request<T: Decodable, B: Encodable>(
         endpoint: String,
         method: String,
         body: B? = nil as EmptyBody?,
-        requiresAuth: Bool = true
+        requiresAuth: Bool = true,
+        retryCount: Int = 0
     ) async throws -> T {
+        let startTime = Date()
+        
         // Build URL
         guard let url = URL(string: baseURL + endpoint) else {
+            log.log("❌ Invalid URL: \(baseURL + endpoint)", category: .api, level: .error)
             throw APIError.invalidURL
         }
         
         // Create request
-        var request = URLRequest(url: url)
-        request.httpMethod = method
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = method
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.setValue("ios/1.0", forHTTPHeaderField: "User-Agent")
+        
+        var headers: [String: String] = [
+            "Content-Type": "application/json",
+            "User-Agent": "ios/1.0"
+        ]
         
         // Add authentication if required
         if requiresAuth {
             do {
-                let token = try await authService.getIDToken(forceRefresh: false)
-                request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+                let token = try await authService.getIDToken(forceRefresh: retryCount > 0)
+                let tokenPreview = String(token.prefix(20)) + "..." + String(token.suffix(10))
+                log.logAuth("Firebase JWT token obtained (preview: \(tokenPreview))", level: .debug)
+                urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+                headers["Authorization"] = "Bearer [TOKEN]"
             } catch {
+                log.logAuth("❌ Failed to get Firebase token: \(error.localizedDescription)", level: .error)
                 throw APIError.unauthorized
             }
+        } else {
+            log.log("Request does not require authentication", category: .api, level: .debug)
         }
         
         // Add body if provided
+        var bodyData: Data? = nil
         if let body = body {
-            request.httpBody = try encoder.encode(body)
+            bodyData = try encoder.encode(body)
+            urlRequest.httpBody = bodyData
         }
+        
+        // Log request
+        log.logAPIRequest(method, endpoint: endpoint, headers: headers, body: bodyData)
         
         // Execute request
         do {
-            let (data, response) = try await session.data(for: request)
+            let (data, response) = try await session.data(for: urlRequest)
+            let duration = Date().timeIntervalSince(startTime)
             
             // Validate response
             guard let httpResponse = response as? HTTPURLResponse else {
+                log.log("❌ Invalid HTTP response", category: .network, level: .error)
                 throw APIError.invalidResponse
             }
+            
+            // Log response
+            log.logAPIResponse(httpResponse.statusCode, endpoint: endpoint, data: data, duration: duration)
             
             switch httpResponse.statusCode {
             case 200...299:
                 // Success - decode response
                 do {
-                    return try decoder.decode(T.self, from: data)
+                    let decoded = try decoder.decode(T.self, from: data)
+                    log.logTiming("\(method) \(endpoint)", duration: duration)
+                    return decoded
                 } catch {
+                    log.log("❌ Decoding error: \(error)", category: .api, level: .error)
+                    if let jsonString = String(data: data, encoding: .utf8) {
+                        log.log("Response data: \(jsonString.prefix(500))", category: .api, level: .debug)
+                    }
                     throw APIError.decodingError(error)
                 }
                 
             case 401:
+                // Unauthorized - retry once with token refresh
+                log.logAuth("Received 401 Unauthorized, retry count: \(retryCount)", level: .warning)
+                if retryCount == 0 {
+                    log.logAuth("Retrying with refreshed token...", level: .info)
+                    return try await request(
+                        endpoint: endpoint,
+                        method: method,
+                        body: body,
+                        requiresAuth: requiresAuth,
+                        retryCount: 1
+                    )
+                }
+                log.logAuth("❌ Authentication failed after retry", level: .error)
                 throw APIError.unauthorized
                 
+            case 429:
+                // Rate limit exceeded
+                log.log("⚠️ Rate limit exceeded (429)", category: .api, level: .warning)
+                throw APIError.rateLimitExceeded
+                
             default:
+                log.log("❌ Server error: \(httpResponse.statusCode)", category: .api, level: .error)
                 throw APIError.serverError(httpResponse.statusCode)
             }
             
         } catch let error as APIError {
+            log.logError(error, context: "\(method) \(endpoint)")
             throw error
         } catch {
+            log.logError(error, context: "\(method) \(endpoint) - Network error")
             throw APIError.networkError(error)
         }
     }
+    
+    // MARK: - Admin API
+    
+    /// Get comprehensive admin metrics (admin-only endpoint)
+    func getAdminMetrics() async throws -> AdminMetrics {
+        log.log("Fetching admin metrics", category: .api)
+        
+        let endpoint = "/api/admin/metrics"
+        
+        return try await request(
+            endpoint: endpoint,
+            method: "GET",
+            requiresAuth: true
+        )
+    }
 }
 
-// MARK: - Supporting Types
+// MARK: - Azure API Response Models
 
-struct UserProfile: Codable {
+/// Azure API story response
+struct AzureStoryResponse: Codable {
     let id: String
-    let email: String?
-    let subscriptionTier: String
-    let preferences: UserPreferences
+    let title: String
+    let category: String
+    let tags: [String]
+    let status: String
+    let verification_level: Int
+    let summary: AzureSummaryResponse?
+    let source_count: Int
+    let first_seen: String
+    let last_updated: String
+    let importance_score: Int
+    let breaking_news: Bool
+    let user_liked: Bool?
+    let user_saved: Bool?
+    let sources: [AzureSourceResponse]?
+}
+
+struct AzureSummaryResponse: Codable {
+    let text: String
+    let version: Int
+    let word_count: Int
+    let generated_at: String
+}
+
+struct AzureSourceResponse: Codable {
+    let id: String
+    let source: String
+    let title: String
+    let article_url: String
+    let published_at: String
+}
+
+struct FeedResponse: Codable {
+    let stories: [AzureStoryResponse]
+    let total: Int?
+    let has_more: Bool?
+    let next_offset: Int?
     
     enum CodingKeys: String, CodingKey {
-        case id, email, preferences
-        case subscriptionTier = "subscription_tier"
+        case stories, total
+        case has_more
+        case next_offset
     }
 }
 
-struct UserPreferences: Codable {
-    var categories: [String]
-    var notificationSettings: NotificationSettings
-    
-    enum CodingKeys: String, CodingKey {
-        case categories
-        case notificationSettings = "notification_settings"
-    }
+struct ClusterResponse: Codable {
+    let clusters: [StoryCluster]
+    let total: Int?
+    let has_more: Bool?
 }
 
-struct NotificationSettings: Codable {
-    var breakingNews: Bool
-    var quietHours: QuietHours?
-    
-    enum CodingKeys: String, CodingKey {
-        case breakingNews = "breaking_news"
-        case quietHours = "quiet_hours"
-    }
+struct SourcesResponse: Codable {
+    let sources: [Source]
 }
 
-struct QuietHours: Codable {
-    var enabled: Bool
-    var start: String  // HH:mm format
-    var end: String    // HH:mm format
+struct HealthResponse: Codable {
+    let status: String
+    let version: String?
+    let timestamp: String?
+    let cosmos_db: String?
 }
 
 /// Empty body for requests without a body
@@ -384,3 +622,279 @@ private struct EmptyBody: Encodable {}
 /// Empty response for requests that don't return data
 private struct EmptyResponse: Decodable {}
 
+// MARK: - Azure Response Mapping
+
+extension AzureStoryResponse {
+    /// Convert Azure API response to app Story model
+    func toStory() -> Story {
+        // Parse dates
+        let dateFormatter = ISO8601DateFormatter()
+        let publishedDate = dateFormatter.date(from: first_seen) ?? Date()
+        
+        // Map category
+        let newsCategory: NewsCategory = {
+            switch category.lowercased() {
+            case "tech", "technology": return .technology
+            case "business", "finance": return .business
+            case "politics", "government": return .politics
+            case "science": return .science
+            case "health", "medical": return .health
+            case "sports": return .sports
+            case "entertainment": return .entertainment
+            case "world", "international": return .world
+            case "environment", "climate": return .environment
+            default: return .topStories
+            }
+        }()
+        
+        // Create primary source from first article or generic
+        let primarySource: Source
+        if let firstSource = sources?.first {
+            primarySource = Source(
+                id: firstSource.source,
+                name: firstSource.source.capitalized,
+                domain: "\(firstSource.source).com",
+                logoURL: URL(string: "https://logo.clearbit.com/\(firstSource.source).com")
+            )
+        } else {
+            primarySource = .mock // Fallback
+        }
+        
+        // Convert all sources to SourceArticle objects
+        let sourceArticles: [SourceArticle] = sources?.map { azureSource in
+            SourceArticle(
+                id: azureSource.id,
+                source: azureSource.source,
+                title: azureSource.title,
+                articleURL: azureSource.article_url,
+                publishedAt: azureSource.published_at
+            )
+        } ?? []
+        
+        // Get article URL from first source
+        let articleURL = sources?.first.flatMap { URL(string: $0.article_url) } ?? URL(string: "https://example.com")!
+        
+        // Estimate reading time from summary
+        let readingTime = (summary?.word_count ?? 150) / 200 // ~200 words per minute
+        
+        // Map status
+        let storyStatus: StoryStatus = {
+            switch status.uppercased() {
+            case "MONITORING": return .monitoring
+            case "DEVELOPING": return .developing
+            case "VERIFIED": return .verified
+            case "BREAKING": return .breaking
+            default: return .verified
+            }
+        }()
+        
+        // Parse last updated date
+        let lastUpdatedDate = dateFormatter.date(from: last_updated)
+        
+        return Story(
+            id: id,
+            title: title,
+            summary: summary?.text ?? "No summary available",
+            content: nil,
+            imageURL: nil, // TODO: Extract from sources if available
+            publishedAt: publishedDate,
+            source: primarySource,
+            sources: sourceArticles,
+            category: newsCategory,
+            url: articleURL,
+            clusterId: nil,
+            sentiment: nil,
+            readingTimeMinutes: max(1, readingTime),
+            status: storyStatus,
+            lastUpdated: lastUpdatedDate,
+            sourceCount: source_count,
+            credibilityScore: Double(verification_level) / 10.0, // Convert 0-10 to 0.0-1.0
+            trendingScore: breaking_news ? 0.9 : Double(importance_score) / 10.0,
+            isRead: false,
+            isSaved: user_saved ?? false,
+            isLiked: user_liked ?? false
+        )
+    }
+}
+
+
+// MARK: - Mock Data Support
+
+extension APIService {
+    /// Simulates network delay for more realistic mock behavior
+    private func mockDelay() async {
+        try? await Task.sleep(nanoseconds: UInt64.random(in: 300_000_000...800_000_000)) // 0.3-0.8 seconds
+    }
+    
+    private func mockGetFeed(offset: Int, limit: Int, category: NewsCategory?) async -> [Story] {
+        await mockDelay()
+        let stories = category == nil ? Story.mockArray : Story.mockArray.filter { $0.category == category }
+        let start = min(offset, stories.count)
+        let end = min(offset + limit, stories.count)
+        return Array(stories[start..<end])
+    }
+    
+    private func mockGetClusters(offset: Int, limit: Int) async -> [StoryCluster] {
+        await mockDelay()
+        let clusters = StoryCluster.mockArray
+        let start = min(offset, clusters.count)
+        let end = min(offset + limit, clusters.count)
+        return Array(clusters[start..<end])
+    }
+    
+    private func mockGetStory(id: String) async -> Story {
+        await mockDelay()
+        return Story.mockArray.first(where: { $0.id == id }) ?? Story.mock
+    }
+    
+    private func mockGetBreakingNews() async -> [Story] {
+        await mockDelay()
+        return Array(Story.mockArray.prefix(2))
+    }
+    
+    private func mockSearchStories(query: String) async -> [Story] {
+        await mockDelay()
+        let lowercaseQuery = query.lowercased()
+        return Story.mockArray.filter {
+            $0.title.lowercased().contains(lowercaseQuery) ||
+            $0.summary.lowercased().contains(lowercaseQuery)
+        }
+    }
+    
+    private func mockMarkAsRead(storyId: String) async {
+        await mockDelay()
+        print("Mock: Marked story \(storyId) as read")
+    }
+    
+    private func mockSaveStory(storyId: String) async {
+        await mockDelay()
+        print("Mock: Saved story \(storyId)")
+    }
+    
+    private func mockUnsaveStory(storyId: String) async {
+        await mockDelay()
+        print("Mock: Unsaved story \(storyId)")
+    }
+    
+    private func mockLikeStory(storyId: String) async {
+        await mockDelay()
+        print("Mock: Liked story \(storyId)")
+    }
+    
+    private func mockUnlikeStory(storyId: String) async {
+        await mockDelay()
+        print("Mock: Unliked story \(storyId)")
+    }
+    
+    private func mockGetSavedStories() async -> [Story] {
+        await mockDelay()
+        return Array(Story.mockArray.prefix(2))
+    }
+    
+    private func mockUpdatePreferences(_ preferences: UserPreferences) async {
+        await mockDelay()
+        print("Mock: Updated preferences")
+    }
+    
+    // MARK: - Device Token Registration (Push Notifications)
+    
+    /// Register device token for push notifications
+    func registerDeviceToken(token: String) async throws {
+        log.log("📱 Registering device token with backend", category: .api, level: .info)
+        
+        let endpoint = "\(baseURL)/device-token/register"
+        guard let url = URL(string: endpoint) else {
+            throw APIError.invalidURL
+        }
+        
+        let body: [String: Any] = [
+            "fcm_token": token,
+            "platform": "ios",
+            "app_version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        ]
+        
+        let jsonData = try JSONSerialization.data(withJSONObject: body)
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = jsonData
+        
+        // Add JWT token for authentication
+        if let jwt = try? await authService.getIDToken() {
+            request.setValue("Bearer \(jwt)", forHTTPHeaderField: "Authorization")
+        }
+        
+        do {
+            let (_, response) = try await session.data(for: request)
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw APIError.invalidResponse
+            }
+            
+            switch httpResponse.statusCode {
+            case 200...299:
+                log.log("✅ Device token registered successfully", category: .api, level: .info)
+            case 401:
+                throw APIError.unauthorized
+            default:
+                throw APIError.serverError(httpResponse.statusCode)
+            }
+        } catch let error as APIError {
+            log.logError(error, context: "Register device token")
+            throw error
+        } catch {
+            log.logError(error, context: "Register device token network error")
+            throw APIError.networkError(error)
+        }
+    }
+    
+    /// Unregister device token (e.g., on logout)
+    func unregisterDeviceToken(token: String) async throws {
+        log.log("📱 Unregistering device token from backend", category: .api, level: .info)
+        
+        let endpoint = "\(baseURL)/device-token/unregister"
+        guard let url = URL(string: endpoint) else {
+            throw APIError.invalidURL
+        }
+        
+        let body: [String: Any] = [
+            "fcm_token": token
+        ]
+        
+        let jsonData = try JSONSerialization.data(withJSONObject: body)
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = jsonData
+        
+        // Add JWT token for authentication
+        if let jwt = try? await authService.getIDToken() {
+            request.setValue("Bearer \(jwt)", forHTTPHeaderField: "Authorization")
+        }
+        
+        do {
+            let (_, response) = try await session.data(for: request)
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw APIError.invalidResponse
+            }
+            
+            switch httpResponse.statusCode {
+            case 200...299:
+                log.log("✅ Device token unregistered successfully", category: .api, level: .info)
+            case 401:
+                throw APIError.unauthorized
+            default:
+                throw APIError.serverError(httpResponse.statusCode)
+            }
+        } catch let error as APIError {
+            log.logError(error, context: "Unregister device token")
+            throw error
+        } catch {
+            log.logError(error, context: "Unregister device token network error")
+            throw APIError.networkError(error)
+        }
+    }
+}

@@ -3,11 +3,12 @@
   "Values": {
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "FUNCTIONS_WORKER_RUNTIME": "python",
-    "COSMOS_CONNECTION_STRING": "AccountEndpoint=https://...;AccountKey=...",
-    "ANTHROPIC_API_KEY": "sk-ant-...",
-    "TWITTER_BEARER_TOKEN": "AAAA...",
-    "FIREBASE_CREDENTIALS": "{\"type\":\"service_account\",...}",
-    "APPLICATIONINSIGHTS_CONNECTION_STRING": "InstrumentationKey=..."
+    "COSMOS_CONNECTION_STRING": "AccountEndpoint=https://your-cosmos-account.documents.azure.com:443/;AccountKey=your-key;",
+    "COSMOS_DATABASE_NAME": "newsreel-db",
+    "STORAGE_CONNECTION_STRING": "DefaultEndpointsProtocol=https;AccountName=your-storage;AccountKey=your-key;EndpointSuffix=core.windows.net",
+    "ANTHROPIC_API_KEY": "your-anthropic-api-key",
+    "TWITTER_BEARER_TOKEN": "your-twitter-bearer-token",
+    "FIREBASE_CREDENTIALS": "{\"type\":\"service_account\",\"project_id\":\"your-project-id\",...}",
+    "LOG_LEVEL": "INFO"
   }
 }
-

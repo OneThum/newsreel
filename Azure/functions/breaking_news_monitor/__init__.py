@@ -1,0 +1,2 @@
+"""Breaking News Monitor Function"""
+

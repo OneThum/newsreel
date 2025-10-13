@@ -11,6 +11,7 @@ import FirebaseAuth
 import FirebaseCore
 import AuthenticationServices
 import CryptoKit
+import GoogleSignIn
 
 /// Authentication state for the app
 enum AuthState: Equatable {
@@ -59,12 +60,14 @@ struct User: Identifiable {
     let email: String?
     let displayName: String?
     let photoURL: URL?
+    let isAnonymous: Bool
     
     init(from firebaseUser: FirebaseAuth.User) {
         self.id = firebaseUser.uid
         self.email = firebaseUser.email
         self.displayName = firebaseUser.displayName
         self.photoURL = firebaseUser.photoURL
+        self.isAnonymous = firebaseUser.isAnonymous
     }
 }
 
@@ -73,13 +76,17 @@ class AuthService: ObservableObject {
     
     @Published var authState: AuthState = .loading
     @Published var currentUser: User?
+    @Published var isAnonymous: Bool = false
     
     private var authStateListener: AuthStateDidChangeListenerHandle?
     private var currentNonce: String?
     
     init() {
+        log.separator("AUTH SERVICE INIT")
+        log.logAuth("Initializing AuthService", level: .info)
         // Configure Firebase (called from NewsreelApp.swift)
         setupAuthStateListener()
+        log.logAuth("AuthService initialized", level: .info)
     }
     
     deinit {
@@ -91,16 +98,26 @@ class AuthService: ObservableObject {
     // MARK: - Auth State Monitoring
     
     private func setupAuthStateListener() {
+        log.logAuth("Setting up auth state listener", level: .debug)
         authStateListener = Auth.auth().addStateDidChangeListener { [weak self] _, firebaseUser in
             guard let self = self else { return }
             
             if let firebaseUser = firebaseUser {
                 let user = User(from: firebaseUser)
                 self.currentUser = user
+                self.isAnonymous = firebaseUser.isAnonymous
                 self.authState = .authenticated(user)
+                
+                let userType = firebaseUser.isAnonymous ? "Anonymous" : "Authenticated"
+                log.logAuth("🔐 Auth state changed: \(userType) user (UID: \(firebaseUser.uid.prefix(8))...)", level: .info)
+                log.logAuth("   Email: \(firebaseUser.email ?? "none")", level: .debug)
+                log.logAuth("   Display Name: \(firebaseUser.displayName ?? "none")", level: .debug)
+                log.logAuth("   Is Anonymous: \(firebaseUser.isAnonymous)", level: .debug)
             } else {
                 self.currentUser = nil
+                self.isAnonymous = false
                 self.authState = .unauthenticated
+                log.logAuth("🔓 Auth state changed: Unauthenticated", level: .info)
             }
         }
     }
@@ -108,12 +125,15 @@ class AuthService: ObservableObject {
     // MARK: - Email/Password Authentication
     
     func signIn(email: String, password: String) async throws {
+        log.logAuth("Attempting email/password sign in for: \(email)", level: .info)
         do {
             let result = try await Auth.auth().signIn(withEmail: email, password: password)
             let user = User(from: result.user)
             self.currentUser = user
             self.authState = .authenticated(user)
+            log.logAuth("✅ Email/password sign in successful", level: .info)
         } catch let error as NSError {
+            log.logAuth("❌ Email/password sign in failed: \(error.localizedDescription)", level: .error)
             throw mapFirebaseError(error)
         }
     }
@@ -137,34 +157,127 @@ class AuthService: ObservableObject {
         }
     }
     
+    // MARK: - Anonymous Sign-In
+    
+    func signInAnonymously() async throws {
+        log.logAuth("Attempting anonymous sign in", level: .info)
+        do {
+            let result = try await Auth.auth().signInAnonymously()
+            let user = User(from: result.user)
+            self.currentUser = user
+            self.isAnonymous = true
+            self.authState = .authenticated(user)
+            log.logAuth("✅ Anonymous sign in successful (UID: \(result.user.uid.prefix(8))...)", level: .info)
+        } catch let error as NSError {
+            log.logAuth("❌ Anonymous sign in failed: \(error.localizedDescription)", level: .error)
+            throw mapFirebaseError(error)
+        }
+    }
+    
+    // MARK: - Link Anonymous Account
+    
+    /// Link anonymous account to permanent credentials (for future use)
+    func linkAnonymousAccount(to credential: AuthCredential) async throws {
+        guard let firebaseUser = Auth.auth().currentUser, firebaseUser.isAnonymous else {
+            throw AuthError.unknownError("No anonymous account to link")
+        }
+        
+        do {
+            let result = try await firebaseUser.link(with: credential)
+            let user = User(from: result.user)
+            self.currentUser = user
+            self.isAnonymous = false
+            self.authState = .authenticated(user)
+        } catch let error as NSError {
+            throw mapFirebaseError(error)
+        }
+    }
+    
     // MARK: - Google Sign-In
     
-    // TODO: Implement Google Sign-In (requires GoogleSignIn SDK)
-    // This will be added in Phase 3
+    func signInWithGoogle() async throws {
+        log.logAuth("Attempting Google Sign In", level: .info)
+        
+        // Get the client ID from Firebase
+        guard let clientID = Auth.auth().app?.options.clientID else {
+            log.logAuth("❌ No Firebase client ID found", level: .error)
+            throw AuthError.unknownError("No Firebase client ID found")
+        }
+        
+        // Create Google Sign In configuration
+        let config = GIDConfiguration(clientID: clientID)
+        GIDSignIn.sharedInstance.configuration = config
+        
+        // Get the root view controller
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let rootViewController = windowScene.windows.first?.rootViewController else {
+            log.logAuth("❌ No root view controller found", level: .error)
+            throw AuthError.unknownError("No root view controller")
+        }
+        
+        do {
+            // Start the sign in flow
+            let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: rootViewController)
+            
+            guard let idToken = result.user.idToken?.tokenString else {
+                log.logAuth("❌ No ID token from Google", level: .error)
+                throw AuthError.unknownError("No ID token from Google")
+            }
+            
+            let accessToken = result.user.accessToken.tokenString
+            
+            log.logAuth("Google sign in successful, creating Firebase credential", level: .debug)
+            
+            // Create Firebase credential
+            let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: accessToken)
+            
+            // Sign in with Firebase
+            let authResult = try await Auth.auth().signIn(with: credential)
+            let user = User(from: authResult.user)
+            self.currentUser = user
+            self.authState = .authenticated(user)
+            
+            log.logAuth("✅ Google Sign In successful (UID: \(authResult.user.uid.prefix(8))...)", level: .info)
+            log.logAuth("   Email: \(authResult.user.email ?? "none")", level: .debug)
+            log.logAuth("   Display Name: \(authResult.user.displayName ?? "none")", level: .debug)
+            
+        } catch let error as NSError {
+            log.logAuth("❌ Google Sign In failed: \(error.localizedDescription)", level: .error)
+            throw mapFirebaseError(error)
+        }
+    }
     
     // MARK: - Apple Sign-In
     
     func signInWithApple(authorization: ASAuthorization) async throws {
+        log.logAuth("Attempting Apple Sign In", level: .info)
+        
         guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential else {
+            log.logAuth("❌ Invalid Apple ID credential", level: .error)
             throw AuthError.unknownError("Invalid Apple ID credential")
         }
         
         guard let nonce = currentNonce else {
+            log.logAuth("❌ Nonce missing", level: .error)
             throw AuthError.unknownError("Invalid state: nonce missing")
         }
         
         guard let appleIDToken = appleIDCredential.identityToken else {
+            log.logAuth("❌ Unable to fetch identity token", level: .error)
             throw AuthError.unknownError("Unable to fetch identity token")
         }
         
         guard let idTokenString = String(data: appleIDToken, encoding: .utf8) else {
+            log.logAuth("❌ Unable to serialize token string", level: .error)
             throw AuthError.unknownError("Unable to serialize token string")
         }
         
-        let credential = OAuthProvider.credential(
-            withProviderID: "apple.com",
-            idToken: idTokenString,
-            rawNonce: nonce
+        log.logAuth("Apple ID token obtained, creating Firebase credential", level: .debug)
+        
+        let credential = OAuthProvider.appleCredential(
+            withIDToken: idTokenString,
+            rawNonce: nonce,
+            fullName: appleIDCredential.fullName
         )
         
         do {
@@ -172,7 +285,10 @@ class AuthService: ObservableObject {
             let user = User(from: result.user)
             self.currentUser = user
             self.authState = .authenticated(user)
+            log.logAuth("✅ Apple Sign In successful (UID: \(result.user.uid.prefix(8))...)", level: .info)
+            log.logAuth("   Email: \(result.user.email ?? "none")", level: .debug)
         } catch let error as NSError {
+            log.logAuth("❌ Apple Sign In failed: \(error.localizedDescription)", level: .error)
             throw mapFirebaseError(error)
         }
     }
@@ -209,17 +325,27 @@ class AuthService: ObservableObject {
     
     /// Get current user's Firebase JWT token for API authentication
     func getIDToken(forceRefresh: Bool = false) async throws -> String {
+        log.logAuth("Getting Firebase ID token (force refresh: \(forceRefresh))", level: .debug)
+        
         guard let firebaseUser = Auth.auth().currentUser else {
+            log.logAuth("❌ No current user, cannot get token", level: .error)
             throw AuthError.userNotFound
         }
         
-        return try await firebaseUser.getIDToken(forcingRefresh: forceRefresh)
+        do {
+            let token = try await firebaseUser.getIDToken(forcingRefresh: forceRefresh)
+            log.logAuth("✅ Firebase ID token obtained (length: \(token.count) chars)", level: .debug)
+            return token
+        } catch {
+            log.logAuth("❌ Failed to get Firebase ID token: \(error.localizedDescription)", level: .error)
+            throw error
+        }
     }
     
     // MARK: - Helper Methods
     
     private func mapFirebaseError(_ error: NSError) -> AuthError {
-        guard let errorCode = AuthErrorCode.Code(rawValue: error.code) else {
+        guard let errorCode = AuthErrorCode(rawValue: error.code) else {
             return .unknownError(error.localizedDescription)
         }
         

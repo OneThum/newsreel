@@ -1,150 +1,206 @@
 # Newsreel
 
-> AI-curated news aggregation for iOS - Ad-free, transparent, personalized
+**AI-Powered News Aggregation Platform**
 
-## Overview
+Newsreel is a modern news aggregation app that delivers curated, multi-perspective news stories from 100+ trusted sources, enhanced with AI-powered summaries and real-time verification.
 
-Newsreel is an iOS app that delivers AI-summarized news from multiple trusted sources. Using Claude Sonnet 4.1, we synthesize facts from various outlets into clear, concise summaries while maintaining full source transparency.
+---
 
-**Display Name**: Newsreel  
-**Bundle ID**: `com.onethum.newsreel`  
-**Version**: 1.0.0 (Build 1)  
-**Repository**: https://github.com/OneThum/newsreel.git  
-**Developer**: One Thum Software
-
-## Key Features
-
-- 🤖 **AI-Powered Summaries** - Facts-based summaries synthesized from multiple sources
-- 🔄 **Flip Card UI** - Summary on front, sources on back with attribution
-- 🚨 **Breaking News** - Real-time detection with 3-source verification
-- 🎯 **Personalized Feed** - Learns from your reading behavior
-- 🚫 **Ad-Free** - Clean, distraction-free reading experience
-- 📱 **iOS 26+ Native** - Built with latest SwiftUI and modern Apple design patterns
-- ✨ **Liquid Glass Design** - Beautiful gradient backgrounds with Apple-inspired aesthetics
-- 🎨 **Modern iOS 26 UI** - Scroll transitions, materials, and latest HIG guidelines
-
-## Tech Stack
-
-### Frontend
-- **Platform**: iOS 26+
-- **Framework**: SwiftUI (latest iOS 26 features)
-- **Architecture**: MVVM with Combine/Swift Concurrency
-- **Typography**: Outfit font family (all weights)
-- **Design**: Liquid Glass with iOS 26 materials and transitions
-- **Authentication**: Firebase Auth
-- **Subscriptions**: RevenueCat
-
-### Backend
-- **APIs**: Azure Container Apps (FastAPI)
-- **Functions**: Azure Functions (Python 3.11)
-- **Database**: Azure Cosmos DB (Serverless)
-- **AI**: Anthropic Claude Sonnet 4.1
-- **Monitoring**: Azure Application Insights
-
-## Project Structure
-
-```
-Newsreel/
-├── docs/                           # Documentation
-│   └── Product_Specification.md    # Full product specification
-├── Azure/                          # Azure infrastructure
-│   ├── functions/                  # Azure Functions
-│   └── api/                        # Container Apps APIs
-├── Newsreel App/                   # iOS Application
-│   └── Newsreel/                   # Main app target
-└── README.md                       # This file
-```
-
-## Documentation
-
-- **[Project Status](docs/PROJECT_STATUS.md)** - Current status, completed items, and immediate next steps
-- **[Product Specification](docs/Product_Specification.md)** - Complete technical specification with architecture, database schemas, API specs, and implementation details
-- **[Development Roadmap](docs/Development_Roadmap.md)** - Detailed implementation plan with phases and checkboxes
-- **[Xcode Configuration](docs/Xcode_Configuration.md)** - Project settings, versioning, and App Store preparation
-- **[iOS 18 Best Practices](docs/iOS18_Best_Practices.md)** - Modern iOS 18 features, scroll transitions, and Liquid Glass patterns
-- **[Design System Guide](docs/Design_System.md)** - Liquid Glass gradient backgrounds, Outfit typography, and UI guidelines
-- **[Font Setup Guide](docs/Font_Setup_Guide.md)** - Outfit font configuration and usage reference
-- **[Firebase Setup Guide](docs/Firebase_Setup_Guide.md)** - Authentication and push notification configuration
-- **[Azure Setup Guide](docs/Azure_Setup_Guide.md)** - Step-by-step infrastructure deployment guide
-- **[RevenueCat Setup Guide](docs/RevenueCat_Setup_Guide.md)** - Subscription management configuration and implementation
-- **[Cost Management](docs/Cost_Management.md)** - Budget tracking, optimization strategies, and alerts
-- **[Documentation Index](docs/INDEX.md)** - Complete documentation hub
-
-## Business Model
-
-### Free Tier
-- 20 stories per day
-- 30-minute delay on breaking news
-- Access to all sources
-- Up to 10 saved stories
-
-### Premium Tier ($4.99/month)
-- Unlimited stories
-- Real-time breaking news
-- Unlimited saves
-- Priority support
-- Export reading history
-- Custom notifications
-
-## Development Status
-
-🚧 **Status**: Planning/Initial Setup
-
-See the [Product Specification](docs/Product_Specification.md#11-development-phases) for detailed development phases and timeline.
-
-## Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
-- **iOS 26.0+** / Xcode 18+
-- Azure subscription (Newsreel Subscription)
-- Firebase project (Authentication)
-- RevenueCat account (Subscription management)
-- Anthropic API key (Claude AI)
-- Twitter Developer API access (Breaking news)
+- **iOS**: Xcode 15+, iOS 17+, Swift 5.9+
+- **Backend**: Azure subscription, Python 3.11+, Azure Functions Core Tools
+- **Auth**: Firebase project with Apple Sign-In and Google Sign-In enabled
 
-### Setup Instructions
+### Setup
+1. **iOS App**: See `docs/Xcode_Configuration.md`
+2. **Azure Backend**: See `docs/Azure_Setup_Guide.md`
+3. **Firebase Auth**: See `docs/Firebase_Setup_Guide.md`
 
-See individual setup guides:
-- [Xcode Configuration](docs/Xcode_Configuration.md) - Project settings and versioning
-- [Firebase Setup Guide](docs/Firebase_Setup_Guide.md) - Authentication and push notifications
-- [Azure Setup Guide](docs/Azure_Setup_Guide.md) - Infrastructure deployment
-- [RevenueCat Setup Guide](docs/RevenueCat_Setup_Guide.md) - Subscription management
-- [Font Setup Guide](docs/Font_Setup_Guide.md) - Outfit font configuration
+---
 
-## Cost Management
+## 📚 Documentation
 
-**Hard Budget Constraints:**
-- **Azure Maximum**: $150/month (CANNOT EXCEED)
-- **Total Project Maximum**: $300/month (CANNOT EXCEED)
+All documentation is organized in the `/docs` folder:
 
-**Current Projected Costs**: ~$276/month
-- Azure Services: $96/month
-  - Azure Cosmos DB: $31
-  - Azure Container Apps: $40
-  - Azure Functions: $15
-  - Storage & Monitoring: $10
-- External Services: $180/month
-  - Claude API: $80
-  - Twitter API: $100
-  - Firebase Auth: $0 (free tier)
-  - RevenueCat: $0 (free tier up to $2.5k MRR)
+### Getting Started
+- **[Recent Changes](docs/Recent_Changes.md)** - Latest features, bug fixes, and improvements
+- **[Quick Reference](docs/QUICK_REFERENCE.md)** - Essential commands and URLs
+- **[Project Status](docs/PROJECT_STATUS.md)** - Current implementation status
 
-**Buffer**: $24/month (8% under budget ✅)
+### Setup Guides
+- **[Azure Setup](docs/Azure_Setup_Guide.md)** - Azure infrastructure deployment
+- **[Firebase Setup](docs/Firebase_Setup_Guide.md)** - Authentication configuration
+- **[Xcode Configuration](docs/Xcode_Configuration.md)** - iOS project setup
 
-**Note**: RevenueCat is free for first ~500 subscribers ($2,500 MRR at $4.99/month)
+### Architecture & Design
+- **[RSS Feed Strategy](docs/RSS_FEED_STRATEGY.md)** - Feed ingestion architecture
+- **[Clustering Improvements](docs/CLUSTERING_IMPROVEMENTS.md)** - Story clustering logic
+- **[Staggered RSS Polling](docs/STAGGERED_RSS_POLLING.md)** - Polling optimization
+- **[Design System](docs/Design_System.md)** - iOS UI/UX patterns
+- **[iOS18 Best Practices](docs/iOS18_Best_Practices.md)** - Development guidelines
 
-See [Cost Management Guide](docs/Cost_Management.md) for detailed tracking, optimization strategies, and alerts.
+### Monitoring & Operations
+- **[Badge Logging & Monitoring](docs/BADGE_LOGGING_MONITORING.md)** - Observability setup
+- **[Product Improvement Roadmap](docs/PRODUCT_IMPROVEMENT_ROADMAP.md)** - Future enhancements
+- **[Cost Management](docs/Cost_Management.md)** - Azure budget optimization
 
-## Contributing
+### Product Specification
+- **[Product Specification](docs/Product_Specification.md)** - Full product requirements
 
-This is a private project by One Thum Software. Internal team guidelines to be added.
+---
 
-## License
+## 🏗️ Architecture
+
+### Backend (Azure)
+- **Azure Functions**: RSS ingestion, story clustering, summarization, breaking news monitoring
+- **Azure Container Apps**: FastAPI REST API
+- **Cosmos DB**: Serverless NoSQL database
+- **Application Insights**: Logging and monitoring
+- **Anthropic API**: AI-powered summaries
+
+### iOS App
+- **SwiftUI**: Modern declarative UI
+- **Firebase Authentication**: Apple Sign-In, Google Sign-In
+- **SwiftData**: Local persistence and offline-first caching
+- **Async/Await**: Modern concurrency patterns
+
+---
+
+## ✨ Key Features
+
+### For Users
+- **Multi-Source Stories**: View 100+ news sources covering the same story
+- **AI Summaries**: Quick, accurate summaries powered by Claude
+- **Real-Time Updates**: Twitter-style smooth feed updates
+- **Category Filtering**: 10 news categories with beautiful horizontal chips
+- **Full-Text Search**: Find stories by keywords with relevance ranking
+- **Status Badges**: See story verification status (MONITORING, DEVELOPING, VERIFIED, BREAKING)
+- **Offline Support**: Read cached stories without internet
+
+### For Developers
+- **Structured Logging**: Full observability with Application Insights
+- **CLI Automation**: Shell scripts for log analysis
+- **Admin Dashboard**: Mobile-accessible backend metrics
+- **Modern Stack**: SwiftUI, Azure Functions, FastAPI, Cosmos DB
+- **Cost Optimized**: Serverless architecture with budget controls
+
+---
+
+## 🔧 Tech Stack
+
+### iOS
+- Swift 5.9+
+- SwiftUI & SwiftData
+- Firebase (Auth & Analytics)
+- URLSession with async/await
+- OSLog for structured logging
+
+### Backend
+- Python 3.11
+- Azure Functions (Timer triggers, Cosmos DB change feed)
+- FastAPI (REST API)
+- Cosmos DB (Serverless NoSQL)
+- Anthropic Claude API
+- Application Insights
+
+### Infrastructure
+- Azure Container Apps
+- Azure Functions
+- Azure Cosmos DB
+- Azure Container Registry
+- Azure Application Insights
+- Azure Log Analytics
+
+---
+
+## 📱 iOS App Structure
+
+```
+Newsreel App/
+├── Newsreel/
+│   ├── NewsreelApp.swift          # App entry point
+│   ├── Models/                     # Data models
+│   ├── Services/                   # API, Auth, Persistence
+│   ├── Views/                      # SwiftUI views
+│   │   ├── Auth/                  # Login, registration
+│   │   ├── Components/            # Reusable components
+│   │   ├── Settings/              # Preferences, notifications
+│   │   └── Admin/                 # Admin dashboard
+│   ├── Utilities/                  # Helpers, extensions
+│   └── Assets.xcassets/           # Images, colors
+```
+
+---
+
+## 🌐 Backend Structure
+
+```
+Azure/
+├── functions/                      # Azure Functions
+│   ├── rss_ingestion/             # 10-second RSS polling
+│   ├── story_clustering/          # Story deduplication & clustering
+│   ├── summarization/             # AI summary generation
+│   ├── breaking_news_monitor/     # Real-time news alerts
+│   └── shared/                    # Shared utilities
+├── api/                           # FastAPI REST API
+│   └── app/
+│       ├── routers/               # API endpoints
+│       ├── services/              # Business logic
+│       └── middleware/            # Auth, logging
+└── scripts/                       # CLI automation tools
+```
+
+---
+
+## 🚀 Deployment
+
+### iOS App
+```bash
+# Build
+cd "Newsreel App"
+xcodebuild -project Newsreel.xcodeproj -scheme Newsreel build
+
+# Run in simulator
+open -a Simulator
+xcodebuild -project Newsreel.xcodeproj -scheme Newsreel -destination 'platform=iOS Simulator,name=iPhone 16 Pro' run
+```
+
+### Azure Functions
+```bash
+cd Azure/functions
+func azure functionapp publish newsreel-func-51689 --python
+```
+
+### Azure Container Apps (API)
+```bash
+cd Azure/api
+az acr build --registry newsreelacr --image newsreel-api:latest .
+az containerapp update --name newsreel-api --resource-group newsreel-rg --image newsreelacr.azurecr.io/newsreel-api:latest
+```
+
+---
+
+## 🔗 Quick Links
+
+- **Backend API**: https://newsreel-api.thankfulpebble-0dde6120.centralus.azurecontainerapps.io
+- **Azure Functions**: newsreel-func-51689.azurewebsites.net
+- **Application Insights**: Via Azure Portal
+- **Cosmos DB**: newsreel-cosmos (serverless)
+
+---
+
+## 📄 License
 
 Copyright © 2025 One Thum Software. All rights reserved.
 
 ---
 
-**Contact**: One Thum Software  
-**Last Updated**: October 8, 2025
+## 🤝 Contributing
 
+This is a private project. For questions or issues, contact dave@onethum.com.
+
+---
+
+**For detailed documentation, see the `/docs` folder.**
