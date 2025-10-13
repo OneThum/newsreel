@@ -479,6 +479,10 @@ def process_feed_entry(entry, feed_result: Dict[str, Any]) -> Optional[RawArticl
         article_id = generate_article_id(feed_config.source_id, article_url, published_at)
         story_fingerprint = generate_story_fingerprint(title, entities)
         
+        # Note: fetched_at is immutable (when we first saw it)
+        # updated_at will be updated on each upsert
+        now = datetime.now(timezone.utc)
+        
         article = RawArticle(
             id=article_id,
             source=feed_config.source_id,
@@ -488,7 +492,8 @@ def process_feed_entry(entry, feed_result: Dict[str, Any]) -> Optional[RawArticl
             title=title,
             description=description,
             published_at=published_at,
-            fetched_at=fetched_at,
+            fetched_at=fetched_at,  # When we first saw it (immutable)
+            updated_at=now,  # When we last updated it (will be upserted)
             published_date=published_date,
             content=content,
             author=author,
@@ -597,9 +602,11 @@ async def rss_ingestion_timer(timer: func.TimerRequest) -> None:
                         continue
                     
                     try:
-                        result = await cosmos_client.create_raw_article(article)
+                        # UPSERT: Creates new or updates existing (same source + URL)
+                        # This implements update-in-place for article updates
+                        result = await cosmos_client.upsert_raw_article(article)
                         if result:
-                            new_articles += 1
+                            new_articles += 1  # Note: counts both new and updated articles
                             source_distribution[feed_config.name] += 1
                     except Exception as e:
                         logger.error(f"Error storing article {article.id}: {e}")
@@ -747,7 +754,45 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                 # Note: We allow multiple articles from the same source (AP might have multiple updates)
                 # Each article represents a different development or angle
                 source_articles.append(article.id)
-                logger.info(f"Added {article.source} article to story {story['id']} (now {len(source_articles)} articles total)")
+                
+                # 🔍 ENHANCED SOURCE TRACKING LOGGING
+                # Calculate source diversity BEFORE updating
+                from collections import Counter
+                existing_sources = []
+                for art_id in source_articles[:-1]:  # All except the one we just added
+                    # Extract source from article ID (format: source_hash or source_YYYYMMDD_...)
+                    source_part = art_id.split('_')[0]
+                    existing_sources.append(source_part)
+                
+                source_counts = Counter(existing_sources)
+                unique_sources = len(source_counts)
+                duplicate_sources = {k: v for k, v in source_counts.items() if v > 1}
+                
+                logger.info(
+                    f"📰 Added [{article.source}] to story {story['id']}: "
+                    f"{prev_source_count}→{len(source_articles)} articles, "
+                    f"{unique_sources} unique sources"
+                )
+                
+                if duplicate_sources:
+                    logger.warning(
+                        f"⚠️  Story {story['id']} has DUPLICATE SOURCES: "
+                        f"{dict(duplicate_sources)}"
+                    )
+                    # Log the new article's source
+                    logger.warning(f"   Just added: {article.source} (ID: {article.id})")
+                    # Check if this new article is creating a duplicate
+                    if article.source.split('_')[0] in duplicate_sources:
+                        logger.warning(f"   ⚠️  This is a DUPLICATE of existing {article.source} articles!")
+                
+                # Log source diversity details
+                logger.log_story_cluster(
+                    story_id=story['id'],
+                    source_count=len(source_articles),
+                    unique_sources=unique_sources + 1,  # +1 for the article we just added
+                    category=story.get('category', 'unknown'),
+                    status=story.get('status', 'unknown')
+                )
                 
                 verification_level = len(source_articles)
                 now = datetime.now(timezone.utc)

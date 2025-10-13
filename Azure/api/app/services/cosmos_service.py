@@ -158,7 +158,7 @@ class CosmosService:
             raise
     
     async def get_story_sources(self, source_ids: List[str]) -> List[Dict[str, Any]]:
-        """Get source articles for a story"""
+        """Get source articles for a story - DEDUPLICATED by source name"""
         try:
             container = self._get_container("raw_articles")
             sources = []
@@ -177,7 +177,21 @@ class CosmosService:
                         logger.warning(f"Source article not found: {source_id}")
                         continue
             
-            return sources
+            # DEDUPLICATE by source name before returning
+            # This prevents showing "CNN, CNN, CNN..." when CNN has multiple updates
+            # Keep the most recent article from each unique source
+            seen_sources = {}
+            for source in sources:
+                source_name = source.get('source', '')
+                if source_name:
+                    # Overwrites older articles from same source with newer ones
+                    seen_sources[source_name] = source
+            
+            deduplicated_sources = list(seen_sources.values())
+            
+            logger.info(f"📊 Deduplication: {len(sources)} articles → {len(deduplicated_sources)} unique sources")
+            
+            return deduplicated_sources
         except Exception as e:
             logger.error(f"Error getting story sources: {e}")
             raise

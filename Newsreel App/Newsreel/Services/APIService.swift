@@ -660,16 +660,53 @@ extension AzureStoryResponse {
             primarySource = .mock // Fallback
         }
         
-        // Convert all sources to SourceArticle objects
-        let sourceArticles: [SourceArticle] = sources?.map { azureSource in
-            SourceArticle(
-                id: azureSource.id,
-                source: azureSource.source,
-                title: azureSource.title,
-                articleURL: azureSource.article_url,
-                publishedAt: azureSource.published_at
-            )
-        } ?? []
+                // Convert all sources to SourceArticle objects
+                let sourceArticles: [SourceArticle] = sources?.map { azureSource in
+                    SourceArticle(
+                        id: azureSource.id,
+                        source: azureSource.source,
+                        title: azureSource.title,
+                        articleURL: azureSource.article_url,
+                        publishedAt: azureSource.published_at
+                    )
+                } ?? []
+                
+                // TEMPORARY FIX: Deduplicate sources client-side until Azure API deployment works
+                // Remove this once backend deduplication is successfully deployed
+                var uniqueSources: [String: SourceArticle] = [:]
+                for source in sourceArticles {
+                    uniqueSources[source.source] = source  // Keep one per unique source name
+                }
+                let deduplicatedSources = Array(uniqueSources.values())
+        
+        // 🔍 DEDUPLICATION DIAGNOSTIC LOGGING
+        if let sources = sources {
+            Logger.api.info("📦 [API DECODE] Story: \(id)")
+            Logger.api.info("   API returned \(sources.count) source objects")
+            Logger.api.info("   Converted to \(sourceArticles.count) SourceArticle objects")
+            
+            // Check for duplicates in API response
+            let sourceNames = sources.map { $0.source }
+            let uniqueNames = Set(sourceNames)
+            if uniqueNames.count != sourceNames.count {
+                Logger.api.warning("⚠️ [API DECODE] API RETURNED DUPLICATES!")
+                Logger.api.warning("   Unique: \(uniqueNames.count), Total: \(sourceNames.count)")
+                
+                // Log counts
+                let counts = Dictionary(grouping: sourceNames, by: { $0 }).mapValues { $0.count }
+                let duplicates = counts.filter { $0.value > 1 }
+                for (name, count) in duplicates {
+                    Logger.api.warning("   '\(name)' appears \(count) times in API response")
+                }
+            }
+            
+            // Log first 3 source names for inspection
+            for (index, source) in sources.prefix(3).enumerated() {
+                Logger.api.debug("   [\(index+1)] \(source.source) - ID: \(source.id)")
+            }
+        } else {
+            Logger.api.warning("⚠️ [API DECODE] Story: \(id) - sources field is nil")
+        }
         
         // Get article URL from first source
         let articleURL = sources?.first.flatMap { URL(string: $0.article_url) } ?? URL(string: "https://example.com")!
@@ -691,6 +728,9 @@ extension AzureStoryResponse {
         // Parse last updated date
         let lastUpdatedDate = dateFormatter.date(from: last_updated)
         
+        // 🔍 FINAL LOGGING before Story creation
+        Logger.api.debug("📦 [API DECODE] Creating Story object with \(deduplicatedSources.count) deduplicated sources (was \(sourceArticles.count) raw)")
+        
         return Story(
             id: id,
             title: title,
@@ -699,7 +739,7 @@ extension AzureStoryResponse {
             imageURL: nil, // TODO: Extract from sources if available
             publishedAt: publishedDate,
             source: primarySource,
-            sources: sourceArticles,
+            sources: deduplicatedSources,  // Use deduplicated array
             category: newsCategory,
             url: articleURL,
             clusterId: nil,

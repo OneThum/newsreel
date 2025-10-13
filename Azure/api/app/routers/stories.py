@@ -69,46 +69,48 @@ async def map_story_to_response(
             )
         # else: story is old without summary, status would be "none" (no summary object returned)
     
+    # Get source count (get_story_sources returns ALREADY DEDUPLICATED sources)
+    source_ids = story.get('source_articles', [])
+    unique_source_count = len(source_ids)  # Default to raw count if query fails
+    source_docs = []
+    
+    if source_ids:
+        # get_story_sources now returns deduplicated sources (one per unique source name)
+        source_docs = await cosmos_service.get_story_sources(source_ids)
+        unique_source_count = len(source_docs)  # Already deduplicated!
+    
     # Get sources if requested
     sources = []
-    if include_sources:
-        source_ids = story.get('source_articles', [])
-        if source_ids:
-            source_docs = await cosmos_service.get_story_sources(source_ids)
-            
-            # DEDUPLICATE by source name - only show one article per unique source
-            # This prevents showing "CNN, CNN, CNN..." when CNN has multiple updates
-            seen_sources = {}  # source_name -> article (keeps most recent)
-            for source in source_docs:
-                source_name = source.get('source', '')
-                # Keep the most recent article from each source (overwrites older ones)
-                # Could also keep first instead: if source_name not in seen_sources
-                seen_sources[source_name] = source
-            
-            # Convert deduplicated sources to SourceArticle responses
-            sources = [
-                SourceArticle(
-                    id=source['id'],
-                    source=get_source_display_name(source.get('source', '')),  # Use display name
-                    title=source.get('title', ''),
-                    article_url=source.get('article_url', ''),
-                    published_at=datetime.fromisoformat(
-                        source.get('published_at', '').replace('Z', '+00:00')
-                    )
+    if include_sources and source_docs:
+        # Convert already-deduplicated sources to SourceArticle responses
+        sources = [
+            SourceArticle(
+                id=source['id'],
+                source=get_source_display_name(source.get('source', '')),  # Use display name
+                title=source.get('title', ''),
+                article_url=source.get('article_url', ''),
+                published_at=datetime.fromisoformat(
+                    source.get('published_at', '').replace('Z', '+00:00')
                 )
-                for source in seen_sources.values()
-            ]
+            )
+            for source in source_docs
+        ]
     
     if include_sources:
+        # DEBUG: Add visible marker to confirm new code is running
+        response_title = story.get('title', '')
+        if unique_source_count != len(source_ids):
+            response_title = f"[DEDUP: {len(source_ids)}→{unique_source_count}] {response_title}"
+        
         return StoryDetailResponse(
             id=story['id'],
-            title=story.get('title', ''),
+            title=response_title,
             category=story.get('category', 'general'),
             tags=story.get('tags', []),
             status=story.get('status', 'VERIFIED'),
             verification_level=story.get('verification_level', 1),
             summary=summary,
-            source_count=len(story.get('source_articles', [])),
+            source_count=unique_source_count,  # Use DEDUPLICATED count
             first_seen=datetime.fromisoformat(
                 story.get('first_seen', '').replace('Z', '+00:00')
             ),
@@ -130,7 +132,7 @@ async def map_story_to_response(
             status=story.get('status', 'VERIFIED'),
             verification_level=story.get('verification_level', 1),
             summary=summary,
-            source_count=len(story.get('source_articles', [])),
+            source_count=unique_source_count,  # Use DEDUPLICATED count
             first_seen=datetime.fromisoformat(
                 story.get('first_seen', '').replace('Z', '+00:00')
             ),

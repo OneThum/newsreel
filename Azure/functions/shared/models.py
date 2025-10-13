@@ -59,8 +59,9 @@ class RawArticle(BaseModel):
     article_url: str
     title: str
     description: Optional[str] = None
-    published_at: datetime
-    fetched_at: datetime
+    published_at: datetime  # Original publication date from RSS feed
+    fetched_at: datetime  # When we first saw this article (immutable)
+    updated_at: datetime  # When we last updated this record (for upserts)
     published_date: str  # YYYY-MM-DD format for partitioning
     content: Optional[str] = None
     author: Optional[str] = None

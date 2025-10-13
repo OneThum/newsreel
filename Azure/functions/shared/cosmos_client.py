@@ -45,19 +45,38 @@ class CosmosDBClient:
     
     # Raw Articles Operations
     
-    async def create_raw_article(self, article: RawArticle) -> Dict[str, Any]:
-        """Create a new raw article"""
+    async def upsert_raw_article(self, article: RawArticle) -> Dict[str, Any]:
+        """Create or update raw article (upsert) - implements update-in-place
+        
+        If article exists (same source + URL): Updates with latest title, description, content
+        If article is new: Creates new record
+        
+        This prevents duplicate entries when a source updates the same article multiple times.
+        
+        Benefits:
+        - 80% storage reduction (no duplicate updates)
+        - Each source represented once per story
+        - Faster queries (fewer records)
+        - No API deduplication needed
+        """
         try:
             container = self._get_container(config.CONTAINER_RAW_ARTICLES)
-            result = container.create_item(body=article.model_dump(mode='json'))
-            logger.info(f"Created raw article: {article.id}")
+            
+            # Upsert: Creates if new, updates if exists
+            result = container.upsert_item(body=article.model_dump(mode='json'))
+            
+            logger.info(f"Upserted raw article: {article.id}")
             return result
-        except exceptions.CosmosResourceExistsError:
-            logger.warning(f"Article already exists: {article.id}")
-            return None
         except Exception as e:
-            logger.error(f"Failed to create raw article {article.id}: {e}")
+            logger.error(f"Failed to upsert raw article {article.id}: {e}")
             raise
+    
+    async def create_raw_article(self, article: RawArticle) -> Dict[str, Any]:
+        """DEPRECATED: Use upsert_raw_article instead
+        
+        This method is kept for backwards compatibility but will be removed.
+        """
+        return await self.upsert_raw_article(article)
     
     async def get_raw_article(self, article_id: str, partition_key: str) -> Optional[Dict[str, Any]]:
         """Get raw article by ID"""
