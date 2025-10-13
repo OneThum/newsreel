@@ -52,10 +52,16 @@ def is_spam_or_promotional(title: str, description: str, url: str) -> bool:
         r'you need to (?:buy|shop)',
         r'must-have products',
         
-        # Listicle spam (products)
-        r'\d+\s+(?:products|items|things).*(?:you|should)',
+        # Listicle spam (products) - ENHANCED patterns
+        # Only flag "things" if it's clearly about products to buy/shop
+        r'\d+\s+(?:products|items).*(?:you can|to).*(?:buy|shop|get)',
+        r'\d+\s+(?:of the|the)?.*products.*(?:you can|to).*(?:buy|shop|get)',
+        r'\d+\s+.*products.*(?:buy|shop).*(?:amazon|walmart|target)',
         r'products worth buying',
         r'items on sale',
+        r'things to (?:buy|shop)',
+        r'\d+\s+.*(?:useful|essential|must-have).*products',
+        r'\d+.*travel products.*(?:buy|amazon)',
         
         # Gift guides (usually promotional)
         r'gift guide',
@@ -63,6 +69,7 @@ def is_spam_or_promotional(title: str, description: str, url: str) -> bool:
         
         # Generic clickbait + shopping
         r'you won\'t believe.*(?:deal|price)',
+        r'products you can buy',
     ]
     
     # Check for spam patterns
@@ -91,6 +98,50 @@ def is_spam_or_promotional(title: str, description: str, url: str) -> bool:
     
     if re.match(r'^the \d+ best .* to (?:shop|buy)', title.lower()):
         return True
+    
+    # CRITICAL: Restaurant/dining/lifestyle content (not hard news)
+    # Pattern: Short proper-noun-only titles (1-4 words, mostly capitalized)
+    # with lifestyle context in description
+    lifestyle_dining_keywords = [
+        'restaurant', 'dining', 'menu', 'cafe', 'bistro', 'bar', 'pub',
+        'eatery', 'upscale', 'fine dining', 'michelin', 'chef', 'culinary',
+        'wine list', 'tasting menu', 'reservation', 'dine', 'brunch',
+        'scenic', 'luxur', 'exquisite', 'perfect for', 'ideal for',
+        'nestled', 'charm', 'atmosphere', 'ambiance', 'intimate',
+        'cozy', 'elegant', 'sophisticated', 'award-winning',
+        'food guide', 'where to eat', 'best restaurants'
+    ]
+    
+    # Check if title is short and mostly capitalized (proper noun pattern)
+    title_words = title.strip().split()
+    if len(title_words) <= 4:  # 1-4 words
+        capitalized_words = sum(1 for w in title_words if w and w[0].isupper())
+        if capitalized_words >= len(title_words) * 0.7:  # 70%+ capitalized
+            # Check if description/URL contains lifestyle/dining indicators
+            if any(keyword in text for keyword in lifestyle_dining_keywords):
+                return True
+            # Check URL for lifestyle/dining sections
+            if any(section in url_lower for section in ['/lifestyle/', '/food/', '/dining/', 
+                                                         '/restaurants/', '/travel/', '/good-food/']):
+                return True
+            
+            # CRITICAL: Even WITHOUT description, if URL pattern suggests restaurant guide
+            # Examples: "/good-food/", "/food-drink/", "/best-restaurants/"
+            restaurant_url_patterns = [
+                '/good-food',
+                '/best-restaurant',
+                '/food-drink',
+                '/venue',
+                '/eating-out'
+            ]
+            if any(pattern in url_lower for pattern in restaurant_url_patterns):
+                # And title is JUST a proper noun (restaurant name)
+                # Block if no common news verbs/indicators
+                news_indicators = ['says', 'announces', 'reports', 'confirms', 'claims', 
+                                  'accuses', 'reveals', 'attack', 'fire', 'death', 'killed',
+                                  'injured', 'arrested', 'charged', 'verdict', 'found']
+                if not any(indicator in title.lower() for indicator in news_indicators):
+                    return True
     
     return False
 

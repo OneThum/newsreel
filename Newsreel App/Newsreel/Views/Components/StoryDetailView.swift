@@ -52,8 +52,11 @@ struct StoryDetailView: View {
                     }
                     
                     VStack(alignment: .leading, spacing: 16) {
-                        // Category Badge
-                        CategoryBadge(category: viewModel.story.category, size: .medium, style: .filled)
+                        // Category and Status Badges
+                        HStack(spacing: 8) {
+                            CategoryBadge(category: viewModel.story.category, size: .medium, style: .filled)
+                            StatusBadge(status: viewModel.story.status, isUpdated: viewModel.story.isRecentlyUpdated)
+                        }
                         
                         // Title
                         Text(viewModel.story.title)

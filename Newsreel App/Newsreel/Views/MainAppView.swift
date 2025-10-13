@@ -163,6 +163,7 @@ struct CategoryChip: View {
 // MARK: - Feed View
 
 struct FeedView: View {
+    @Environment(\.scenePhase) var scenePhase
     @EnvironmentObject var authService: AuthService
     @EnvironmentObject var apiService: APIService
     @StateObject private var viewModel: FeedViewModel
@@ -241,6 +242,21 @@ struct FeedView: View {
             // Stop polling when view disappears
             viewModel.stopPolling()
         }
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            // CRITICAL: Stop all timers when app goes to background to prevent battery drain and heat
+            switch newPhase {
+            case .active:
+                // App is active - resume polling
+                log.log("🟢 App active - resuming polling", category: .ui, level: .info)
+                viewModel.startPolling(apiService: apiService)
+            case .inactive, .background:
+                // App is inactive or in background - stop all timers to save battery
+                log.log("⏸️ App background - stopping polling to save battery", category: .ui, level: .info)
+                viewModel.stopPolling()
+            @unknown default:
+                break
+            }
+        }
     }
     
     private var scrollToTopButton: some View {
@@ -313,9 +329,9 @@ struct FeedView: View {
                                     .frame(height: 0)
                                     .id("top")
                                 
-                                // Spacer at top to prevent first card from being cut off
+                                // Minimal spacer at top (elastic scroll will handle the rest)
                                 Color.clear
-                                    .frame(height: 4)
+                                    .frame(height: 0)
                                 
                                 // Hidden view to trigger refresh when time updates
                                 Text(viewModel.lastTimeUpdate.description)
@@ -371,7 +387,7 @@ struct FeedView: View {
                         }
                         .padding(.horizontal)
                         .padding(.bottom)
-                        .padding(.top, 8) // Reduced since we have spacer inside LazyVStack
+                        .padding(.top, 0) // No top padding, let elastic scroll handle spacing
                         .refreshable {
                             await viewModel.refresh(apiService: apiService)
                         }
@@ -392,7 +408,7 @@ struct FeedView: View {
                             // Small delay to ensure story is rendered
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                 withAnimation(.easeOut(duration: 0.4)) {
-                                    proxy.scrollTo(storyId, anchor: .center)
+                                    proxy.scrollTo(storyId, anchor: .top)
                                 }
                                 // Reset after scroll
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -578,11 +594,11 @@ class FeedViewModel: ObservableObject {
     func startPolling(apiService: APIService) {
         stopPolling() // Stop any existing polling
         
-        // Start story polling (every 30 seconds)
+        // Start story polling (every 2 minutes - reduced from 30s to save battery and reduce heat)
         pollingTimer = Task {
             while !Task.isCancelled {
-                // Wait 30 seconds between polls
-                try? await Task.sleep(nanoseconds: 30_000_000_000)
+                // Wait 2 minutes between polls (was 30 seconds - way too aggressive)
+                try? await Task.sleep(nanoseconds: 120_000_000_000)
                 
                 guard !Task.isCancelled else { break }
                 
@@ -719,8 +735,11 @@ class FeedViewModel: ObservableObject {
     }
     
     func refresh(apiService: APIService) async {
-        // Log what category we're refreshing for debugging
-        log.log("🔄 Refreshing feed with category: \(selectedCategory?.displayName ?? "all")", category: .ui, level: .info)
+        // CRITICAL: Preserve the currently selected category during refresh
+        let categoryToRefresh = selectedCategory
+        
+        log.log("🔄 Refreshing feed with category: \(categoryToRefresh?.displayName ?? "all")", category: .ui, level: .info)
+        log.log("   selectedCategory before refresh: \(selectedCategory?.displayName ?? "nil")", category: .ui, level: .debug)
         
         // Reset pagination state explicitly
         currentPage = 0
@@ -730,8 +749,16 @@ class FeedViewModel: ObservableObject {
         pendingNewStoriesCount = 0
         newStoriesAvailable = false
         
+        // CRITICAL: Ensure selectedCategory hasn't been changed
+        if selectedCategory != categoryToRefresh {
+            log.log("⚠️ Category changed during refresh! Restoring: \(categoryToRefresh?.displayName ?? "all")", category: .ui, level: .warning)
+            selectedCategory = categoryToRefresh
+        }
+        
         // Load stories for current category
         await loadStories(apiService: apiService, refresh: true)
+        
+        log.log("   selectedCategory after refresh: \(selectedCategory?.displayName ?? "nil")", category: .ui, level: .debug)
     }
     
     func changeCategory(to category: NewsCategory?, apiService: APIService) async {
@@ -1477,19 +1504,39 @@ struct ScrollToTopButton: View {
     
     var body: some View {
         Button(action: action) {
-            Image(systemName: "arrow.up")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(width: 44, height: 44)
-                .background(
-                    Circle()
-                        .fill(.ultraThinMaterial)
-                        .overlay(
-                            Circle()
-                                .fill(.blue.opacity(0.3))
+            ZStack {
+                // Liquid Glass background
+                Circle()
+                    .fill(.ultraThinMaterial)
+                    .frame(width: 48, height: 48)
+                
+                // Subtle blue tint overlay
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.blue.opacity(0.15),
+                                Color.blue.opacity(0.05)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
                         )
-                )
-                .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+                    )
+                    .frame(width: 48, height: 48)
+                
+                // Arrow icon
+                Image(systemName: "arrow.up")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [.white, .white.opacity(0.9)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+            }
+            .shadow(color: .black.opacity(0.2), radius: 12, x: 0, y: 6)
+            .shadow(color: .blue.opacity(0.1), radius: 20, x: 0, y: 10)
         }
     }
 }

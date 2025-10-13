@@ -189,15 +189,17 @@ def has_topic_conflict(title1: str, title2: str) -> bool:
 # HEADLINE GENERATION HELPER
 # ============================================================================
 
-async def generate_updated_headline(story: Dict[str, Any], source_articles: List[Dict[str, Any]]) -> str:
+async def generate_updated_headline(story: Dict[str, Any], source_articles: List[Dict[str, Any]], new_article: RawArticle) -> str:
     """
-    Generate an updated headline for a story based on all source articles.
-    Called when story reaches key verification thresholds or becomes BREAKING.
+    Re-evaluate headline when a new source is added to a story cluster.
+    AI determines if the new source contains material warranting a headline update.
     
-    Headlines should evolve as breaking news develops:
+    Default: Keep current headline unless new source has significant new information.
+    
+    Headlines evolve as breaking news develops:
     - Initial report: "Explosion reported in Tennessee"
-    - 3 sources: "18 missing after Tennessee explosives plant blast"
-    - 5+ sources: "No survivors found in Tennessee explosives factory blast"
+    - New detail: "18 missing after Tennessee explosives plant blast"
+    - Update: "No survivors found in Tennessee explosives factory blast"
     """
     try:
         # Initialize Anthropic client
@@ -207,51 +209,91 @@ async def generate_updated_headline(story: Dict[str, Any], source_articles: List
         
         anthropic_client = Anthropic(api_key=config.ANTHROPIC_API_KEY)
         
-        # Gather all headlines and key details from sources
-        source_headlines = []
-        for source in source_articles:
-            title = source.get('title', '')
-            source_name = source.get('source', 'Unknown')
-            if title:
-                source_headlines.append(f"- {source_name}: {title}")
-        
-        combined_headlines = "\n".join(source_headlines[:10])  # Limit to 10 for cost control
-        source_count = len(source_articles)
+        # Get current headline
         current_headline = story.get('title', '')
         
-        # Prompt for headline generation
-        prompt = f"""Based on these {source_count} news sources covering the same story, generate an improved headline that:
+        # Get the NEW source's headline and details
+        new_source_name = new_article.source
+        new_source_headline = new_article.title
+        new_source_description = new_article.description or ''
+        
+        # Gather all source headlines for context
+        all_source_headlines = []
+        for art_id in source_articles[:10]:  # Limit to 10 most recent
+            parts = art_id.split('_')
+            if len(parts) >= 2:
+                date_str = parts[1]
+                partition_key = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
+                article = await cosmos_client.get_raw_article(art_id, partition_key)
+                if article:
+                    source_name = article.get('source', 'Unknown')
+                    title = article.get('title', '')
+                    if title:
+                        all_source_headlines.append(f"- {source_name}: {title}")
+        
+        combined_headlines = "\n".join(all_source_headlines)
+        source_count = len(source_articles)
+        
+        # Prompt for intelligent headline re-evaluation
+        prompt = f"""A news story has {source_count} sources. A NEW source just arrived. Evaluate if the headline should be updated.
 
-1. Reflects the MOST CURRENT, VERIFIED information across all sources
-2. Is SPECIFIC with concrete details (numbers, names, locations, outcomes)
-3. Prioritizes NEW DEVELOPMENTS over initial reports
-4. Is 8-15 words maximum
-5. Uses ACTIVE voice and CLEAR language
-6. Captures the essence of what's happening NOW
+CURRENT HEADLINE: "{current_headline}"
 
-Current headline: "{current_headline}"
+NEW SOURCE ({new_source_name}):
+Title: "{new_source_headline}"
+Details: "{new_source_description[:200]}"
 
-Source headlines:
+ALL {source_count} SOURCES (for context):
 {combined_headlines}
 
-Generate a single, improved headline that synthesizes the most important, verified information from all sources. Focus on facts that multiple sources agree on. If there's breaking news or significant updates, prioritize those over initial details.
+TASK: Determine if the NEW source contains material information that warrants updating the headline.
 
-Write ONLY the headline, nothing else:"""
+Update headline ONLY IF the new source has:
+✓ Significant new factual details (numbers, names, outcomes, locations)
+✓ Breaking developments that change the story
+✓ More specific or accurate information than current headline
+✓ Contradicts or refines information in current headline
+✓ Current headline has source-specific artifacts (e.g., "| Special Report", "| BREAKING", "- Live") that should be removed
 
-        system_prompt = """You are a senior news editor crafting headlines for breaking news. Your headlines are:
-- ACCURATE: Based only on verified facts from provided sources
-- SPECIFIC: Include concrete details (numbers, names, outcomes, locations)
-- CURRENT: Reflect the latest developments, not initial reports
-- CLEAR: Written for immediate comprehension
-- CONCISE: 8-15 words maximum
+KEEP current headline if new source:
+✗ Repeats information already in current headline
+✗ Adds only minor or peripheral details
+✗ Provides commentary without new facts
+✗ Is essentially the same story from a different angle
 
-You ALWAYS generate a headline. You never refuse or explain why you can't."""
+CRITICAL: Always remove source-specific editorial tags like:
+- "| Special Report" (CBS branding)
+- "| BREAKING" (editorial tags)
+- "- Live" or "- Update" (time-specific tags)
+- "| Analysis" or "| Opinion" (content type tags)
+- Network/outlet branding suffixes
 
-        # Call Claude API with minimal tokens (headlines are short)
+Headlines should be FACTUAL, NEUTRAL, and FREE of source-specific formatting.
+
+RESPONSE FORMAT:
+If update needed: Write the improved headline (8-15 words, specific, clear, NO editorial tags)
+If no update needed: Write exactly "KEEP_CURRENT"
+
+Your response:"""
+
+        system_prompt = """You are a senior news editor evaluating whether new sources warrant headline updates. Your decisions are:
+- CONSERVATIVE: Default to keeping current headline unless new source has material new information
+- FACTUAL: Only update for concrete new facts, not opinions or commentary
+- SPECIFIC: Updated headlines must include concrete details (numbers, names, outcomes, locations)
+- CLEAR: Headlines must be immediately comprehensible (8-15 words)
+- CURRENT: Prioritize the most recent, verified developments
+- NEUTRAL: Remove ALL source-specific editorial tags (e.g., "| Special Report", "| BREAKING", "- Live", outlet branding)
+- CLEAN: Headlines should be pure factual content, suitable for any news outlet
+
+CRITICAL: If current headline has source-specific artifacts (like "| Special Report"), you MUST update to remove them, even if the factual content is accurate.
+
+You always respond with either an improved headline OR "KEEP_CURRENT". Never explain or refuse."""
+
+        # Call Claude API with minimal tokens
         start_time = time.time()
         response = anthropic_client.messages.create(
             model=config.ANTHROPIC_MODEL,
-            max_tokens=100,  # Headlines are very short
+            max_tokens=150,  # Allow for headline or "KEEP_CURRENT"
             system=system_prompt,
             messages=[{
                 "role": "user",
@@ -259,12 +301,24 @@ You ALWAYS generate a headline. You never refuse or explain why you can't."""
             }]
         )
         
-        # Extract headline
-        updated_headline = response.content[0].text.strip()
+        # Extract response
+        ai_response = response.content[0].text.strip()
         generation_time_ms = int((time.time() - start_time) * 1000)
         
-        # Clean up headline
-        updated_headline = updated_headline.strip('"').strip("'").strip()
+        # Log AI cost
+        usage = response.usage
+        cost = (usage.input_tokens * 3.0 + usage.output_tokens * 15.0) / 1_000_000
+        
+        # Check if AI decided to keep current headline
+        if "KEEP_CURRENT" in ai_response.upper():
+            logger.info(
+                f"📰 Headline unchanged for {story['id']} - new source didn't warrant update "
+                f"({generation_time_ms}ms, ${cost:.4f})"
+            )
+            return story['title']  # Return current headline (no change)
+        
+        # Clean up new headline
+        updated_headline = ai_response.strip('"').strip("'").strip()
         
         # Validate headline quality
         if len(updated_headline.split()) < 4 or len(updated_headline) < 20:
@@ -276,12 +330,9 @@ You ALWAYS generate a headline. You never refuse or explain why you can't."""
             # Too long, truncate
             updated_headline = updated_headline[:200].rsplit(' ', 1)[0] + '...'
         
-        # Log headline generation
-        usage = response.usage
-        cost = (usage.input_tokens * 3.0 + usage.output_tokens * 15.0) / 1_000_000
-        
+        # Log successful headline update
         logger.info(
-            f"📰 Headline generated for {story['id']}: {len(updated_headline)} chars, "
+            f"📰 Headline updated for {story['id']}: {len(updated_headline)} chars, "
             f"{generation_time_ms}ms, ${cost:.4f} - "
             f"'{current_headline}' → '{updated_headline}'"
         )
@@ -681,29 +732,22 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                 story = stories[0]
                 source_articles = story.get('source_articles', [])
                 
-                # Check if this article is already in the cluster (by ID)
-                if article.id not in source_articles:
-                    # CRITICAL: Check source diversity
-                    # Extract sources from existing article IDs (format: source_timestamp_hash)
-                    existing_sources = set()
-                    for art_id in source_articles:
-                        source_from_id = art_id.split('_')[0]  # Extract source from ID
-                        existing_sources.add(source_from_id)
-                    
-                    # Only add if from a NEW source (ensures diversity)
-                    if article.source not in existing_sources:
-                        source_articles.append(article.id)
-                        logger.info(f"Added {article.source} to story {story['id']} (now {len(source_articles)} unique sources)")
-                    else:
-                        logger.info(f"Skipped duplicate source {article.source} for story {story['id']} (already have article from this source)")
-                        # Mark article as processed even though not added
-                        await cosmos_client.update_article_processed(article.id, article.published_date, story['id'])
-                        continue  # Skip to next article
-                else:
-                    # Article already in cluster - mark as processed and skip update
-                    logger.info(f"Article {article.id} already in story {story['id']} - skipping update to preserve timestamps")
+                # CRITICAL: Calculate prev_source_count BEFORE modifying the list
+                # (source_articles is a reference to the list in story, not a copy)
+                prev_source_count = len(source_articles)
+                
+                # Check if THIS SPECIFIC ARTICLE is already in the cluster (by ID)
+                if article.id in source_articles:
+                    # This exact article is already in the cluster, skip
+                    logger.info(f"Article {article.id} already in story {story['id']} - skipping duplicate")
                     await cosmos_client.update_article_processed(article.id, article.published_date, story['id'])
                     continue  # Skip to next article - DON'T update last_updated!
+                
+                # Article not in cluster yet - ADD IT
+                # Note: We allow multiple articles from the same source (AP might have multiple updates)
+                # Each article represents a different development or angle
+                source_articles.append(article.id)
+                logger.info(f"Added {article.source} article to story {story['id']} (now {len(source_articles)} articles total)")
                 
                 verification_level = len(source_articles)
                 now = datetime.now(timezone.utc)
@@ -714,7 +758,6 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                 # A story that's getting new sources RIGHT NOW is breaking news, even if created days ago
                 # This handles ongoing stories (e.g., hostage releases, elections, disasters)
                 current_status = story.get('status', 'MONITORING')
-                prev_source_count = len(story.get('source_articles', []))
                 is_gaining_sources = len(source_articles) > prev_source_count
                 
                 # Check if this story was recently updated (within last 30 min)
@@ -772,23 +815,20 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                     'update_count': story.get('update_count', 0) + 1
                 }
                 
-                # RE-EVALUATE HEADLINE when story gains significant sources
+                # RE-EVALUATE HEADLINE on EVERY source addition
                 # Headlines should evolve as breaking news develops and more details emerge
+                # AI will decide if new source warrants headline update (default: KEEP_CURRENT)
                 should_update_headline = False
                 
-                # Update headline at key thresholds: 3, 5, 10, 15 sources (or when reaching BREAKING)
-                if verification_level == 3 or verification_level == 5 or verification_level == 10 or verification_level == 15:
+                # ALWAYS re-evaluate when a new source is added (verification_level increased)
+                if verification_level > prev_source_count:
                     should_update_headline = True
-                    logger.info(f"📰 Headline re-evaluation triggered for {story['id']} (reached {verification_level} sources)")
-                elif status == StoryStatus.BREAKING.value and prev_source_count < verification_level:
-                    # Also update when promoted to BREAKING with new sources
-                    should_update_headline = True
-                    logger.info(f"📰 Headline re-evaluation triggered for {story['id']} (promoted to BREAKING)")
+                    logger.info(f"📰 Headline re-evaluation triggered for {story['id']} ({prev_source_count}→{verification_level} sources)")
                 
                 if should_update_headline:
                     try:
                         # Generate updated headline based on all sources
-                        updated_headline = await generate_updated_headline(story, source_articles)
+                        updated_headline = await generate_updated_headline(story, source_articles, article)
                         if updated_headline and updated_headline != story['title']:
                             updates['title'] = updated_headline
                             logger.info(f"✏️ Updated headline: '{story['title']}' → '{updated_headline}'")
@@ -894,12 +934,25 @@ async def summarization_changefeed(documents: func.DocumentList) -> None:
                 continue
             
             existing_summary = story_data.get('summary')
-            # Skip if we already have a summary (unless sources changed significantly)
-            if existing_summary and existing_summary.get('text'):
-                # Only regenerate if we have significantly more sources now
-                prev_source_count = existing_summary.get('source_count', 0)
-                if len(source_articles) < prev_source_count + 3:
-                    continue
+            
+            # RE-EVALUATE SUMMARY on EVERY source addition (triggered by story_cluster changes)
+            # AI will determine if new source warrants summary update
+            # For stories without summaries, always generate
+            # For stories with summaries, check if source count increased (new source added)
+            prev_source_count = existing_summary.get('source_count', 0) if existing_summary else 0
+            current_source_count = len(source_articles)
+            
+            # Only re-evaluate if:
+            # 1. No summary exists yet (first-time generation), OR
+            # 2. Source count increased (new source was added)
+            if existing_summary and current_source_count <= prev_source_count:
+                # No new sources since last summary, skip
+                continue
+            
+            logger.info(
+                f"📝 Summary re-evaluation triggered for {story_data['id']} "
+                f"({prev_source_count}→{current_source_count} sources)"
+            )
             
             # Fetch source articles
             articles = []
@@ -1086,7 +1139,8 @@ You ALWAYS provide a summary based on available information, even if limited. Yo
                 'prompt_tokens': prompt_tokens,
                 'completion_tokens': completion_tokens,
                 'cached_tokens': cached_tokens,
-                'cost_usd': round(total_cost, 6)
+                'cost_usd': round(total_cost, 6),
+                'source_count': current_source_count  # Track source count for re-evaluation logic
             }
             
             # Update story with summary

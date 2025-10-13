@@ -19,6 +19,7 @@ class SummaryResponse(BaseModel):
     version: int
     word_count: int
     generated_at: datetime
+    status: str = "available"  # "available", "generating", "failed", "none"
 
 
 class StoryResponse(BaseModel):

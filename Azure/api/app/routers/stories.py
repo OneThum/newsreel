@@ -48,8 +48,26 @@ async def map_story_to_response(
             word_count=summary_data.get('word_count', 0),
             generated_at=datetime.fromisoformat(
                 summary_data.get('generated_at', '').replace('Z', '+00:00')
-            )
+            ),
+            status="available"
         )
+    else:
+        # Story exists but no summary yet
+        # Check if story is recent (< 3 minutes old) - summary might be generating
+        story_age_minutes = (datetime.now(timezone.utc) - datetime.fromisoformat(
+            story.get('first_seen', '').replace('Z', '+00:00')
+        )).total_seconds() / 60
+        
+        if story_age_minutes < 3:
+            # Story is fresh, summary is likely generating
+            summary = SummaryResponse(
+                text="",  # Empty text
+                version=0,
+                word_count=0,
+                generated_at=datetime.now(timezone.utc),
+                status="generating"
+            )
+        # else: story is old without summary, status would be "none" (no summary object returned)
     
     # Get sources if requested
     sources = []
@@ -57,6 +75,17 @@ async def map_story_to_response(
         source_ids = story.get('source_articles', [])
         if source_ids:
             source_docs = await cosmos_service.get_story_sources(source_ids)
+            
+            # DEDUPLICATE by source name - only show one article per unique source
+            # This prevents showing "CNN, CNN, CNN..." when CNN has multiple updates
+            seen_sources = {}  # source_name -> article (keeps most recent)
+            for source in source_docs:
+                source_name = source.get('source', '')
+                # Keep the most recent article from each source (overwrites older ones)
+                # Could also keep first instead: if source_name not in seen_sources
+                seen_sources[source_name] = source
+            
+            # Convert deduplicated sources to SourceArticle responses
             sources = [
                 SourceArticle(
                     id=source['id'],
@@ -67,7 +96,7 @@ async def map_story_to_response(
                         source.get('published_at', '').replace('Z', '+00:00')
                     )
                 )
-                for source in source_docs
+                for source in seen_sources.values()
             ]
     
     if include_sources:

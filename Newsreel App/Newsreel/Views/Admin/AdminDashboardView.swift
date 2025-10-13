@@ -23,6 +23,7 @@ extension Double {
 /// Admin-only dashboard showing Azure backend health and stats
 /// Only visible to david@mclauchlan.com
 struct AdminDashboardView: View {
+    @Environment(\.scenePhase) var scenePhase
     @EnvironmentObject private var authService: AuthService
     @EnvironmentObject private var apiService: APIService
     @StateObject private var viewModel = AdminDashboardViewModel()
@@ -93,6 +94,17 @@ struct AdminDashboardView: View {
         }
         .onDisappear {
             viewModel.stopAutoRefresh()
+        }
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            // Stop auto-refresh when app goes to background to save battery
+            switch newPhase {
+            case .active:
+                viewModel.startAutoRefresh(apiService: apiService)
+            case .inactive, .background:
+                viewModel.stopAutoRefresh()
+            @unknown default:
+                break
+            }
         }
     }
     
@@ -510,7 +522,8 @@ class AdminDashboardViewModel: ObservableObject {
         
         autoRefreshTask = Task { @MainActor in
             while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 60_000_000_000) // 60 seconds
+                // Refresh every 5 minutes (was 60 seconds - way too aggressive, causes heat/battery drain)
+                try? await Task.sleep(nanoseconds: 300_000_000_000) // 300 seconds = 5 minutes
                 if !Task.isCancelled {
                     await loadMetrics(apiService: apiService)
                 }

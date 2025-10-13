@@ -234,21 +234,20 @@ class CosmosDBClient:
         try:
             container = self._get_container(config.CONTAINER_STORY_CLUSTERS)
             # Query stories with specific status
-            # NOTE: No ORDER BY - Cosmos DB doesn't support it without index, sort in Python instead
-            query = """
-                SELECT * FROM c 
-                WHERE c.status = @status 
-                AND (NOT IS_DEFINED(c.doc_type) OR c.doc_type IS NULL)
-            """
+            # SIMPLIFIED: Filter out feed_poll_state documents in Python instead of SQL
+            query = "SELECT * FROM c WHERE c.status = @status"
             items = list(container.query_items(
                 query=query,
                 parameters=[{"name": "@status", "value": status}],
                 enable_cross_partition_query=True
             ))
             
+            # Filter out feed_poll_state documents
+            stories = [item for item in items if item.get('doc_type') != 'feed_poll_state']
+            
             # Sort in Python by first_seen (newest first) for age-based transitions
-            items_sorted = sorted(items, key=lambda x: x.get('first_seen', ''), reverse=True)
-            return items_sorted[:limit]
+            stories_sorted = sorted(stories, key=lambda x: x.get('first_seen', ''), reverse=True)
+            return stories_sorted[:limit]
         except Exception as e:
             logger.error(f"Failed to query stories by status {status}: {e}")
             return []
