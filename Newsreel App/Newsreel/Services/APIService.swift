@@ -677,35 +677,35 @@ extension AzureStoryResponse {
                 for source in sourceArticles {
                     uniqueSources[source.source] = source  // Keep one per unique source name
                 }
-                let deduplicatedSources = Array(uniqueSources.values())
+                let deduplicatedSources = Array(uniqueSources.values)
         
         // 🔍 DEDUPLICATION DIAGNOSTIC LOGGING
         if let sources = sources {
-            Logger.api.info("📦 [API DECODE] Story: \(id)")
-            Logger.api.info("   API returned \(sources.count) source objects")
-            Logger.api.info("   Converted to \(sourceArticles.count) SourceArticle objects")
+            log.log("📦 [API DECODE] Story: \(id)", category: .api, level: .info)
+            log.log("   API returned \(sources.count) source objects", category: .api, level: .info)
+            log.log("   Converted to \(sourceArticles.count) SourceArticle objects", category: .api, level: .info)
             
             // Check for duplicates in API response
             let sourceNames = sources.map { $0.source }
             let uniqueNames = Set(sourceNames)
             if uniqueNames.count != sourceNames.count {
-                Logger.api.warning("⚠️ [API DECODE] API RETURNED DUPLICATES!")
-                Logger.api.warning("   Unique: \(uniqueNames.count), Total: \(sourceNames.count)")
+                log.log("⚠️ [API DECODE] API RETURNED DUPLICATES!", category: .api, level: .warning)
+                log.log("   Unique: \(uniqueNames.count), Total: \(sourceNames.count)", category: .api, level: .warning)
                 
                 // Log counts
                 let counts = Dictionary(grouping: sourceNames, by: { $0 }).mapValues { $0.count }
                 let duplicates = counts.filter { $0.value > 1 }
                 for (name, count) in duplicates {
-                    Logger.api.warning("   '\(name)' appears \(count) times in API response")
+                    log.log("   '\(name)' appears \(count) times in API response", category: .api, level: .warning)
                 }
             }
             
             // Log first 3 source names for inspection
             for (index, source) in sources.prefix(3).enumerated() {
-                Logger.api.debug("   [\(index+1)] \(source.source) - ID: \(source.id)")
+                log.log("   [\(index+1)] \(source.source) - ID: \(source.id)", category: .api, level: .debug)
             }
         } else {
-            Logger.api.warning("⚠️ [API DECODE] Story: \(id) - sources field is nil")
+            log.log("⚠️ [API DECODE] Story: \(id) - sources field is nil", category: .api, level: .warning)
         }
         
         // Get article URL from first source
@@ -729,7 +729,7 @@ extension AzureStoryResponse {
         let lastUpdatedDate = dateFormatter.date(from: last_updated)
         
         // 🔍 FINAL LOGGING before Story creation
-        Logger.api.debug("📦 [API DECODE] Creating Story object with \(deduplicatedSources.count) deduplicated sources (was \(sourceArticles.count) raw)")
+        log.log("📦 [API DECODE] Creating Story object with \(deduplicatedSources.count) deduplicated sources (was \(sourceArticles.count) raw)", category: .api, level: .debug)
         
         return Story(
             id: id,

@@ -17,21 +17,21 @@ struct StoryDetailView: View {
         _viewModel = StateObject(wrappedValue: StoryDetailViewModel(story: story, apiService: apiService))
         
         // 🔍 DEDUPLICATION DIAGNOSTIC LOGGING
-        Logger.ui.info("🔍 [STORY DETAIL INIT] Opening story: \(story.id)")
-        Logger.ui.info("   sourceCount field: \(story.sourceCount)")
-        Logger.ui.info("   sources.count: \(story.sources.count)")
+        log.log("🔍 [STORY DETAIL INIT] Opening story: \(story.id)", category: .ui, level: .info)
+        log.log("   sourceCount field: \(story.sourceCount)", category: .ui, level: .info)
+        log.log("   sources.count: \(story.sources.count)", category: .ui, level: .info)
         
         if story.sources.isEmpty {
-            Logger.ui.warning("⚠️ [STORY DETAIL INIT] sources array is EMPTY!")
+            log.log("⚠️ [STORY DETAIL INIT] sources array is EMPTY!", category: .ui, level: .warning)
         } else {
             let sourceNames = story.sources.map { $0.displayName }
-            Logger.ui.info("   sources: \(sourceNames.joined(separator: ", "))")
+            log.log("   sources: \(sourceNames.joined(separator: ", "))", category: .ui, level: .info)
             
             // Check for duplicates
             let uniqueNames = Set(sourceNames)
             if uniqueNames.count != sourceNames.count {
-                Logger.ui.warning("⚠️ [STORY DETAIL INIT] DUPLICATES in sources array!")
-                Logger.ui.warning("   Unique: \(uniqueNames.count), Total: \(sourceNames.count)")
+                log.log("⚠️ [STORY DETAIL INIT] DUPLICATES in sources array!", category: .ui, level: .warning)
+                log.log("   Unique: \(uniqueNames.count), Total: \(sourceNames.count)", category: .ui, level: .warning)
             }
         }
     }
@@ -255,35 +255,35 @@ struct StoryDetailView: View {
                                     .foregroundStyle(.secondary)
                                     .onAppear {
                                         // 🔍 DEDUPLICATION DIAGNOSTIC LOGGING
-                                        Logger.ui.info("📋 [DEDUPLICATION DEBUG] Story: \(viewModel.story.id)")
-                                        Logger.ui.info("   Total source articles from API: \(viewModel.story.sources.count)")
-                                        Logger.ui.info("   Unique source count: \(viewModel.uniqueSourceCount)")
+                                        log.log("📋 [DEDUPLICATION DEBUG] Story: \(viewModel.story.id)", category: .ui, level: .info)
+                                        log.log("   Total source articles from API: \(viewModel.story.sources.count)", category: .ui, level: .info)
+                                        log.log("   Unique source count: \(viewModel.uniqueSourceCount)", category: .ui, level: .info)
                                         
                                         // Log all source names
                                         let sourceNames = viewModel.story.sources.map { $0.displayName }
-                                        Logger.ui.info("   Source names: \(sourceNames.joined(separator: ", "))")
+                                        log.log("   Source names: \(sourceNames.joined(separator: ", "))", category: .ui, level: .info)
                                         
                                         // Check for duplicates
                                         let uniqueNames = Set(sourceNames)
                                         if uniqueNames.count != sourceNames.count {
-                                            Logger.ui.warning("⚠️ [DEDUPLICATION] DUPLICATES DETECTED!")
-                                            Logger.ui.warning("   Unique names: \(uniqueNames.count), Total: \(sourceNames.count)")
+                                            log.log("⚠️ [DEDUPLICATION] DUPLICATES DETECTED!", category: .ui, level: .warning)
+                                            log.log("   Unique names: \(uniqueNames.count), Total: \(sourceNames.count)", category: .ui, level: .warning)
                                             
                                             // Log duplicate counts
                                             let counts = Dictionary(grouping: sourceNames, by: { $0 }).mapValues { $0.count }
                                             let duplicates = counts.filter { $0.value > 1 }
                                             for (name, count) in duplicates {
-                                                Logger.ui.warning("   '\(name)' appears \(count) times")
+                                                log.log("   '\(name)' appears \(count) times", category: .ui, level: .warning)
                                             }
                                         } else {
-                                            Logger.ui.info("✅ [DEDUPLICATION] All sources unique")
+                                            log.log("✅ [DEDUPLICATION] All sources unique", category: .ui, level: .info)
                                         }
                                         
                                         // Log first 5 article IDs and URLs for inspection
                                         for (index, source) in viewModel.story.sources.prefix(5).enumerated() {
-                                            Logger.ui.debug("   [\(index+1)] \(source.displayName) - ID: \(source.id)")
+                                            log.log("   [\(index+1)] \(source.displayName) - ID: \(source.id)", category: .ui, level: .debug)
                                             if let url = source.url {
-                                                Logger.ui.debug("       URL: \(url.absoluteString)")
+                                                log.log("       URL: \(url.absoluteString)", category: .ui, level: .debug)
                                             }
                                         }
                                     }
