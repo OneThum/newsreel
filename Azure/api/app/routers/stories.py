@@ -70,10 +70,12 @@ async def map_story_to_response(
         # else: story is old without summary, status would be "none" (no summary object returned)
     
     # Get source count (get_story_sources returns ALREADY DEDUPLICATED sources)
-    source_ids = story.get('source_articles', [])
+    source_ids = story.get('source_articles')
+    if source_ids is None:
+        source_ids = []  # Handle missing/null source_articles field
     unique_source_count = len(source_ids)  # Default to raw count if query fails
     source_docs = []
-    
+
     if source_ids:
         # get_story_sources now returns deduplicated sources (one per unique source name)
         source_docs = await cosmos_service.get_story_sources(source_ids)
@@ -97,14 +99,9 @@ async def map_story_to_response(
         ]
     
     if include_sources:
-        # DEBUG: Add visible marker to confirm new code is running
-        response_title = story.get('title', '')
-        if unique_source_count != len(source_ids):
-            response_title = f"[DEDUP: {len(source_ids)}→{unique_source_count}] {response_title}"
-        
         return StoryDetailResponse(
             id=story['id'],
-            title=response_title,
+            title=story.get('title', ''),
             category=story.get('category', 'general'),
             tags=story.get('tags', []),
             status=story.get('status', 'VERIFIED'),

@@ -137,13 +137,13 @@ class CosmosService:
             raise
     
     async def query_breaking_news(self, limit: int = 10) -> List[Dict[str, Any]]:
-        """Query breaking news stories"""
+        """Query recent stories (BREAKING, DEVELOPING, and VERIFIED)"""
         try:
             container = self._get_container("story_clusters")
             query = """
-                SELECT * FROM c 
-                WHERE c.status = 'BREAKING' 
-                ORDER BY c.breaking_detected_at DESC
+                SELECT * FROM c
+                WHERE c.status IN ('BREAKING', 'DEVELOPING', 'VERIFIED')
+                ORDER BY c.last_updated DESC
                 OFFSET 0 LIMIT @limit
             """
             parameters = [{"name": "@limit", "value": limit}]
@@ -154,7 +154,7 @@ class CosmosService:
             ))
             return items
         except Exception as e:
-            logger.error(f"Error querying breaking news: {e}")
+            logger.error(f"Error querying recent stories: {e}")
             raise
     
     async def get_story_sources(self, source_ids: List[str]) -> List[Dict[str, Any]]:

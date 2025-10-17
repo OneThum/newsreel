@@ -7,7 +7,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
-from ..auth import get_current_user
+from ..middleware.auth import get_current_user
 from ..services.cosmos_service import cosmos_service
 
 logger = logging.getLogger(__name__)

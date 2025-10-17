@@ -594,11 +594,11 @@ class FeedViewModel: ObservableObject {
     func startPolling(apiService: APIService) {
         stopPolling() // Stop any existing polling
         
-        // Start story polling (every 2 minutes - reduced from 30s to save battery and reduce heat)
+        // Start story polling (every 5 minutes - optimized for battery and heat)
         pollingTimer = Task {
             while !Task.isCancelled {
-                // Wait 2 minutes between polls (was 30 seconds - way too aggressive)
-                try? await Task.sleep(nanoseconds: 120_000_000_000)
+                // Wait 5 minutes between polls (reduced frequency for battery/heat optimization)
+                try? await Task.sleep(nanoseconds: 300_000_000_000)
                 
                 guard !Task.isCancelled else { break }
                 
@@ -624,8 +624,8 @@ class FeedViewModel: ObservableObject {
         
         timeUpdateTimer = Task {
             while !Task.isCancelled {
-                // Wait 60 seconds
-                try? await Task.sleep(nanoseconds: 60_000_000_000)
+                // Wait 5 minutes (same as polling to reduce concurrent operations)
+                try? await Task.sleep(nanoseconds: 300_000_000_000)
                 
                 guard !Task.isCancelled else { break }
                 

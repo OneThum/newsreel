@@ -21,7 +21,7 @@
 | Type | Name |
 |------|------|
 | **Resource Group** | `Newsreel-RG` |
-| **Subscription** | `Newsreel Subscription` |
+| **Subscription** | `OneThum-Apps-Subscription` |
 | **Subscription ID** | `d4abcc64-9e59-4094-8d89-10b5d36b6d4c` |
 | **Region** | `Central US` |
 | **Cosmos DB** | `newsreel-db-1759951135` |
@@ -236,7 +236,7 @@ let (data, _) = try await URLSession.shared.data(from: url)
 - [ ] Add Anthropic API key to Functions
 - [ ] Add Firebase credentials to Functions
 - [ ] Add Firebase credentials to Container App
-- [ ] Wait for RSS ingestion (runs every 5 min)
+- [ ] Wait for RSS ingestion
 - [ ] Verify articles in Cosmos DB
 - [ ] Verify stories being clustered
 - [ ] Test API from iOS app
