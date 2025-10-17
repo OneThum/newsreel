@@ -708,8 +708,21 @@ extension AzureStoryResponse {
             log.log("⚠️ [API DECODE] Story: \(id) - sources field is nil", category: .api, level: .warning)
         }
         
-        // Get article URL from first source
-        let articleURL = sources?.first.flatMap { URL(string: $0.article_url) } ?? URL(string: "https://example.com")!
+        // Get article URL from first valid source
+        let articleURL: URL = {
+            // Try to find a valid URL from sources
+            if let sources = sources {
+                for source in sources {
+                    if !source.article_url.isEmpty,
+                       let url = URL(string: source.article_url),
+                       url.scheme != nil {
+                        return url
+                    }
+                }
+            }
+            // Fallback for stories without valid URLs
+            return URL(string: "https://newsreel.app/article-unavailable")!
+        }()
         
         // Estimate reading time from summary
         let readingTime = (summary?.word_count ?? 150) / 200 // ~200 words per minute

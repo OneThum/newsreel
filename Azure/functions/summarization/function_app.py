@@ -247,10 +247,11 @@ that synthesize information from multiple sources. You never add speculation or 
                 version_history.append(history_entry.model_dump(mode='json'))
             
             # Update story with summary
+            # NOTE: Do NOT update last_updated here - that field is only for source updates
+            # Otherwise old stories with new summaries appear at top of feed
             updates = {
                 'summary': summary.model_dump(mode='json'),
-                'version_history': version_history,
-                'last_updated': datetime.now(timezone.utc).isoformat()
+                'version_history': version_history
             }
             
             await cosmos_client.update_story_cluster(story_id, category, updates)
