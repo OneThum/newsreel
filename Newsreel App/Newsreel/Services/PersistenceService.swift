@@ -114,6 +114,10 @@ class PersistenceService: ObservableObject {
     let modelContainer: ModelContainer
     let modelContext: ModelContext
     
+    // Cache version - increment when cache structure changes
+    private let cacheVersion = 2
+    private let cacheVersionKey = "newsreel_cache_version"
+    
     private init() {
         do {
             let schema = Schema([CachedStory.self])
@@ -130,8 +134,30 @@ class PersistenceService: ObservableObject {
             
             modelContext = ModelContext(modelContainer)
             modelContext.autosaveEnabled = true
+            
+            // Check if cache needs to be invalidated due to version change
+            Task {
+                await invalidateCacheIfNeeded()
+            }
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
+        }
+    }
+    
+    /// Check and invalidate cache if version has changed
+    private func invalidateCacheIfNeeded() async {
+        let storedVersion = UserDefaults.standard.integer(forKey: cacheVersionKey)
+        
+        if storedVersion < cacheVersion {
+            log.log("🔄 Cache version mismatch (stored: \(storedVersion), current: \(cacheVersion)) - clearing cache", 
+                   category: .ui, level: .info)
+            do {
+                try clearAll()
+                UserDefaults.standard.set(cacheVersion, forKey: cacheVersionKey)
+                log.log("✅ Cache cleared and version updated", category: .ui, level: .info)
+            } catch {
+                log.logError(error, context: "Failed to clear outdated cache")
+            }
         }
     }
     
@@ -302,6 +328,17 @@ class PersistenceService: ObservableObject {
     func clearAll() throws {
         try modelContext.delete(model: CachedStory.self)
         try modelContext.save()
+        log.log("🗑️ Cache cleared successfully", category: .ui, level: .info)
+    }
+    
+    /// Get cache statistics
+    func getCacheStats() throws -> (storyCount: Int, totalSize: String) {
+        let descriptor = FetchDescriptor<CachedStory>()
+        let count = try modelContext.fetchCount(descriptor)
+        // Rough estimate: ~5KB per story
+        let sizeKB = count * 5
+        let sizeString = sizeKB > 1024 ? "\(sizeKB / 1024) MB" : "\(sizeKB) KB"
+        return (count, sizeString)
     }
 }
 

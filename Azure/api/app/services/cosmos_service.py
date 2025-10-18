@@ -93,6 +93,18 @@ class CosmosService:
                     enable_cross_partition_query=True
                 ))
             
+            # 🔍 DIAGNOSTIC: Log query results
+            logger.info(f"📊 [COSMOS] query_recent_stories returned {len(items)} items")
+            if items:
+                first_item = items[0]
+                logger.info(f"   [COSMOS] First item ID: {first_item.get('id')}")
+                logger.info(f"   [COSMOS] First item keys: {list(first_item.keys())}")
+                logger.info(f"   [COSMOS] First item has 'summary': {'summary' in first_item}")
+                logger.info(f"   [COSMOS] First item has 'source_articles': {'source_articles' in first_item}")
+                if 'source_articles' in first_item:
+                    logger.info(f"   [COSMOS] First item source_articles type: {type(first_item['source_articles'])}")
+                    logger.info(f"   [COSMOS] First item source_articles length: {len(first_item['source_articles'])}")
+            
             # Smart sorting algorithm: BREAKING news ALWAYS first, then sort by recency
             def story_sort_key(story):
                 # Base score on recency (use last_updated if significantly different from first_seen)
@@ -128,10 +140,18 @@ class CosmosService:
             
             items_sorted = sorted(items, key=story_sort_key, reverse=True)
             
+            # 🔍 DIAGNOSTIC: Log after sorting
+            logger.info(f"   [COSMOS] After sorting: {len(items_sorted)} items")
+            
             # Apply offset and limit
             start = offset
             end = offset + limit
-            return items_sorted[start:end]
+            result = items_sorted[start:end]
+            
+            # 🔍 DIAGNOSTIC: Log after offset/limit
+            logger.info(f"   [COSMOS] After offset/limit (start={start}, end={end}): {len(result)} items")
+            
+            return result
         except Exception as e:
             logger.error(f"Error querying recent stories: {e}")
             raise
@@ -152,6 +172,17 @@ class CosmosService:
                 parameters=parameters,
                 enable_cross_partition_query=True
             ))
+            
+            # 🔍 DIAGNOSTIC: Log query results
+            logger.info(f"📊 [COSMOS] query_breaking_news returned {len(items)} items")
+            if items:
+                first_item = items[0]
+                logger.info(f"   [COSMOS] First item ID: {first_item.get('id')}")
+                logger.info(f"   [COSMOS] First item has 'summary': {'summary' in first_item}")
+                logger.info(f"   [COSMOS] First item has 'source_articles': {'source_articles' in first_item}")
+                if 'source_articles' in first_item:
+                    logger.info(f"   [COSMOS] First item source_articles length: {len(first_item['source_articles'])}")
+            
             return items
         except Exception as e:
             logger.error(f"Error querying recent stories: {e}")

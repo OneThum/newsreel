@@ -235,8 +235,8 @@ struct FeedView: View {
             if viewModel.stories.isEmpty {
                 await viewModel.loadStories(apiService: apiService)
             }
-            // Start polling for new stories
-            viewModel.startPolling(apiService: apiService)
+            // REMOVED: Don't start polling here - let .onChange(of: scenePhase) handle it
+            // This prevents potential double-polling which was causing heating issues
         }
         .onDisappear {
             // Stop polling when view disappears
@@ -333,10 +333,9 @@ struct FeedView: View {
                                 Color.clear
                                     .frame(height: 0)
                                 
-                                // Hidden view to trigger refresh when time updates
-                                Text(viewModel.lastTimeUpdate.description)
-                                    .frame(width: 0, height: 0)
-                                    .opacity(0)
+                                // REMOVED: lastTimeUpdate trigger was causing full feed re-renders every 5 minutes!
+                                // This was a major performance issue causing jerkiness and heating
+                                // Time displays update naturally when stories load/refresh
                                 
                                 if viewModel.isLoading && viewModel.stories.isEmpty {
                                     // Loading skeleton
@@ -388,52 +387,52 @@ struct FeedView: View {
                         .padding(.horizontal)
                         .padding(.bottom)
                         .padding(.top, 0) // No top padding, let elastic scroll handle spacing
+                        }
                         .refreshable {
                             await viewModel.refresh(apiService: apiService)
                         }
-                    }
-                    .onChange(of: viewModel.shouldScrollToTop) { _, shouldScroll in
-                        if shouldScroll {
-                            withAnimation(.easeOut(duration: 0.3)) {
-                                proxy.scrollTo("top", anchor: .top)
-                            }
-                            // Reset flag after scroll
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                                viewModel.shouldScrollToTop = false
-                            }
-                        }
-                    }
-                    .onChange(of: viewModel.scrollToStoryId) { _, storyId in
-                        if let storyId = storyId {
-                            // Small delay to ensure story is rendered
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                withAnimation(.easeOut(duration: 0.4)) {
-                                    proxy.scrollTo(storyId, anchor: .top)
+                        .onChange(of: viewModel.shouldScrollToTop) { _, shouldScroll in
+                            if shouldScroll {
+                                withAnimation(.easeOut(duration: 0.3)) {
+                                    proxy.scrollTo("top", anchor: .top)
                                 }
-                                // Reset after scroll
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                    viewModel.scrollToStoryId = nil
+                                // Reset flag after scroll
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                                    viewModel.shouldScrollToTop = false
                                 }
                             }
                         }
-                    }
-                    .onChange(of: notificationStoryId) { _, storyId in
-                        if let storyId = storyId {
-                            log.log("📍 Scrolling to story from notification: \(storyId)", 
-                                   category: .ui, level: .info)
-                            // Scroll to the story
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                withAnimation(.easeOut(duration: 0.5)) {
-                                    proxy.scrollTo(storyId, anchor: .center)
+                        .onChange(of: viewModel.scrollToStoryId) { _, storyId in
+                            if let storyId = storyId {
+                                // Small delay to ensure story is rendered
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    withAnimation(.easeOut(duration: 0.4)) {
+                                        proxy.scrollTo(storyId, anchor: .top)
+                                    }
+                                    // Reset after scroll
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                        viewModel.scrollToStoryId = nil
+                                    }
                                 }
-                                // Reset after scroll
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                                    notificationStoryId = nil
+                            }
+                        }
+                        .onChange(of: notificationStoryId) { _, storyId in
+                            if let storyId = storyId {
+                                log.log("📍 Scrolling to story from notification: \(storyId)", 
+                                       category: .ui, level: .info)
+                                // Scroll to the story
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                    withAnimation(.easeOut(duration: 0.5)) {
+                                        proxy.scrollTo(storyId, anchor: .center)
+                                    }
+                                    // Reset after scroll
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                                        notificationStoryId = nil
+                                    }
                                 }
                             }
                         }
                     }
-                }
             }
         }
     }
@@ -464,9 +463,10 @@ class FeedViewModel: ObservableObject {
     private var lastFetchDate: Date?
     
     func loadStories(apiService: APIService, refresh: Bool = false) async {
-        // Allow refresh to proceed even if loading, but skip duplicate pagination
-        guard !isLoading || refresh else {
-            log.log("Load already in progress, skipping", category: .ui, level: .debug)
+        // Prevent simultaneous loads - even for refresh
+        // This prevents request cancellation when user pulls multiple times
+        guard !isLoading else {
+            log.log("Load already in progress (isLoading=true), skipping to prevent request cancellation", category: .ui, level: .debug)
             return
         }
         
@@ -607,15 +607,16 @@ class FeedViewModel: ObservableObject {
             }
         }
         
-        // Start time update timer (every 60 seconds)
-        startTimeUpdateTimer()
+        // REMOVED: Time update timer - was causing unnecessary CPU usage
+        // Time displays ("2h ago", etc.) update naturally when stories load/refresh
+        // No need for a separate timer that triggers UI re-renders
     }
     
     /// Stop polling for new stories
     func stopPolling() {
         pollingTimer?.cancel()
         pollingTimer = nil
-        stopTimeUpdateTimer()
+        // Time update timer removed for performance
     }
     
     /// Start timer to refresh timeAgo displays every minute
@@ -1149,6 +1150,8 @@ struct ProfileView: View {
     @EnvironmentObject var subscriptionService: SubscriptionService
     @State private var showingSignOutAlert = false
     @State private var showingPaywall = false
+    @State private var showingClearCacheAlert = false
+    @State private var cacheStats: (storyCount: Int, totalSize: String) = (0, "0 KB")
     
     var body: some View {
         NavigationStack {
@@ -1293,6 +1296,45 @@ struct ProfileView: View {
                             )
                         }
                         
+                        // Developer section
+                        VStack(spacing: 0) {
+                            Text("Developer")
+                                .font(.outfit(size: 13, weight: .semiBold))
+                                .foregroundStyle(.secondary)
+                                .textCase(.uppercase)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.bottom, 8)
+                                .padding(.horizontal, 4)
+                            
+                            VStack(spacing: 0) {
+                                // Clear Cache
+                                Button(action: { 
+                                    HapticManager.selection()
+                                    showingClearCacheAlert = true
+                                }) {
+                                    HStack {
+                                        Label("Clear Cache", systemImage: "trash")
+                                            .font(.outfit(size: 16, weight: .regular))
+                                        Spacer()
+                                        Text("\(cacheStats.storyCount) stories")
+                                            .font(.outfit(size: 14, weight: .medium))
+                                            .foregroundStyle(.secondary)
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 14))
+                                            .foregroundStyle(.quaternary)
+                                    }
+                                    .contentShape(Rectangle())
+                                }
+                                .foregroundStyle(.primary)
+                                .padding(16)
+                            }
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(.ultraThinMaterial)
+                                    .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 4)
+                            )
+                        }
+                        
                         // Sign Out section
                         Button(action: { showingSignOutAlert = true }) {
                             HStack {
@@ -1336,6 +1378,32 @@ struct ProfileView: View {
             .sheet(isPresented: $showingPaywall) {
                 PaywallView()
                     .environmentObject(subscriptionService)
+            }
+            .alert("Clear Cache?", isPresented: $showingClearCacheAlert) {
+                Button("Cancel", role: .cancel) {}
+                Button("Clear", role: .destructive) {
+                    Task {
+                        do {
+                            try PersistenceService.shared.clearAll()
+                            // Refresh stats
+                            cacheStats = try PersistenceService.shared.getCacheStats()
+                            HapticManager.notification(type: .success)
+                        } catch {
+                            log.logError(error, context: "Clear cache failed")
+                            HapticManager.notification(type: .error)
+                        }
+                    }
+                }
+            } message: {
+                Text("This will clear \(cacheStats.storyCount) cached stories (\(cacheStats.totalSize)). Your saved stories will not be affected.")
+            }
+            .task {
+                // Load cache stats
+                do {
+                    cacheStats = try PersistenceService.shared.getCacheStats()
+                } catch {
+                    log.logError(error, context: "Failed to get cache stats")
+                }
             }
         }
     }

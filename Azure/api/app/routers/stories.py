@@ -27,6 +27,10 @@ async def map_story_to_response(
 ):
     """Map Cosmos DB story to API response"""
     
+    # 🔍 DIAGNOSTIC: Log input story data
+    story_id = story.get('id', 'UNKNOWN')
+    logger.debug(f"   [MAPPING] Story ID: {story_id}, include_sources: {include_sources}")
+    
     # Check if user has interacted with story
     user_liked = False
     user_saved = False
@@ -40,6 +44,11 @@ async def map_story_to_response(
     summary_data = story.get('summary')
     summary = None
     
+    # 🔍 Log summary processing
+    logger.debug(f"      [MAPPING] summary_data exists: {summary_data is not None}")
+    if summary_data:
+        logger.debug(f"      [MAPPING] summary_data keys: {list(summary_data.keys()) if isinstance(summary_data, dict) else 'NOT A DICT'}")
+    
     if summary_data and summary_data.get('text'):
         # All users get AI summaries
         summary = SummaryResponse(
@@ -51,6 +60,7 @@ async def map_story_to_response(
             ),
             status="available"
         )
+        logger.debug(f"      [MAPPING] Summary created: {len(summary.text)} chars")
     else:
         # Story exists but no summary yet
         # Check if story is recent (< 3 minutes old) - summary might be generating
@@ -67,6 +77,9 @@ async def map_story_to_response(
                 generated_at=datetime.now(timezone.utc),
                 status="generating"
             )
+            logger.debug(f"      [MAPPING] Story is fresh ({story_age_minutes:.1f} min old), summary status: generating")
+        else:
+            logger.debug(f"      [MAPPING] Story is old ({story_age_minutes:.1f} min), no summary available")
         # else: story is old without summary, status would be "none" (no summary object returned)
     
     # Get source count (get_story_sources returns ALREADY DEDUPLICATED sources)
@@ -75,11 +88,23 @@ async def map_story_to_response(
         source_ids = []  # Handle missing/null source_articles field
     unique_source_count = len(source_ids)  # Default to raw count if query fails
     source_docs = []
-
+    
+    logger.debug(f"      [MAPPING] source_articles in story: {len(source_ids)}")
+    
+    # 🔍 CRITICAL DEBUG: Log what's in source_articles field
+    if not source_ids or len(source_ids) == 0:
+        logger.warning(f"⚠️  [MAPPING] Story {story_id} has NO source_articles!")
+        logger.warning(f"   Full source_articles value: {source_ids}")
+        logger.warning(f"   Story keys: {list(story.keys())}")
+        # Log first 500 chars of story to see structure
+        story_preview = str(story)[:500]
+        logger.warning(f"   Story preview: {story_preview}")
+    
     if source_ids:
         # get_story_sources now returns deduplicated sources (one per unique source name)
         source_docs = await cosmos_service.get_story_sources(source_ids)
         unique_source_count = len(source_docs)  # Already deduplicated!
+        logger.debug(f"      [MAPPING] After deduplication: {len(source_docs)} sources")
     
     # Get sources if requested
     sources = []
@@ -97,6 +122,7 @@ async def map_story_to_response(
             )
             for source in source_docs
         ]
+        logger.debug(f"      [MAPPING] Converted to {len(sources)} SourceArticle objects")
     
     if include_sources:
         return StoryDetailResponse(
@@ -166,23 +192,72 @@ async def get_personalized_feed(
     # Query stories
     stories = await cosmos_service.query_recent_stories(
         category=category,
-        limit=limit * 2,  # Get extra for personalization filtering
+        limit=limit * 3,  # Get extra for personalization filtering
         offset=offset
     )
     
+    # 🔍 DIAGNOSTIC: Log stories from database
+    if stories:
+        logger.info(f"📊 [FEED] Query returned {len(stories)} stories")
+        first_story = stories[0]
+        logger.info(f"   [FEED] First story ID: {first_story.get('id')}")
+        logger.info(f"   [FEED] First story has summary: {bool(first_story.get('summary'))}")
+        logger.info(f"   [FEED] First story source_articles count: {len(first_story.get('source_articles', []))}")
+    else:
+        logger.warning("📊 [FEED] Query returned 0 stories")
+    
+    # 🔍 TEMPORARY: No filtering - return all stories to diagnose data issues
+    # Log detailed info about what we're returning
+    for story in stories[:3]:  # Log first 3 stories
+        logger.info(f"📝 Story: {story.get('id')}")
+        logger.info(f"   Status: {story.get('status', 'N/A')}")
+        logger.info(f"   Source articles: {story.get('source_articles', [])}")
+        logger.info(f"   Source count: {len(story.get('source_articles', []))}")
+        logger.info(f"   Summary present: {bool(story.get('summary'))}")
+        if story.get('summary'):
+            logger.info(f"   Summary text: {story.get('summary', {}).get('text', '')[:100]}...")
+    
+    # Return all stories for now (no filtering) so users see data
+    processed_stories = stories
+    
+    logger.info(f"🔍 [FEED] Returning all {len(processed_stories)} stories (no filtering) for diagnosis")
+    
     # Personalize feed
     personalized_stories = await recommendation_service.personalize_feed(
-        stories=stories,
+        stories=processed_stories,
         user_profile=user,
         limit=limit
     )
     
+    # 🔍 DIAGNOSTIC: Log after personalization
+    if personalized_stories:
+        logger.info(f"📊 [FEED] After personalization: {len(personalized_stories)} stories")
+        first_personalized = personalized_stories[0]
+        logger.info(f"   [FEED] First personalized story ID: {first_personalized.get('id')}")
+        logger.info(f"   [FEED] First personalized story has summary: {bool(first_personalized.get('summary'))}")
+        logger.info(f"   [FEED] First personalized story source_articles count: {len(first_personalized.get('source_articles', []))}")
+    else:
+        logger.warning("📊 [FEED] After personalization: 0 stories")
+    
     # Map to response WITH sources included
     # Performance: Fetch sources in parallel batches
     story_responses = []
-    for story in personalized_stories:
+    for i, story in enumerate(personalized_stories):
+        logger.info(f"   [FEED MAPPING] Story {i+1}/{len(personalized_stories)}: {story.get('id')}")
+        
+        # 🔍 Log before mapping
+        has_summary = bool(story.get('summary'))
+        source_article_ids = story.get('source_articles', [])
+        logger.info(f"      Before mapping - has_summary: {has_summary}, source_articles: {len(source_article_ids)}")
+        
         story_response = await map_story_to_response(story, user, include_sources=True)
+        
+        # 🔍 Log after mapping
+        logger.info(f"      After mapping - summary: {story_response.summary is not None}, sources in response: {len(story_response.sources) if hasattr(story_response, 'sources') else 0}")
+        
         story_responses.append(story_response)
+    
+    logger.info(f"📊 [FEED] Returning {len(story_responses)} story responses")
     
     # No more rate limiting on feed access!
     # Premium feature is summaries, not feed access
@@ -210,11 +285,24 @@ async def get_breaking_news(
     # Query breaking news - no delays or filtering for any users
     stories = await cosmos_service.query_breaking_news(limit=limit)
     
+    # 🔍 DIAGNOSTIC: Log stories from database
+    if stories:
+        logger.info(f"📊 [BREAKING] Query returned {len(stories)} stories")
+        first_story = stories[0]
+        logger.info(f"   [BREAKING] First story ID: {first_story.get('id')}")
+        logger.info(f"   [BREAKING] First story has summary: {bool(first_story.get('summary'))}")
+        logger.info(f"   [BREAKING] First story source_articles count: {len(first_story.get('source_articles', []))}")
+    else:
+        logger.warning("📊 [BREAKING] Query returned 0 stories")
+    
     # Map to response with sources included
     story_responses = []
-    for story in stories:
+    for i, story in enumerate(stories):
+        logger.info(f"   [BREAKING MAPPING] Story {i+1}/{len(stories)}: {story.get('id')}")
         story_response = await map_story_to_response(story, user, include_sources=True)
         story_responses.append(story_response)
+    
+    logger.info(f"📊 [BREAKING] Returning {len(story_responses)} story responses")
     
     return story_responses
 

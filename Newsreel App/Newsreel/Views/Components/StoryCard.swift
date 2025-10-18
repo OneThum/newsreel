@@ -19,28 +19,12 @@ struct StoryCard: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Story Image (if available)
-            if let imageURL = story.imageURL {
-                AsyncImage(url: imageURL) { phase in
-                    switch phase {
-                    case .empty:
-                        imageLoadingPlaceholder
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(height: 200)
-                            .clipped()
-                    case .failure:
-                        imageErrorPlaceholder
-                    @unknown default:
-                        imageLoadingPlaceholder
-                    }
-                }
+            // REMOVED: AsyncImage for story image - was causing jerkiness during scroll
+            // Use simple static placeholder (NO ANIMATION - was the jerkiness culprit!)
+            Rectangle()
+                .fill(Color.gray.opacity(0.15))
                 .frame(height: 200)
-                .background(Color.gray.opacity(0.1))
-            }
-            
+
             // Story Content
             VStack(alignment: .leading, spacing: 12) {
                 // Category Badge, Status, and Metadata
@@ -76,22 +60,11 @@ struct StoryCard: View {
                 HStack(spacing: 12) {
                     // Source logo and name
                     HStack(spacing: 6) {
-                        if let logoURL = story.source.logoURL {
-                            AsyncImage(url: logoURL) { image in
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                            } placeholder: {
-                                Image(systemName: "newspaper")
-                                    .foregroundStyle(.secondary)
-                            }
-                            .frame(width: 16, height: 16)
-                            .clipShape(Circle())
-                        } else {
-                            Image(systemName: "newspaper")
-                                .font(.system(size: 12))
-                                .foregroundStyle(.secondary)
-                        }
+                        // REMOVED: AsyncImage for source logo - was causing layout thrashing
+                        // Use simple icon instead for consistent 60fps scrolling
+                        Image(systemName: "newspaper")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
                         
                         Text(story.source.displayName)
                             .font(.outfit(size: 13, weight: .medium))
@@ -132,24 +105,17 @@ struct StoryCard: View {
             .padding(16)
         }
         .glassCard(cornerRadius: 16)
-        .scaleEffect(showFullImage ? 1.02 : 1.0)
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: showFullImage)
+        // REMOVED: scaleEffect + animation were causing re-layouts on every scroll frame
+        // This was the main cause of jerkiness - animations trigger re-measurement of all children
         .onTapGesture {
             HapticManager.selection()
             onTap()
         }
-        .onLongPressGesture(minimumDuration: 0.3) {
-            HapticManager.impact(style: .medium)
-            showFullImage.toggle()
-        }
-        .onAppear {
-            // Log badge display for monitoring badge accuracy
-            if story.status != .verified || story.isRecentlyUpdated {
-                let badgeType = story.isRecentlyUpdated ? "UPDATED" : story.status.displayName
-                log.log("🏷️ Badge displayed: \(badgeType) for story '\(story.title.prefix(50))...' (sources: \(story.sourceCount))", 
-                       category: .ui, level: .debug)
-            }
-        }
+        // REMOVED: Long press gesture - was contributing to gesture recognizer overhead
+        // Can be re-added later with proper debouncing if needed
+        // REMOVED: .onAppear logging was causing excessive log spam
+        // especially during re-renders, contributing to performance issues
+        // Badge logging can be re-enabled for debugging if needed
     }
     
     // MARK: - Image Placeholders

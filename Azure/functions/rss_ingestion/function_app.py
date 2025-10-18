@@ -1,6 +1,6 @@
 """
 RSS Ingestion Function
-Timer-triggered function that polls RSS feeds every 5 minutes
+Timer-triggered function that polls RSS feeds every 10 seconds with staggered feed distribution
 """
 import azure.functions as func
 import logging

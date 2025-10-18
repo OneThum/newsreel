@@ -650,11 +650,13 @@ extension AzureStoryResponse {
         // Create primary source from first article or generic
         let primarySource: Source
         if let firstSource = sources?.first {
+            // API already returns properly formatted source names (e.g., "BBC News", "The Guardian")
+            // Use them as-is without modification
             primarySource = Source(
                 id: firstSource.source,
-                name: firstSource.source.capitalized,
-                domain: "\(firstSource.source).com",
-                logoURL: URL(string: "https://logo.clearbit.com/\(firstSource.source).com")
+                name: firstSource.source, // Use the source name exactly as provided by API
+                domain: "\(firstSource.source.lowercased().replacingOccurrences(of: " ", with: "")).com",
+                logoURL: URL(string: "https://logo.clearbit.com/\(firstSource.source.lowercased().replacingOccurrences(of: " ", with: "")).com")
             )
         } else {
             primarySource = .mock // Fallback

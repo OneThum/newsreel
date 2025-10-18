@@ -5,10 +5,13 @@ Python 3.11 serverless functions on Azure Functions Consumption plan.
 ## Functions
 
 ### 1. RSS Ingestion (Timer Trigger)
-**Schedule**: Every 5 minutes  
-**File**: `rss_ingestion/function_app.py`
+**Schedule**: Every 10 seconds (staggered polling)  
+**File**: `function_app.py` (lines 516-620+)  
+**Legacy**: `rss_ingestion/function_app.py` (deprecated)
 
-Polls 100 RSS feeds in parallel and stores articles in Cosmos DB.
+Polls 5 RSS feeds per cycle for continuous news flow. Results in ~1 new article every 3 seconds on average instead of lumpy 5-minute batch updates.
+
+**See**: `docs/RSS_INGESTION_CONFIG.md` for complete configuration and tuning options.
 
 ### 2. Story Clustering (Cosmos Change Feed)
 **Trigger**: Cosmos DB change feed on `raw_articles`  
