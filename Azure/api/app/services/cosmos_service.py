@@ -189,38 +189,41 @@ class CosmosService:
             raise
     
     async def get_story_sources(self, source_ids: List[str]) -> List[Dict[str, Any]]:
-        """Get source articles for a story - DEDUPLICATED by source name"""
+        """Get source articles for a story - DEDUPLICATED by source name
+        
+        ⚡ CRITICAL OPTIMIZATION: Uses single batch query instead of N+1 queries
+        Before: 1 query per source = 817 queries for 817-source story (TIMEOUT!)
+        After: 1 batch query = all sources fetched instantly
+        """
         try:
+            if not source_ids:
+                return []
+            
             container = self._get_container("raw_articles")
-            sources = []
             
-            for source_id in source_ids:
-                # Extract partition key from source ID
-                parts = source_id.split('_')
-                if len(parts) >= 2:
-                    date_str = parts[1]
-                    partition_key = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
-                    
-                    try:
-                        item = container.read_item(item=source_id, partition_key=partition_key)
-                        sources.append(item)
-                    except exceptions.CosmosResourceNotFoundError:
-                        logger.warning(f"Source article not found: {source_id}")
-                        continue
+            # Build batch query to fetch all sources in ONE query
+            placeholders = ', '.join([f'@id{i}' for i in range(len(source_ids))])
+            query = f"SELECT * FROM c WHERE c.id IN ({placeholders})"
             
-            # DEDUPLICATE by source name before returning
-            # This prevents showing "CNN, CNN, CNN..." when CNN has multiple updates
-            # Keep the most recent article from each unique source
+            parameters = [{'name': f'@id{i}', 'value': source_ids[i]} for i in range(len(source_ids))]
+            
+            # Execute single batch query (cross-partition to ensure all are found)
+            sources = list(container.query_items(
+                query=query,
+                parameters=parameters,
+                enable_cross_partition_query=True
+            ))
+            
+            # DEDUPLICATE by source name
             seen_sources = {}
             for source in sources:
                 source_name = source.get('source', '')
                 if source_name:
-                    # Overwrites older articles from same source with newer ones
                     seen_sources[source_name] = source
             
             deduplicated_sources = list(seen_sources.values())
             
-            logger.info(f"📊 Deduplication: {len(sources)} articles → {len(deduplicated_sources)} unique sources")
+            logger.info(f"⚡ Batch query: {len(source_ids)} IDs → {len(sources)} found → {len(deduplicated_sources)} unique")
             
             return deduplicated_sources
         except Exception as e:

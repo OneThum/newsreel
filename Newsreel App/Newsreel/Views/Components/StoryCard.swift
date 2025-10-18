@@ -14,16 +14,18 @@ struct StoryCard: View {
     let onSave: () -> Void
     let onLike: () -> Void
     let onShare: () -> Void
+    let showImages: Bool  // Add preference parameter
     
     @State private var showFullImage = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // REMOVED: AsyncImage for story image - was causing jerkiness during scroll
-            // Use simple static placeholder (NO ANIMATION - was the jerkiness culprit!)
-            Rectangle()
-                .fill(Color.gray.opacity(0.15))
-                .frame(height: 200)
+            // Show image placeholder only if images are enabled in preferences
+            if showImages {
+                Rectangle()
+                    .fill(Color.gray.opacity(0.15))
+                    .frame(height: 200)
+            }
 
             // Story Content
             VStack(alignment: .leading, spacing: 12) {
@@ -176,7 +178,8 @@ struct HapticManager {
                 onTap: { print("Tapped") },
                 onSave: { print("Saved") },
                 onLike: { print("Liked") },
-                onShare: { print("Shared") }
+                onShare: { print("Shared") },
+                showImages: true // Pass true for preview
             )
             .padding()
             
@@ -185,7 +188,8 @@ struct HapticManager {
                 onTap: { print("Tapped") },
                 onSave: { print("Saved") },
                 onLike: { print("Liked") },
-                onShare: { print("Shared") }
+                onShare: { print("Shared") },
+                showImages: true // Pass true for preview
             )
             .padding()
         }

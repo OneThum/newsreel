@@ -169,6 +169,7 @@ struct FeedView: View {
     @StateObject private var viewModel: FeedViewModel
     @State private var selectedStory: Story?
     @State private var showingSearch = false
+    @State private var showImages = true  // Load from preferences
     @Binding var notificationStoryId: String?
     
     init(notificationStoryId: Binding<String?> = .constant(nil)) {
@@ -223,11 +224,11 @@ struct FeedView: View {
                 }
             }
             .sheet(item: $selectedStory) { story in
-                StoryDetailView(story: story, apiService: apiService)
+                StoryDetailView(story: story, apiService: apiService, showImages: showImages)
                     .environmentObject(authService)
             }
             .sheet(isPresented: $showingSearch) {
-                SearchView(apiService: apiService)
+                SearchView(apiService: apiService, showImages: showImages)
                     .environmentObject(authService)
             }
         }
@@ -237,6 +238,14 @@ struct FeedView: View {
             }
             // REMOVED: Don't start polling here - let .onChange(of: scenePhase) handle it
             // This prevents potential double-polling which was causing heating issues
+        }
+        .onAppear {
+            // Load images preference from UserDefaults
+            showImages = UserDefaults.standard.bool(forKey: "showImages", default: true)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { _ in
+            // Reload images preference when settings are changed
+            showImages = UserDefaults.standard.bool(forKey: "showImages", default: true)
         }
         .onDisappear {
             // Stop polling when view disappears
@@ -372,7 +381,8 @@ struct FeedView: View {
                                         },
                                         onShare: {
                                             viewModel.shareStory(story)
-                                        }
+                                        },
+                                        showImages: showImages  // Pass preference
                                     )
                                     .id(story.id) // Important for animation
                                 }
@@ -1050,7 +1060,8 @@ struct SavedStoriesView: View {
                                         },
                                         onShare: {
                                             viewModel.shareStory(story)
-                                        }
+                                        },
+                                        showImages: true // Pass preference
                                     )
                                 }
                             }
@@ -1415,6 +1426,7 @@ struct SearchView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var authService: AuthService
     let apiService: APIService
+    let showImages: Bool  // Add preference parameter
     
     @State private var searchText = ""
     @State private var results: [Story] = []
@@ -1422,6 +1434,7 @@ struct SearchView: View {
     @State private var selectedStory: Story?
     @State private var searchCategory: NewsCategory?
     @FocusState private var isSearchFieldFocused: Bool
+    @State private var localShowImages = UserDefaults.standard.bool(forKey: "showImages", default: true)
     
     var body: some View {
         NavigationStack {
@@ -1513,7 +1526,8 @@ struct SearchView: View {
                                         },
                                         onShare: {
                                             // Share logic
-                                        }
+                                        },
+                                        showImages: localShowImages // Pass preference
                                     )
                                 }
                             }
@@ -1532,7 +1546,7 @@ struct SearchView: View {
                 }
             }
             .sheet(item: $selectedStory) { story in
-                StoryDetailView(story: story, apiService: apiService)
+                StoryDetailView(story: story, apiService: apiService, showImages: localShowImages)
                     .environmentObject(authService)
             }
             .onAppear {

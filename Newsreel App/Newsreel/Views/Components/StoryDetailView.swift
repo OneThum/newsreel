@@ -12,9 +12,11 @@ struct StoryDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var authService: AuthService
     @StateObject private var viewModel: StoryDetailViewModel
+    let showImages: Bool  // Add preference parameter
     
-    init(story: Story, apiService: APIService) {
+    init(story: Story, apiService: APIService, showImages: Bool = true) {
         _viewModel = StateObject(wrappedValue: StoryDetailViewModel(story: story, apiService: apiService))
+        self.showImages = showImages
         
         // 🔍 DEDUPLICATION DIAGNOSTIC LOGGING
         log.log("🔍 [STORY DETAIL INIT] Opening story: \(story.id)", category: .ui, level: .info)
@@ -40,8 +42,8 @@ struct StoryDetailView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    // Story Image
-                    if let imageURL = viewModel.story.imageURL {
+                    // Story Image - respect showImages preference
+                    if showImages, let imageURL = viewModel.story.imageURL {
                         AsyncImage(url: imageURL) { phase in
                             switch phase {
                             case .success(let image):
