@@ -133,10 +133,11 @@ Provide a balanced, factual summary combining information from all sources."""
         total_cost = input_cost + output_cost
         
         # Assert: Cost calculated correctly
-        assert total_cost > 0
-        assert input_cost < output_cost  # Output tokens more expensive
+        assert total_cost > 0, "Total cost should be positive"
+        assert input_cost == 0.0004, "Input cost should be 0.0004"
+        assert output_cost == 0.0002, "Output cost should be 0.0002"
         expected_cost = (500 / 1_000_000 * 0.80) + (50 / 1_000_000 * 4.00)
-        assert abs(total_cost - expected_cost) < 0.0001
+        assert abs(total_cost - expected_cost) < 0.000001  # Should be identical
 
 
 @pytest.mark.integration

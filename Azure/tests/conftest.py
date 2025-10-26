@@ -538,6 +538,10 @@ def mock_anthropic_response():
         'type': 'message',
         'role': 'assistant',
         'content': [{'type': 'text', 'text': 'Three-sentence summary'}],
-        'model': 'claude-3-5-haiku-20241022'
+        'model': 'claude-3-5-haiku-20241022',
+        'usage': {
+            'input_tokens': 500,
+            'output_tokens': 50
+        }
     }
 
