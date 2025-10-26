@@ -22,6 +22,14 @@ class TestDeployedAPI:
         url = os.getenv('API_BASE_URL', 'https://newsreel-api.thankfulpebble-0dde6120.centralus.azurecontainerapps.io')
         return url
     
+    @pytest.fixture
+    def auth_headers(self):
+        """Get authentication headers if JWT token is available"""
+        token = os.getenv('NEWSREEL_JWT_TOKEN')
+        if token:
+            return {'Authorization': f'Bearer {token}'}
+        return {}
+    
     def test_api_is_reachable(self, api_base_url):
         """Test: Can we reach the API at all?"""
         try:
@@ -30,9 +38,9 @@ class TestDeployedAPI:
         except Exception as e:
             pytest.fail(f"❌ API is not reachable: {e}")
     
-    def test_stories_endpoint_returns_data(self, api_base_url):
+    def test_stories_endpoint_returns_data(self, api_base_url, auth_headers):
         """Test: Does /api/stories/feed return actual stories?"""
-        response = requests.get(f"{api_base_url}/api/stories/feed?limit=10", timeout=10)
+        response = requests.get(f"{api_base_url}/api/stories/feed?limit=10", headers=auth_headers, timeout=10)
         
         assert response.status_code == 200, f"Endpoint returned {response.status_code}"
         
@@ -50,9 +58,9 @@ class TestDeployedAPI:
         
         print(f"✓ API returned {len(stories)} stories")
     
-    def test_stories_are_recent(self, api_base_url):
+    def test_stories_are_recent(self, api_base_url, auth_headers):
         """Test: Are the stories recent (not stale data)?"""
-        response = requests.get(f"{api_base_url}/api/stories/feed?limit=5", timeout=10)
+        response = requests.get(f"{api_base_url}/api/stories/feed?limit=5", headers=auth_headers, timeout=10)
         data = response.json()
         stories = data.get('stories', [])
         
