@@ -96,6 +96,36 @@ async def cosmos_client(test_config):
     # No cleanup needed - client is stateless
 
 
+@pytest.fixture(scope="function")
+async def cosmos_client_for_tests(test_config):
+    """
+    ✅ REAL Cosmos DB client for integration tests
+    
+    This fixture connects to the ACTUAL Cosmos DB database,
+    not a mock. This ensures tests use real data and fail when
+    the system is actually broken.
+    
+    Usage:
+        async def test_something(cosmos_client_for_tests, clean_test_data):
+            article = create_test_article()
+            result = await cosmos_client_for_tests.create_article(article)
+            clean_test_data.register_article(result['id'])
+            
+            # Query real database
+            stories = await cosmos_client_for_tests.query_stories_by_fingerprint(...)
+            assert len(stories) > 0
+    """
+    if not test_config['cosmos_connection_string']:
+        pytest.skip("Cosmos DB connection string not configured")
+    
+    client = CosmosDBClient()
+    client.connect()
+    
+    yield client
+    
+    # Client is stateless, no cleanup needed
+
+
 @pytest.fixture
 async def clean_test_data(cosmos_client):
     """
@@ -408,17 +438,39 @@ def api_client_unauthenticated(api_base_url):
 
 
 # ============================================================================
-# MOCK FIXTURES
+# MOCK FIXTURES (DEPRECATED - Use real Cosmos DB instead)
 # ============================================================================
 
 @pytest.fixture
 def mock_cosmos_client():
-    """Mock Cosmos DB client for integration tests"""
+    """
+    ⚠️  DEPRECATED: This fixture uses FAKE data and hides real issues
+    
+    DO NOT USE for new tests. Use cosmos_client_for_tests instead.
+    
+    Why? We proved that mocks lead to:
+    - 97% test pass rate while system is completely broken
+    - False confidence in system health
+    - Hidden bugs that users experience
+    
+    The policy is: NEVER use mock data for testing or debugging.
+    Use the real system instead.
+    
+    See: TESTING_POLICY_NO_MOCKS.md
+    """
+    import warnings
+    warnings.warn(
+        "❌ DEPRECATED: mock_cosmos_client uses fake data and hides real issues\n"
+        "   Use cosmos_client_for_tests instead (connects to REAL Cosmos DB)\n"
+        "   Policy: Never use mock data for testing. See TESTING_POLICY_NO_MOCKS.md",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    
     from unittest.mock import AsyncMock, MagicMock
-    
+
     mock_client = MagicMock()
-    
-    # Mock async methods
+
     mock_client.upsert_article = AsyncMock(return_value={'id': 'test_article_1'})
     mock_client.upsert_story = AsyncMock(return_value={'id': 'test_story_1'})
     mock_client.query_stories_by_fingerprint = AsyncMock(return_value=[])
@@ -427,7 +479,7 @@ def mock_cosmos_client():
     mock_client.update_story = AsyncMock(return_value={'id': 'test_story_1'})
     mock_client.get_feed_poll_states = AsyncMock(return_value={})
     mock_client.update_feed_poll_state = AsyncMock(return_value=None)
-    
+
     return mock_client
 
 
