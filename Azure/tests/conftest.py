@@ -512,9 +512,11 @@ def sample_batch_request():
     return {
         'id': 'batch_req_123',
         'batch_id': 'batch_ant_20251026_001',
-        'story_ids': ['story_1', 'story_2', 'story_3'],
+        'anthropic_batch_id': 'batch_ant_20251026_001',  # Same as batch_id for consistency
+        'story_ids': ['story_1', 'story_2', 'story_3', 'story_4', 'story_5'],
         'status': 'submitted',
-        'submitted_at': '2025-10-26T08:00:00Z'
+        'submitted_at': '2025-10-26T08:00:00Z',
+        'request_count': 5
     }
 
 
@@ -525,8 +527,13 @@ def sample_completed_batch():
         'id': 'batch_req_123',
         'status': 'completed',
         'results': [
-            {'custom_id': 'story_1', 'result': {'type': 'succeeded'}}
-        ]
+            {'custom_id': 'story_1', 'result': {'type': 'succeeded', 'message': {'content': [{'text': 'Summary 1'}]}}},
+            {'custom_id': 'story_2', 'result': {'type': 'succeeded', 'message': {'content': [{'text': 'Summary 2'}]}}},
+            {'custom_id': 'story_3', 'result': {'type': 'succeeded', 'message': {'content': [{'text': 'Summary 3'}]}}}
+        ],
+        'succeeded_count': 3,
+        'failed_count': 0,
+        'total_cost': 0.0015
     }
 
 
@@ -537,7 +544,7 @@ def mock_anthropic_response():
         'id': 'msg_123abc',
         'type': 'message',
         'role': 'assistant',
-        'content': [{'type': 'text', 'text': 'Three-sentence summary'}],
+        'content': [{'type': 'text', 'text': 'This is a summary sentence. It contains multiple sentences. Each sentence ends with a period.'}],
         'model': 'claude-3-5-haiku-20241022',
         'usage': {
             'input_tokens': 500,
