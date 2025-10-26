@@ -982,9 +982,11 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                 # Log source diversity details
                 logger.log_story_cluster(
                     story_id=story['id'],
+                    action="updated",
                     source_count=len(source_articles),
-                    unique_sources=unique_sources + 1,  # +1 for the article we just added
                     category=story.get('category', 'unknown'),
+                    fingerprint=article.story_fingerprint,
+                    title=story.get('title', 'unknown'),
                     status=story.get('status', 'unknown')
                 )
                 

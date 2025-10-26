@@ -100,66 +100,34 @@ class CosmosService:
                 ))
             
             # 🔍 DIAGNOSTIC: Log query results
-            logger.info(f"📊 [COSMOS] query_recent_stories returned {len(items)} items")
-            if items:
-                first_item = items[0]
-                logger.info(f"   [COSMOS] First item ID: {first_item.get('id')}")
-                logger.info(f"   [COSMOS] First item keys: {list(first_item.keys())}")
-                logger.info(f"   [COSMOS] First item has 'summary': {'summary' in first_item}")
-                logger.info(f"   [COSMOS] First item has 'source_articles': {'source_articles' in first_item}")
-                if 'source_articles' in first_item:
-                    logger.info(f"   [COSMOS] First item source_articles type: {type(first_item['source_articles'])}")
-                    logger.info(f"   [COSMOS] First item source_articles length: {len(first_item['source_articles'])}")
+            logger.info(f"✅ Query returned {len(items)} stories")
+            return items
+        except exceptions.CosmosResourceNotFoundError as e:
+            # Session token error - reset connection and retry
+            logger.warning(f"Session token error, resetting connection: {e}")
+            self.client = None
+            self._containers = {}
+            self.database = None
             
-            # Smart sorting algorithm: BREAKING news ALWAYS first, then sort by recency
-            def story_sort_key(story):
-                # Base score on recency (use last_updated if significantly different from first_seen)
-                first_seen = story.get('first_seen', '')
-                last_updated = story.get('last_updated', first_seen)
-                
-                # Use the most recent timestamp for sorting
-                primary_time = max(first_seen, last_updated) if last_updated else first_seen
-                
-                # Status weight (higher = more important)
-                # CRITICAL: BREAKING news must ALWAYS be first
-                status = story.get('status', 'VERIFIED')
-                is_breaking = 1 if status == 'BREAKING' else 0
-                
-                # Secondary status weight for non-breaking stories
-                status_weights = {
-                    'BREAKING': 1000,  # Not used in primary sort, but kept for consistency
-                    'DEVELOPING': 500,
-                    'VERIFIED': 100,
-                    'MONITORING': 10
-                }
-                status_weight = status_weights.get(status, 50)
-                
-                # Source count matters (more sources = more important)
-                source_count = len(story.get('source_articles', []))
-                source_weight = min(source_count * 10, 100)  # Cap at 100
-                
-                # CRITICAL CHANGE: Sort by breaking status FIRST, then by time
-                # This ensures BREAKING news is ALWAYS at the top, regardless of publish time
-                # Format: (is_breaking, time, status_weight, source_weight)
-                # Breaking news sorted by time amongst themselves, non-breaking after
-                return (is_breaking, primary_time, status_weight, source_weight)
-            
-            items_sorted = sorted(items, key=story_sort_key, reverse=True)
-            
-            # 🔍 DIAGNOSTIC: Log after sorting
-            logger.info(f"   [COSMOS] After sorting: {len(items_sorted)} items")
-            
-            # Apply offset and limit
-            start = offset
-            end = offset + limit
-            result = items_sorted[start:end]
-            
-            # 🔍 DIAGNOSTIC: Log after offset/limit
-            logger.info(f"   [COSMOS] After offset/limit (start={start}, end={end}): {len(result)} items")
-            
-            return result
+            # Retry once with fresh connection
+            logger.info("Retrying with fresh Cosmos DB connection...")
+            try:
+                self.connect()
+                container = self._get_container("story_clusters")
+                query = "SELECT * FROM c ORDER BY c.last_updated DESC LIMIT @limit"
+                parameters = [{"name": "@limit", "value": limit}]
+                items = list(container.query_items(
+                    query=query,
+                    parameters=parameters,
+                    enable_cross_partition_query=True
+                ))
+                logger.info(f"✅ Retry successful, returned {len(items)} stories")
+                return items
+            except Exception as retry_error:
+                logger.error(f"Retry failed: {retry_error}")
+                raise
         except Exception as e:
-            logger.error(f"Error querying recent stories: {e}")
+            logger.error(f"Error querying stories: {e}")
             raise
     
     async def query_breaking_news(self, limit: int = 10) -> List[Dict[str, Any]]:
