@@ -336,52 +336,22 @@ def firebase_auth_helper():
 def auth_token(firebase_auth_helper):
     """Get a Firebase JWT token for API authentication
     
-    This token is used for authenticated API calls.
+    Uses real Firebase anonymous authentication which is always available.
     
     Priority order:
     1. Cached token
     2. NEWSREEL_JWT_TOKEN environment variable
     3. Local firebase_token.txt file
-    4. Generate new from Firebase (creates test user)
-    5. Use mock token for local testing (last resort)
-    
-    If no real token is available, creates a mock JWT token for local testing.
+    4. Generate new token via Firebase anonymous auth
     """
     token = firebase_auth_helper.get_token()
-    
     if not token:
-        # As a fallback, create a simple test JWT
-        # This allows tests to run in mock mode
-        print("\n⚠️  No Firebase token available, creating mock JWT for testing...")
-        print("   Tests will run but against real API (may fail if auth is required)")
-        
-        import base64
-        import json
-        import time
-        
-        # Create a minimal JWT-like token for testing
-        # Format: header.payload.signature
-        header = base64.urlsafe_b64encode(
-            json.dumps({"alg": "none", "typ": "JWT"}).encode()
-        ).decode().rstrip('=')
-        
-        payload = base64.urlsafe_b64encode(
-            json.dumps({
-                "iss": "https://securetoken.google.com/newsreel-865a5",
-                "aud": "newsreel-865a5",
-                "auth_time": int(time.time()),
-                "user_id": "test_user_mock",
-                "sub": "test_user_mock",
-                "iat": int(time.time()),
-                "exp": int(time.time()) + 3600,
-                "email": "test@newsreel.test",
-                "email_verified": True
-            }).encode()
-        ).decode().rstrip('=')
-        
-        token = f"{header}.{payload}."
-        print(f"   Mock JWT created: {token[:50]}...")
-        
+        raise RuntimeError(
+            "❌ CRITICAL: Failed to obtain Firebase JWT token!\n"
+            "This is required for all API tests.\n"
+            "Firebase anonymous authentication should always work.\n"
+            "Check your Firebase API key and network connectivity."
+        )
     return token
 
 

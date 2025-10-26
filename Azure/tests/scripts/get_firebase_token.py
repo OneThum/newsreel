@@ -43,122 +43,67 @@ FIREBASE_LOGIN_URL = f"https://identitytoolkit.googleapis.com/v1/accounts:signIn
 
 def create_test_user(email: str, password: str) -> Optional[Dict[str, Any]]:
     """
-    Create a Firebase test user via REST API
-    
-    Args:
-        email: User email
-        password: User password
-        
-    Returns:
-        User info dict with uid, or None if failed
+    DEPRECATED: Password authentication is disabled on this Firebase project.
+    Use anonymous authentication instead via get_firebase_jwt_token()
     """
-    try:
-        response = requests.post(
-            f"{FIREBASE_SIGNUP_URL}?key={FIREBASE_API_KEY}",
-            json={"email": email, "password": password, "returnSecureToken": True},
-            timeout=10
-        )
-        
-        if response.status_code == 200:
-            data = response.json()
-            print(f"✅ Created test user: {email} (UID: {data.get('localId', 'unknown')})")
-            return data
-        elif response.status_code == 400:
-            error = response.json().get("error", {}).get("message", "Unknown error")
-            if "EMAIL_EXISTS" in error or "email already exists" in error.lower():
-                print(f"ℹ️  Test user already exists: {email}")
-                # Try to sign in
-                return login_user(email, password)
-            else:
-                print(f"❌ Failed to create user: {error}")
-                return None
-        else:
-            print(f"❌ Firebase API error: {response.status_code} - {response.text}")
-            return None
-            
-    except Exception as e:
-        print(f"❌ Error creating test user: {e}")
-        return None
+    print("ℹ️  Note: Password auth is disabled, using anonymous auth instead")
+    return None
 
 
 def login_user(email: str, password: str) -> Optional[Dict[str, Any]]:
     """
-    Sign in a Firebase user via REST API
+    DEPRECATED: Password authentication is disabled on this Firebase project.
+    Use anonymous authentication instead via get_firebase_jwt_token()
+    """
+    print("ℹ️  Note: Password auth is disabled, using anonymous auth instead")
+    return None
+
+
+def get_firebase_jwt_token(email: str = None, password: str = None) -> Optional[str]:
+    """
+    Get a Firebase JWT token using anonymous authentication
+    
+    Note: Password authentication is disabled on this Firebase project,
+    so we use anonymous auth which is always available.
     
     Args:
-        email: User email
-        password: User password
+        email: Ignored (kept for compatibility)
+        password: Ignored (kept for compatibility)
         
     Returns:
-        User info dict with idToken and localId, or None if failed
+        JWT token string, or None if failed
     """
     try:
+        print("ℹ️  Using Firebase Anonymous Authentication...")
+        
+        # Anonymous signup endpoint
         response = requests.post(
-            f"{FIREBASE_LOGIN_URL}?key={FIREBASE_API_KEY}",
-            json={"email": email, "password": password, "returnSecureToken": True},
+            f"{FIREBASE_SIGNUP_URL}?key={FIREBASE_API_KEY}",
+            json={"returnSecureToken": True},
             timeout=10
         )
         
         if response.status_code == 200:
             data = response.json()
-            print(f"✅ Signed in: {email} (UID: {data.get('localId', 'unknown')})")
-            return data
+            token = data.get('idToken')
+            local_id = data.get('localId')
+            
+            if token:
+                print(f"✅ Got Firebase JWT token via anonymous auth")
+                print(f"   User ID: {local_id}")
+                print(f"   Token: {token[:50]}...")
+                print(f"   Expires in: {data.get('expiresIn')} seconds")
+                return token
+            else:
+                print(f"❌ No token in response: {data}")
+                return None
         else:
             error = response.json().get("error", {}).get("message", "Unknown error")
-            print(f"❌ Failed to sign in: {error}")
+            print(f"❌ Firebase API error: {response.status_code} - {error}")
             return None
             
     except Exception as e:
-        print(f"❌ Error signing in: {e}")
-        return None
-
-
-def get_firebase_jwt_token(
-    email: str = TEST_EMAIL,
-    password: str = TEST_PASSWORD,
-    create_if_missing: bool = True
-) -> Optional[str]:
-    """
-    Get a Firebase JWT token for API authentication
-    
-    This function:
-    1. Attempts to sign in with provided credentials
-    2. If user doesn't exist and create_if_missing=True, creates the user
-    3. Returns the JWT ID token for use with the Newsreel API
-    
-    Args:
-        email: User email (default: test account)
-        password: User password (default: test account)
-        create_if_missing: If True, creates user if they don't exist
-        
-    Returns:
-        JWT ID token string, or None if failed
-    """
-    print(f"\n{'=' * 60}")
-    print(f"Firebase JWT Token Generator")
-    print(f"{'=' * 60}\n")
-    
-    # Try to sign in first
-    user_data = login_user(email, password)
-    
-    # If sign in failed and we should create user, do that
-    if not user_data and create_if_missing:
-        print(f"ℹ️  Creating test user...")
-        user_data = create_test_user(email, password)
-        
-        # If creation succeeded, try signing in again
-        if user_data:
-            user_data = login_user(email, password)
-    
-    if user_data and "idToken" in user_data:
-        token = user_data["idToken"]
-        print(f"\n✅ Got Firebase JWT token")
-        print(f"   User ID: {user_data.get('localId', 'unknown')}")
-        print(f"   Token preview: {token[:20]}...{token[-10:]}")
-        print(f"   Token length: {len(token)} characters\n")
-        return token
-    else:
-        print(f"❌ Failed to obtain Firebase JWT token\n")
+        print(f"❌ Error getting Firebase token: {e}")
         return None
 
 
