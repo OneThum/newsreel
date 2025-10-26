@@ -346,7 +346,7 @@ class TestAzureFunctions:
     
     def test_function_app_is_deployed(self):
         """Test: Is the Function App reachable?"""
-        function_url = os.getenv('FUNCTION_APP_URL', 'https://newsreel-functions.azurewebsites.net')
+        function_url = os.getenv('FUNCTION_APP_URL', 'https://newsreel-func-51689.azurewebsites.net')
         
         try:
             # Most Azure Function Apps have a default page
