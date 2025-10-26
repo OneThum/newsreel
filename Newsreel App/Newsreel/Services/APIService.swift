@@ -115,24 +115,23 @@ class APIService: ObservableObject {
             return await mockGetFeed(offset: offset, limit: limit, category: category)
         }
         
-        // TEMPORARY FIX: Use breaking endpoint instead of feed endpoint
-        // Feed endpoint has issues, breaking endpoint works perfectly
-        var endpoint = "/api/stories/breaking?limit=\(limit)"
-        if let category = category {
-            endpoint += "&category=\(category.rawValue)"
-        }
-        
-        log.log("Endpoint: \(endpoint) [USING BREAKING ENDPOINT TEMPORARILY]", category: .api, level: .debug)
-        
-        // Breaking endpoint doesn't require auth, but keep this for when we switch back
+        // Verify user is authenticated before fetching personalized feed
         guard Auth.auth().currentUser != nil else {
             log.logAuth("⚠️ No authenticated user, cannot fetch personalized feed", level: .warning)
             throw APIError.unauthorized
         }
         
+        // Use the proper authenticated feed endpoint
+        var endpoint = "/api/stories/feed?offset=\(offset)&limit=\(limit)"
+        if let category = category {
+            endpoint += "&category=\(category.rawValue)"
+        }
+        
+        log.log("Endpoint: \(endpoint)", category: .api, level: .debug)
+        
         do {
-            // API now returns direct array (not wrapped in FeedResponse)
-            let azureStories: [AzureStoryResponse] = try await request(endpoint: endpoint, method: "GET", requiresAuth: false)
+            // API returns direct array of stories
+            let azureStories: [AzureStoryResponse] = try await request(endpoint: endpoint, method: "GET", requiresAuth: true)
             let stories = azureStories.map { $0.toStory() }
             log.log("✅ Feed loaded successfully: \(stories.count) stories", category: .api, level: .info)
             log.log("   Sources included: \(azureStories.first?.sources?.count ?? 0) sources in first story", category: .api, level: .debug)
