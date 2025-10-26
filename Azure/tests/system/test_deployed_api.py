@@ -75,6 +75,7 @@ class TestDeployedAPI:
             headers=auth_headers,
             timeout=10
         )
+        
         assert response.status_code == 200
         
         data = response.json()

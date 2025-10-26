@@ -16,6 +16,36 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../f
 # Load environment variables
 load_dotenv()
 
+
+def pytest_configure(config):
+    """
+    Pytest hook that runs before test collection
+    
+    Automatically generates Firebase JWT token if not already set
+    """
+    # Skip if token already set
+    if os.getenv('NEWSREEL_JWT_TOKEN'):
+        print("✅ Using existing NEWSREEL_JWT_TOKEN from environment")
+        return
+    
+    # Try to generate token
+    try:
+        from scripts.firebase_auth_helper import FirebaseAuthHelper
+        
+        print("\n🔐 Generating Firebase JWT token for tests...")
+        helper = FirebaseAuthHelper(verbose=True)
+        token = helper.get_token()
+        
+        if token:
+            os.environ['NEWSREEL_JWT_TOKEN'] = token
+            print(f"✅ JWT token ready: {token[:30]}...{token[-10:]}")
+        else:
+            print("⚠️  Could not generate JWT token - tests will skip authenticated endpoints")
+    except Exception as e:
+        print(f"⚠️  Error generating JWT token: {e}")
+        print("   Tests will skip authenticated endpoints")
+
+
 # Import app modules
 from functions.shared.config import config
 from functions.shared.cosmos_client import CosmosDBClient
@@ -313,10 +343,45 @@ def auth_token(firebase_auth_helper):
     2. NEWSREEL_JWT_TOKEN environment variable
     3. Local firebase_token.txt file
     4. Generate new from Firebase (creates test user)
+    5. Use mock token for local testing (last resort)
+    
+    If no real token is available, creates a mock JWT token for local testing.
     """
     token = firebase_auth_helper.get_token()
+    
     if not token:
-        pytest.skip("Firebase token not available - cannot authenticate")
+        # As a fallback, create a simple test JWT
+        # This allows tests to run in mock mode
+        print("\n⚠️  No Firebase token available, creating mock JWT for testing...")
+        print("   Tests will run but against real API (may fail if auth is required)")
+        
+        import base64
+        import json
+        import time
+        
+        # Create a minimal JWT-like token for testing
+        # Format: header.payload.signature
+        header = base64.urlsafe_b64encode(
+            json.dumps({"alg": "none", "typ": "JWT"}).encode()
+        ).decode().rstrip('=')
+        
+        payload = base64.urlsafe_b64encode(
+            json.dumps({
+                "iss": "https://securetoken.google.com/newsreel-865a5",
+                "aud": "newsreel-865a5",
+                "auth_time": int(time.time()),
+                "user_id": "test_user_mock",
+                "sub": "test_user_mock",
+                "iat": int(time.time()),
+                "exp": int(time.time()) + 3600,
+                "email": "test@newsreel.test",
+                "email_verified": True
+            }).encode()
+        ).decode().rstrip('=')
+        
+        token = f"{header}.{payload}."
+        print(f"   Mock JWT created: {token[:50]}...")
+        
     return token
 
 
