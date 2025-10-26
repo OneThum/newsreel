@@ -11,6 +11,7 @@ import json
 from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any, Optional
 import time
+import traceback
 
 # Import shared modules
 from shared.config import config
@@ -772,6 +773,7 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
     for doc in documents:
         try:
             article_data = json.loads(doc.to_json())
+            logger.info(f"Processing article from raw_articles, keys: {list(article_data.keys())[:10]}")
             article = RawArticle(**article_data)
             
             if article.processed:
@@ -939,7 +941,7 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                     'id': article.id,
                     'source': article.source,
                     'title': article.title,
-                    'url': article.url,
+                    'url': article.article_url,
                     'published_at': article.published_date.isoformat(),
                     'content': article.content[:500] if article.content else None  # Truncate for storage
                 }
@@ -1104,7 +1106,7 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                         'id': article.id,
                         'source': article.source,
                         'title': article.title,
-                        'url': article.url,
+                        'url': article.article_url,
                         'published_at': article.published_date.isoformat(),
                         'content': article.content[:500] if article.content else None  # Truncate for storage
                     }],
@@ -1130,7 +1132,8 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
             await cosmos_client.update_article_processed(article.id, article.published_date, story_id)
             
         except Exception as e:
-            logger.error(f"Error clustering document: {e}")
+            logger.error(f"Error clustering document: {e}", exc_info=True)
+            logger.error(f"Traceback: {traceback.format_exc()}")
     
     logger.info(f"Completed clustering {len(documents)} documents")
 
