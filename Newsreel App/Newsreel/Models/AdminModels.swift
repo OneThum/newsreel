@@ -9,6 +9,7 @@ struct AdminMetrics: Codable {
     let rssIngestion: RSSIngestionStats
     let clustering: ClusteringStats
     let summarization: SummarizationStats
+    let batchProcessing: BatchProcessingStats
     let feedQuality: FeedQualityStats
     let azure: AzureResourceInfo
     
@@ -19,8 +20,23 @@ struct AdminMetrics: Codable {
         case rssIngestion = "rss_ingestion"
         case clustering
         case summarization
+        case batchProcessing = "batch_processing"
         case feedQuality = "feed_quality"
         case azure
+    }
+}
+
+struct ComponentHealth: Codable {
+    let status: String  // "healthy", "degraded", "down"
+    let message: String
+    let lastChecked: Date
+    let responseTimeMs: Int?
+    
+    enum CodingKeys: String, CodingKey {
+        case status
+        case message
+        case lastChecked = "last_checked"
+        case responseTimeMs = "response_time_ms"
     }
 }
 
@@ -30,11 +46,23 @@ struct SystemHealth: Codable {
     let functionsHealth: String
     let databaseHealth: String
     
+    // Detailed component statuses
+    let rssIngestion: ComponentHealth?
+    let storyClustering: ComponentHealth?
+    let summarizationChangefeed: ComponentHealth?
+    let summarizationBackfill: ComponentHealth?
+    let breakingNewsMonitor: ComponentHealth?
+    
     enum CodingKeys: String, CodingKey {
         case overallStatus = "overall_status"
         case apiHealth = "api_health"
         case functionsHealth = "functions_health"
         case databaseHealth = "database_health"
+        case rssIngestion = "rss_ingestion"
+        case storyClustering = "story_clustering"
+        case summarizationChangefeed = "summarization_changefeed"
+        case summarizationBackfill = "summarization_backfill"
+        case breakingNewsMonitor = "breaking_news_monitor"
     }
 }
 
@@ -107,6 +135,26 @@ struct SummarizationStats: Codable {
         case summariesGenerated24h = "summaries_generated_24h"
         case avgWordCount = "avg_word_count"
         case cost24h = "cost_24h"
+    }
+}
+
+struct BatchProcessingStats: Codable {
+    let enabled: Bool
+    let batchesSubmitted24h: Int
+    let batchesCompleted24h: Int
+    let batchSuccessRate: Double
+    let storiesInQueue: Int
+    let avgBatchSize: Int
+    let batchCost24h: Double
+    
+    enum CodingKeys: String, CodingKey {
+        case enabled
+        case batchesSubmitted24h = "batches_submitted_24h"
+        case batchesCompleted24h = "batches_completed_24h"
+        case batchSuccessRate = "batch_success_rate"
+        case storiesInQueue = "stories_in_queue"
+        case avgBatchSize = "avg_batch_size"
+        case batchCost24h = "batch_cost_24h"
     }
 }
 

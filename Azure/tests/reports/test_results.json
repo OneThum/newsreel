@@ -1,0 +1,10 @@
+{
+  "timestamp": "2025-10-26T03:22:28.599808+00:00",
+  "total": 123,
+  "passed": 96,
+  "failed": 18,
+  "skipped": 9,
+  "error": 0,
+  "duration": 2.1105430126190186,
+  "exitcode": 1
+}

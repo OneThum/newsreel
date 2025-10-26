@@ -2,7 +2,7 @@
 import hashlib
 import re
 from datetime import datetime
-from typing import List, Set, Tuple
+from typing import List, Set, Tuple, Dict, Any
 from .models import Entity
 
 
@@ -147,20 +147,17 @@ def is_spam_or_promotional(title: str, description: str, url: str) -> bool:
 
 
 def generate_article_id(source: str, url: str, published_at: datetime) -> str:
-    """Generate unique article ID based on source + URL only (no timestamp)
+    """Generate unique article ID including date for partitioning
     
-    This enables update-in-place: same URL from same source = same article ID
-    When an article is updated, it overwrites the existing record instead of creating duplicates.
+    Format: {source}_{date}_{hash}
+    Example: reuters_20251026_a1b2c3d4
     
-    Benefits:
-    - 80% storage reduction (no duplicate updates)
-    - Each source represented once per story (not 10x for 10 updates)
-    - Faster queries (fewer records)
-    - No API deduplication needed
+    Includes date for efficient partition key usage in Cosmos DB.
     """
-    # Use longer hash for uniqueness without timestamp
-    url_hash = hashlib.md5(url.encode()).hexdigest()[:12]
-    return f"{source}_{url_hash}"
+    # Include date for partitioning
+    date_str = published_at.strftime('%Y%m%d')
+    url_hash = hashlib.md5(url.encode()).hexdigest()[:8]
+    return f"{source}_{date_str}_{url_hash}"
 
 
 def generate_story_fingerprint(title: str, entities: List[Entity]) -> str:
@@ -199,11 +196,15 @@ def generate_story_fingerprint(title: str, entities: List[Entity]) -> str:
     # Extract ONLY the top entity (single most important concept)
     entity_texts = []
     for e in entities:
-        if e.type in ['PERSON', 'LOCATION']:
-            entity_texts.append(e.text.lower())
+        # Handle both Entity objects and dict format for compatibility
+        entity_type = e.get('type') if isinstance(e, dict) else (e.type if hasattr(e, 'type') else None)
+        entity_text = e.get('text') if isinstance(e, dict) else (e.text if hasattr(e, 'text') else None)
+        
+        if entity_type in ['PERSON', 'LOCATION'] and entity_text:
+            entity_texts.append(entity_text.lower())
             break  # Take just the FIRST person/location
-        elif e.type == 'ORGANIZATION' and not entity_texts:
-            entity_texts.append(e.text.lower())
+        elif entity_type == 'ORGANIZATION' and not entity_texts and entity_text:
+            entity_texts.append(entity_text.lower())
     entity_texts = entity_texts[:1]  # REDUCED from 2 to 1 - single entity = broadest match
     
     # Combine - focus on MINIMAL essential concepts only
@@ -263,10 +264,10 @@ def extract_simple_entities(text: str) -> List[Entity]:
 
 def calculate_text_similarity(text1: str, text2: str) -> float:
     """
-    Calculate AGGRESSIVE text similarity for news clustering
+    Calculate CONSERVATIVE text similarity for news clustering
     
-    Optimized for news: AP and CNN reporting same story should score 70-90%
-    Uses multiple methods weighted toward keyword matching
+    Optimized to prevent false clustering: Only truly related stories should score 85%+
+    Uses balanced methods to avoid grouping unrelated topics
     """
     # Normalize
     t1_lower = text1.lower()
@@ -319,16 +320,14 @@ def calculate_text_similarity(text1: str, text2: str) -> float:
     
     substring_score = substring_matches / (len(key_words1) + len(key_words2)) if (key_words1 or key_words2) else 0
     
-    # Combine methods with NEWS-OPTIMIZED weights
-    # - Keyword overlap: 50% (most important - same topics use same words)
-    # - Entity matching: 30% (proper nouns are strong signals)
+    # Combine methods with CONSERVATIVE weights to prevent false clustering
+    # - Keyword overlap: 40% (important but not dominant)
+    # - Entity matching: 40% (proper nouns are strong signals)
     # - Substring: 15% (catches variations)
     # - Jaccard: 5% (general similarity, but less important)
-    final_score = (keyword_score * 0.50) + (entity_score * 0.30) + (substring_score * 0.15) + (jaccard * 0.05)
+    final_score = (keyword_score * 0.40) + (entity_score * 0.40) + (substring_score * 0.15) + (jaccard * 0.05)
     
-    # Boost score if there are multiple entity matches (strong signal)
-    if entity_overlap >= 3:
-        final_score = min(1.0, final_score * 1.2)  # 20% boost, capped at 1.0
+    # NO BOOST - let the score stand on its own to prevent false positives
     
     return final_score
 
@@ -444,12 +443,15 @@ def categorize_article(title: str, description: str, url: str) -> str:
 
 
 def clean_html(text: str) -> str:
-    """Remove HTML tags from text"""
+    """Remove HTML tags and decode HTML entities"""
     if not text:
         return ""
     
     # Remove HTML tags
     text = re.sub(r'<[^>]+>', '', text)
+    # Decode HTML entities (&amp; -> &, &#8220; -> ", etc.)
+    import html
+    text = html.unescape(text)
     # Remove extra whitespace
     text = re.sub(r'\s+', ' ', text)
     return text.strip()
@@ -467,4 +469,121 @@ def truncate_text(text: str, max_length: int = 500) -> str:
     # Truncate at word boundary
     truncated = text[:max_length].rsplit(' ', 1)[0]
     return truncated + '...'
+
+
+# ============================================================================
+# BATCH PROCESSING HELPERS
+# ============================================================================
+
+def build_summarization_prompt(articles: List[Dict[str, Any]]) -> tuple[str, str]:
+    """Build prompt for summarization (used in both real-time and batch)
+    
+    Returns:
+        tuple: (prompt, system_message)
+    """
+    # Build article texts
+    article_texts = []
+    for i, article in enumerate(articles, 1):
+        source = article.get('source', 'Unknown')
+        title = article.get('title', '')
+        description = article.get('description', '')
+        content = article.get('content', description)
+        
+        article_text = f"""Source {i}: {source}
+Title: {title}
+Content: {content[:1000]}"""
+        article_texts.append(article_text.strip())
+    
+    combined_articles = "\n\n---\n\n".join(article_texts)
+    
+    # Adjust prompt based on number of sources
+    if len(articles) == 1:
+        prompt = f"""You are a news summarization AI. Create a factual, neutral summary from the provided news article.
+
+Guidelines:
+1. Write in third person, present or past tense
+2. Extract the key facts: what happened, who, when, where
+3. Include specific numbers, dates, locations, names if available
+4. Keep it concise: 80-120 words
+5. Focus on the core story
+6. Use ONLY the information provided - do NOT refuse or say you need more sources
+7. If details are limited, summarize what IS available
+
+Article to summarize:
+
+{combined_articles}
+
+Write a factual summary of the key information provided:"""
+        system_msg = "You are a professional news summarizer. You ALWAYS provide a summary based on available information, even if limited. You never refuse."
+    else:
+        prompt = f"""You are a news summarization AI. Create a factual, neutral summary synthesizing information from {len(articles)} news sources.
+
+Guidelines:
+1. Write in third person, present or past tense
+2. Synthesize facts from all sources
+3. Include specific numbers, dates, locations, names
+4. Keep it concise: 100-150 words
+5. Focus on what happened, who, when, where, immediate impacts
+6. Avoid speculation or opinion
+7. If sources conflict, mention both perspectives
+
+Articles to summarize:
+
+{combined_articles}
+
+Write a factual summary synthesizing these articles:"""
+        system_msg = "You are a professional news summarizer. You create factual, neutral summaries from news articles. You ALWAYS provide a summary based on available information."
+    
+    return prompt, system_msg
+
+
+def generate_fallback_summary(story_data: Dict[str, Any], articles: List[Dict[str, Any]]) -> str:
+    """Generate a fallback summary when AI refuses or fails
+    
+    Args:
+        story_data: Story cluster data
+        articles: List of article dictionaries
+        
+    Returns:
+        str: Fallback summary text
+    """
+    story_title = story_data.get('title', '')
+    
+    if not articles:
+        return f"{story_title}. Details are being gathered from multiple sources."
+    
+    first_article = articles[0]
+    description = first_article.get('description', first_article.get('content', ''))[:300]
+    source = first_article.get('source', 'News sources')
+    
+    if len(articles) == 1:
+        summary_text = f"{story_title}. According to {source}, {description}"
+    else:
+        source_names = [a.get('source', '') for a in articles[:3]]
+        sources_text = ", ".join(source_names)
+        summary_text = f"{story_title}. Multiple sources including {sources_text} are reporting on this story. {description}"
+    
+    # Clean up
+    summary_text = summary_text.replace('\n', ' ').strip()
+    summary_text = ' '.join(summary_text.split()[:100])
+    
+    return summary_text
+
+
+def is_ai_refusal(summary_text: str) -> bool:
+    """Check if AI response is a refusal to summarize
+    
+    Args:
+        summary_text: The generated summary text
+        
+    Returns:
+        bool: True if text appears to be a refusal
+    """
+    refusal_indicators = [
+        "i cannot", "cannot create", "cannot provide", "insufficient",
+        "would need", "please provide", "unable to", "not possible",
+        "requires additional", "incomplete information", "lacks essential"
+    ]
+    
+    return any(indicator in summary_text.lower() for indicator in refusal_indicators)
 

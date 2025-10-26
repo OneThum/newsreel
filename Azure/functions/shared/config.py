@@ -16,6 +16,7 @@ class Config:
     CONTAINER_USER_PROFILES: str = "user_profiles"
     CONTAINER_USER_INTERACTIONS: str = "user_interactions"
     CONTAINER_MODERATION_QUEUE: str = "moderation_queue"
+    CONTAINER_BATCH_TRACKING: str = "batch_tracking"
     
     # Azure Storage
     STORAGE_CONNECTION_STRING: str = os.getenv("STORAGE_CONNECTION_STRING", "")
@@ -23,7 +24,7 @@ class Config:
     
     # Anthropic API
     ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
-    ANTHROPIC_MODEL: str = "claude-sonnet-4-20250514"
+    ANTHROPIC_MODEL: str = os.getenv("ANTHROPIC_MODEL", "claude-3-5-haiku-20241022")  # Claude 3.5 Haiku (fastest, cheapest)
     ANTHROPIC_MAX_TOKENS: int = 500
     
     # Twitter/X API
@@ -44,12 +45,18 @@ class Config:
     MIN_SOURCES_FOR_DEVELOPING: int = 2
     MIN_SOURCES_FOR_BREAKING: int = 3
     BREAKING_NEWS_WINDOW_MINUTES: int = 30
-    STORY_FINGERPRINT_SIMILARITY_THRESHOLD: float = 0.85
+    STORY_FINGERPRINT_SIMILARITY_THRESHOLD: float = 0.70
     
     # Summarization
     MIN_SOURCES_FOR_SUMMARY: int = 1  # Generate summaries for ALL stories (changed from 2)
-    MAX_SUMMARIES_PER_DAY: int = 3000  # Budget control: ~$22.50/day at $0.0075 each
+    MAX_SUMMARIES_PER_DAY: int = 3000  # Budget control: ~$5-7/day with Claude Haiku 4.5
     SUMMARIZATION_BACKFILL_ENABLED: bool = os.getenv("SUMMARIZATION_BACKFILL_ENABLED", "false").lower() == "true"  # Disabled by default to save costs
+    
+    # Batch Processing (50% cost reduction for backfill)
+    BATCH_PROCESSING_ENABLED: bool = os.getenv("BATCH_PROCESSING_ENABLED", "true").lower() == "true"  # Enabled by default for cost savings
+    BATCH_MAX_SIZE: int = 500  # Max requests per batch (API limit is 100,000)
+    BATCH_BACKFILL_HOURS: int = 48  # Only backfill stories from last N hours
+    BATCH_POLL_INTERVAL_MINUTES: int = 30  # How often to submit new batches and check results
     
     # Rate Limiting
     FREE_TIER_DAILY_LIMIT: int = 20

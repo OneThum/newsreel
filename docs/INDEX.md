@@ -1,208 +1,250 @@
 # Newsreel Documentation Index
 
-**Last Updated**: October 14, 2025
+**Last Updated**: October 18, 2025
 
-> **Recent Update**: Documentation cleaned up and consolidated. All historical bug reports and outdated files removed. System now fully operational!
-
-Welcome to the Newsreel documentation! This index provides a comprehensive guide to all available documentation.
+Welcome to the Newsreel documentation hub! All documentation has been consolidated here for easy navigation.
 
 ---
 
-## 🚀 Getting Started
+## 🎯 Start Here
 
-Start here if you're new to the project:
+**New to the project?** Read these in order:
 
-1. **[Recent Changes](Recent_Changes.md)** ⭐ - Latest features, bug fixes, and improvements
-2. **[Quick Reference](QUICK_REFERENCE.md)** - Essential commands, URLs, and quick tips
-3. **[Project Status](PROJECT_STATUS.md)** - Current implementation status and roadmap
+1. **[APP_STORE_READINESS.md](APP_STORE_READINESS.md)** ⭐  
+   Complete launch checklist - what's done and what's needed
 
----
+2. **[PROJECT_STATUS.md](PROJECT_STATUS.md)** 📊  
+   Current system status, metrics, and timeline
 
-## 📖 Setup Guides
-
-Step-by-step guides for setting up different components:
-
-### Backend Infrastructure
-- **[Azure Setup Guide](Azure_Setup_Guide.md)** - Complete Azure infrastructure deployment
-  - Resource groups, functions, container apps, Cosmos DB
-  - Cost management and monitoring
-  - CLI commands and troubleshooting
-
-### iOS Development
-- **[Xcode Configuration](Xcode_Configuration.md)** - iOS project setup
-  - Signing & capabilities
-  - Frameworks & dependencies
-  - Build configurations
-  - Firebase integration
-
-### Authentication
-- **[Firebase Setup Guide](Firebase_Setup_Guide.md)** - Authentication configuration
-  - Apple Sign-In setup
-  - Google Sign-In setup
-  - Anonymous authentication
-  - Security rules
-
-### Additional Setup
-- **[Font Setup Guide](Font_Setup_Guide.md)** - Custom font integration (Outfit)
-- **[RevenueCat Setup Guide](RevenueCat_Setup_Guide.md)** - Subscription management (optional)
+3. **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** 🔧  
+   Essential commands, URLs, and quick tips
 
 ---
 
-## 🏗️ Architecture Documentation
+## 📚 Documentation Categories
 
-Deep dives into system architecture and design decisions:
+### 📋 Project Management
+- **[APP_STORE_READINESS.md](APP_STORE_READINESS.md)** - Launch checklist and requirements
+- **[PROJECT_STATUS.md](PROJECT_STATUS.md)** - Current status and metrics
+- **[Recent_Changes.md](Recent_Changes.md)** - Latest features and bug fixes
+- **[Development_Roadmap.md](Development_Roadmap.md)** - Development phases and timeline
 
-### Backend Architecture
-- **[RSS Feed Strategy](RSS_FEED_STRATEGY.md)** - Feed ingestion architecture
-  - 100+ news sources
-  - Feed selection criteria
-  - Update frequency optimization
-  - Data flow diagrams
+### 🛠️ Setup & Configuration
+- **[Azure_Setup_Guide.md](Azure_Setup_Guide.md)** - Complete Azure infrastructure deployment
+- **[Firebase_Setup_Guide.md](Firebase_Setup_Guide.md)** - Authentication configuration  
+- **[Xcode_Configuration.md](Xcode_Configuration.md)** - iOS project setup
+- **[Font_Setup_Guide.md](Font_Setup_Guide.md)** - Custom font integration (Outfit)
+- **[RevenueCat_Setup_Guide.md](RevenueCat_Setup_Guide.md)** - Subscription management
 
-- **[Staggered RSS Polling](STAGGERED_RSS_POLLING.md)** - Polling optimization
-  - 10-second polling interval
-  - Staggered feed rotation
-  - Continuous firehose architecture
-  - Performance metrics
+### 🏗️ Architecture & Design
+- **[Product_Specification.md](Product_Specification.md)** - Complete product requirements
+- **[RSS_FEED_STRATEGY.md](RSS_FEED_STRATEGY.md)** - Feed ingestion architecture
+- **[RSS_INGESTION_CONFIG.md](RSS_INGESTION_CONFIG.md)** - Polling configuration details
+- **[Source_Display_Names.md](Source_Display_Names.md)** - RSS source configuration
+- **[Design_System.md](Design_System.md)** - iOS UI/UX patterns and guidelines
+- **[iOS18_Best_Practices.md](iOS18_Best_Practices.md)** - SwiftUI development guidelines
 
-- **[Clustering Improvements](CLUSTERING_IMPROVEMENTS.md)** - Story deduplication
-  - Fuzzy title matching algorithms
-  - Multi-method similarity scoring
-  - Fingerprint-first matching
-  - Source diversity enforcement
+### 💰 Operations & Monitoring
+- **[Cost_Management.md](Cost_Management.md)** - Azure budget optimization
+- **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Commands and URLs
 
-### Monitoring & Observability
-- **[Badge Logging & Monitoring](BADGE_LOGGING_MONITORING.md)** - Full observability setup
-  - Structured logging (iOS & Azure)
-  - Application Insights integration
-  - CLI automation tools
-  - Performance metrics
+### ☁️ Azure-Specific (docs/azure/)
+- **[QUICK_START.md](azure/QUICK_START.md)** - Azure quick start guide
+- **[DEPLOYMENT_SUMMARY.md](azure/DEPLOYMENT_SUMMARY.md)** - Infrastructure deployment details
+- **[MONITORING_GUIDE.md](azure/MONITORING_GUIDE.md)** - Logging and monitoring
+- **[IMPLEMENTATION_COMPLETE.md](azure/IMPLEMENTATION_COMPLETE.md)** - Implementation summary
+- **[NEXT_STEPS.md](azure/NEXT_STEPS.md)** - Post-deployment configuration
+- **[AZURE_CLI_AUTH_REFERENCE.md](azure/AZURE_CLI_AUTH_REFERENCE.md)** - CLI authentication
 
----
-
-## 🎨 Design & Development
-
-Guidelines for maintaining consistency and quality:
-
-- **[Design System](Design_System.md)** - iOS UI/UX patterns
-  - Color system
-  - Typography (Outfit font)
-  - Component library
-  - Animation guidelines
-
-- **[iOS18 Best Practices](iOS18_Best_Practices.md)** - Development guidelines
-  - SwiftUI patterns
-  - Async/await best practices
-  - Performance optimization
-  - Accessibility
+### 📦 Historical Records (docs/archive/)
+Bug fixes, diagnostics, and system evolution from October 2025:
+- Complete diagnosis reports
+- Bug fix documentation (ORDER BY, clustering, summarization)
+- System test results
+- Work completion summaries
 
 ---
 
-## 📋 Product Documentation
+## 🗺️ Documentation by Persona
 
-Product requirements and planning:
+### For Project Managers / Product Owners
+Start with these to understand project status and what's needed:
+1. [APP_STORE_READINESS.md](APP_STORE_READINESS.md) - What's blocking launch?
+2. [PROJECT_STATUS.md](PROJECT_STATUS.md) - Where are we now?
+3. [Development_Roadmap.md](Development_Roadmap.md) - What's the plan?
+4. [Product_Specification.md](Product_Specification.md) - What are we building?
 
-- **[Product Specification](Product_Specification.md)** - Complete product requirements
-  - Features and functionality
-  - User stories
-  - Technical requirements
-  - Success metrics
+### For Backend Developers
+Set up and maintain the Azure infrastructure:
+1. [Azure_Setup_Guide.md](Azure_Setup_Guide.md) - Deploy infrastructure
+2. [azure/QUICK_START.md](azure/QUICK_START.md) - Get started quickly
+3. [RSS_FEED_STRATEGY.md](RSS_FEED_STRATEGY.md) - Understand feed architecture
+4. [RSS_INGESTION_CONFIG.md](RSS_INGESTION_CONFIG.md) - Configure polling
+5. [azure/MONITORING_GUIDE.md](azure/MONITORING_GUIDE.md) - Monitor the system
 
-- **[Product Improvement Roadmap](PRODUCT_IMPROVEMENT_ROADMAP.md)** - Future enhancements
-  - Phase 1: Observability ✅
-  - Phase 2: Feed Diversity
-  - Phase 3: Smart Polling
-  - Phase 4: Categorization Enhancement
-  - Phase 5: Update Intelligence
+### For iOS Developers
+Build and maintain the iOS app:
+1. [Xcode_Configuration.md](Xcode_Configuration.md) - Set up Xcode project
+2. [Firebase_Setup_Guide.md](Firebase_Setup_Guide.md) - Configure authentication
+3. [Design_System.md](Design_System.md) - Follow design guidelines
+4. [iOS18_Best_Practices.md](iOS18_Best_Practices.md) - SwiftUI best practices
+5. [Font_Setup_Guide.md](Font_Setup_Guide.md) - Custom fonts
+6. [RevenueCat_Setup_Guide.md](RevenueCat_Setup_Guide.md) - Subscriptions
 
-- **[Development Roadmap](Development_Roadmap.md)** - Technical implementation plan
+### For DevOps / Operations
+Monitor and maintain the production system:
+1. [azure/MONITORING_GUIDE.md](azure/MONITORING_GUIDE.md) - Set up monitoring
+2. [Cost_Management.md](Cost_Management.md) - Manage Azure costs
+3. [QUICK_REFERENCE.md](QUICK_REFERENCE.md) - Common commands
+4. [azure/DEPLOYMENT_SUMMARY.md](azure/DEPLOYMENT_SUMMARY.md) - Infrastructure overview
 
----
-
-## 💰 Operations & Cost Management
-
-- **[Cost Management](Cost_Management.md)** - Azure budget optimization
-  - Serverless architecture benefits
-  - Cost monitoring
-  - Optimization strategies
-  - Budget alerts
-
----
-
-## 📚 Documentation by Category
-
-### For Developers Setting Up
-1. [Azure Setup Guide](Azure_Setup_Guide.md)
-2. [Firebase Setup Guide](Firebase_Setup_Guide.md)
-3. [Xcode Configuration](Xcode_Configuration.md)
-4. [Font Setup Guide](Font_Setup_Guide.md)
-
-### For Understanding Architecture
-1. [RSS Feed Strategy](RSS_FEED_STRATEGY.md)
-2. [Staggered RSS Polling](STAGGERED_RSS_POLLING.md)
-3. [Clustering Improvements](CLUSTERING_IMPROVEMENTS.md)
-4. [Badge Logging & Monitoring](BADGE_LOGGING_MONITORING.md)
-
-### For Product Owners
-1. [Product Specification](Product_Specification.md)
-2. [Product Improvement Roadmap](PRODUCT_IMPROVEMENT_ROADMAP.md)
-3. [Recent Changes](Recent_Changes.md)
-4. [Project Status](PROJECT_STATUS.md)
-
-### For Designers
-1. [Design System](Design_System.md)
-2. [iOS18 Best Practices](iOS18_Best_Practices.md)
-
-### For Operations
-1. [Cost Management](Cost_Management.md)
-2. [Badge Logging & Monitoring](BADGE_LOGGING_MONITORING.md)
-3. [Quick Reference](QUICK_REFERENCE.md)
+### For AI Assistants
+When helping with this project, prioritize these documents:
+1. [APP_STORE_READINESS.md](APP_STORE_READINESS.md) - Understand what needs to be done
+2. [PROJECT_STATUS.md](PROJECT_STATUS.md) - Understand current state
+3. [Product_Specification.md](Product_Specification.md) - Understand requirements
+4. This INDEX.md - Navigate to specific topics
 
 ---
 
 ## 🔍 Quick Find
 
-### Looking for...
-- **Latest changes?** → [Recent Changes](Recent_Changes.md)
-- **How to deploy?** → [Azure Setup Guide](Azure_Setup_Guide.md)
-- **How RSS works?** → [RSS Feed Strategy](RSS_FEED_STRATEGY.md)
-- **How to monitor?** → [Badge Logging & Monitoring](BADGE_LOGGING_MONITORING.md)
-- **Design guidelines?** → [Design System](Design_System.md)
-- **Future plans?** → [Product Improvement Roadmap](PRODUCT_IMPROVEMENT_ROADMAP.md)
-- **Quick commands?** → [Quick Reference](QUICK_REFERENCE.md)
+**Looking for...**
+
+| Topic | Document |
+|-------|----------|
+| What's needed for launch? | [APP_STORE_READINESS.md](APP_STORE_READINESS.md) |
+| Current system status? | [PROJECT_STATUS.md](PROJECT_STATUS.md) |
+| How to deploy backend? | [Azure_Setup_Guide.md](Azure_Setup_Guide.md) |
+| How to set up iOS app? | [Xcode_Configuration.md](Xcode_Configuration.md) |
+| How RSS feeds work? | [RSS_FEED_STRATEGY.md](RSS_FEED_STRATEGY.md) |
+| Why 10-second polling? | [RSS_INGESTION_CONFIG.md](RSS_INGESTION_CONFIG.md) |
+| Design guidelines? | [Design_System.md](Design_System.md) |
+| Commands and URLs? | [QUICK_REFERENCE.md](QUICK_REFERENCE.md) |
+| Cost optimization? | [Cost_Management.md](Cost_Management.md) |
+| How to monitor? | [azure/MONITORING_GUIDE.md](azure/MONITORING_GUIDE.md) |
+| Bug fix history? | [archive/](archive/) folder |
+
+---
+
+## 📁 Complete File Listing
+
+### Root Documentation (`/docs`)
+
+**Project Status & Planning**
+- APP_STORE_READINESS.md ⭐
+- PROJECT_STATUS.md
+- Recent_Changes.md
+- Development_Roadmap.md
+- Product_Specification.md
+
+**Setup Guides**
+- Azure_Setup_Guide.md
+- Firebase_Setup_Guide.md
+- Xcode_Configuration.md
+- Font_Setup_Guide.md
+- RevenueCat_Setup_Guide.md
+
+**Architecture & Technical**
+- RSS_FEED_STRATEGY.md
+- RSS_INGESTION_CONFIG.md
+- Source_Display_Names.md
+- Design_System.md
+- iOS18_Best_Practices.md
+- Cost_Management.md
+
+**Reference**
+- INDEX.md (this file)
+- QUICK_REFERENCE.md
+
+### Azure Documentation (`/docs/azure`)
+- QUICK_START.md
+- DEPLOYMENT_SUMMARY.md
+- MONITORING_GUIDE.md
+- IMPLEMENTATION_COMPLETE.md
+- NEXT_STEPS.md
+- AZURE_CLI_AUTH_REFERENCE.md
+
+### Historical Archive (`/docs/archive`)
+- COMPLETE_DIAGNOSIS_2025_10_18.md
+- ORDER_BY_BUG_FIX_ROUND3_CLUSTERING.md
+- ORDER_BY_BUG_FIX_ROUND2.md
+- ADMIN_COMPONENT_HEALTH_MONITORING.md
+- SUMMARIZATION_FIX_STATUS.md
+- BACKFILL_4_HOUR_LIMIT.md
+- BUG_FIX_SUMMARY_2025_10_18.md
+- CRITICAL_ISSUE_ROOT_CAUSE_FOUND.md
+- COMPLETE_FIX_SUMMARY_2025_10_18.md
+- BBC_ONLY_BUG_FIX_DEPLOYED.md
+- SOURCES_AND_SUMMARIES_FIX_DEPLOYED.md
+- IMAGES_PREFERENCE_FIX_COMPLETED.md
+- BUILD_STATUS_IMAGES_PREFERENCE.md
+- IMAGES_PREFERENCE_FIX.md
+- CRITICAL_BUG_FIXED.md
+- SYSTEM_TEST_RESULTS.md
+- WORK_COMPLETED_TODAY.md
+- DOCUMENTATION_STATUS.md
+- FINAL_STATUS.md
+- FINAL_DIAGNOSTIC_REPORT.md
+- DOCUMENTATION_CONSOLIDATION_COMPLETE.md
+- CRITICAL_ISSUE_ACTION_PLAN.md
+- Clustering_Precision_Fix.md
+- CLUSTERING_IMPROVEMENTS.md
+
+### Component READMEs (in their respective directories)
+- `/Azure/README.md` - Azure folder overview
+- `/Azure/api/README.md` - API documentation
+- `/Azure/functions/README.md` - Functions documentation
+- `/Azure/scripts/README.md` - Scripts documentation
+- `/Azure/infrastructure/README.md` - Terraform infrastructure
 
 ---
 
 ## 📝 Documentation Standards
 
-When updating documentation:
+When creating or updating documentation:
 
-1. **Keep it current** - Update dates at the top of each document
-2. **Be specific** - Include code examples, commands, and screenshots
-3. **Cross-reference** - Link to related documents
-4. **Use markdown** - Follow consistent formatting
-5. **Update this index** - Add new documents here
+1. **Add date**: Include "Last Updated: [Date]" at the top
+2. **Use markdown**: Follow consistent formatting
+3. **Link related docs**: Cross-reference relevant documents
+4. **Keep current**: Update when changes are made
+5. **Update this index**: Add new documents to appropriate sections
 
 ---
 
-## 🤝 Contributing
+## 🔄 Recent Documentation Changes
 
-To add new documentation:
+**October 18, 2025** - Major consolidation:
+- ✅ Created APP_STORE_READINESS.md (launch checklist)
+- ✅ Updated PROJECT_STATUS.md (current reality)
+- ✅ Simplified root README.md
+- ✅ Moved temporary docs to archive/
+- ✅ Moved Azure docs to azure/
+- ✅ Updated this INDEX.md with new structure
 
-1. Create markdown file in `/docs` folder
-2. Use clear, descriptive filename (e.g., `Feature_Name_Guide.md`)
-3. Include "Last Updated" date at top
-4. Add to this INDEX.md in appropriate category
-5. Cross-reference from related documents
+**October 14, 2025** - Previous cleanup:
+- Consolidated duplicate verification documents
+- Removed redundant status files
+- Created comprehensive guides
+
+---
+
+## 💡 Tips for Navigation
+
+1. **Start with status docs** to understand where the project is
+2. **Use the Quick Find table** above for specific topics
+3. **Check the archive/** folder for historical context
+4. **Component READMEs** provide context for specific codebases
+5. **Cross-references** in each doc point to related information
 
 ---
 
 ## 📞 Support
 
-For questions or issues:
+For questions about documentation:
 - **Email**: dave@onethum.com
 - **Project**: Newsreel by One Thum Software
 
 ---
 
-**All documentation is organized and ready to use!** 🎉
+**All documentation is organized, current, and ready to use!** 📚✨

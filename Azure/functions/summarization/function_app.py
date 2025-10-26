@@ -138,11 +138,11 @@ that synthesize information from multiple sources. You never add speculation or 
             completion_tokens = usage.output_tokens
             cached_tokens = getattr(usage, 'cache_read_input_tokens', 0)
             
-            # Calculate cost (approximate)
-            # Claude Sonnet 4: $3/MTok input, $15/MTok output, 90% cache discount
-            input_cost = (prompt_tokens - cached_tokens) * 3.0 / 1_000_000
-            cache_cost = cached_tokens * 0.30 / 1_000_000  # 90% discount
-            output_cost = completion_tokens * 15.0 / 1_000_000
+            # Calculate cost (Claude Haiku 4.5 pricing)
+            # Input: $1/MTok, Cache read: $0.10/MTok, Output: $5/MTok
+            input_cost = (prompt_tokens - cached_tokens) * 1.0 / 1_000_000
+            cache_cost = cached_tokens * 0.10 / 1_000_000
+            output_cost = completion_tokens * 5.0 / 1_000_000
             total_cost = input_cost + cache_cost + output_cost
             
             # Determine version number

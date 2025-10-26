@@ -206,8 +206,7 @@ async def get_personalized_feed(
     else:
         logger.warning("📊 [FEED] Query returned 0 stories")
     
-    # 🔍 TEMPORARY: No filtering - return all stories to diagnose data issues
-    # Log detailed info about what we're returning
+    # For detailed info about what we're returning
     for story in stories[:3]:  # Log first 3 stories
         logger.info(f"📝 Story: {story.get('id')}")
         logger.info(f"   Status: {story.get('status', 'N/A')}")
@@ -217,10 +216,25 @@ async def get_personalized_feed(
         if story.get('summary'):
             logger.info(f"   Summary text: {story.get('summary', {}).get('text', '')[:100]}...")
     
-    # Return all stories for now (no filtering) so users see data
-    processed_stories = stories
+    # ✅ SMART FILTERING: Filter out MONITORING stories (incomplete/single source)
+    # Keep: DEVELOPING (2+ sources), VERIFIED (3+ sources), BREAKING
+    processed_stories = [
+        story for story in stories 
+        if story.get('status', 'MONITORING') != 'MONITORING'
+    ]
     
-    logger.info(f"🔍 [FEED] Returning all {len(processed_stories)} stories (no filtering) for diagnosis")
+    logger.info(f"🔍 [FEED] Filtered: {len(stories)} → {len(processed_stories)} stories (removed MONITORING status)")
+    if len(processed_stories) == 0:
+        logger.warning("⚠️  [FEED] No processed stories available after filtering!")
+        logger.warning("⚠️  [FEED] Pipeline Issue: NO stories have been clustered yet")
+        logger.warning("⚠️  [FEED] Returning EMPTY feed instead of incomplete MONITORING stories")
+        # DO NOT FALLBACK - let client see empty feed and understand pipeline is slow
+        # processed_stories = stories  # ← REMOVED fallback
+    
+    # If we have NO processed stories, return empty (client will see no stories until pipeline processes)
+    if len(processed_stories) == 0:
+        logger.warning("⚠️  [FEED] Returning ZERO stories - clustering pipeline needs to process articles")
+        return []  # Force empty return
     
     # Personalize feed
     personalized_stories = await recommendation_service.personalize_feed(

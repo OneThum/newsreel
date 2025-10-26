@@ -43,8 +43,11 @@ struct AdminDashboardView: View {
                             // Header
                             headerSection
                             
-                            // System Health
+                            // System Health (Overall)
                             systemHealthSection(metrics: metrics)
+                            
+                            // Component Status (Detailed)
+                            componentStatusSection(metrics: metrics)
                             
                             // Database Stats
                             databaseStatsSection(metrics: metrics)
@@ -57,6 +60,9 @@ struct AdminDashboardView: View {
                             
                             // AI Summarization
                             summarizationSection(metrics: metrics)
+                            
+                            // Batch Processing
+                            batchProcessingSection(metrics: metrics)
                             
                             // Feed Quality
                             feedQualitySection(metrics: metrics)
@@ -171,6 +177,63 @@ struct AdminDashboardView: View {
         }
     }
     
+    // MARK: - Component Status (Detailed)
+    
+    private func componentStatusSection(metrics: AdminMetrics) -> some View {
+        DashboardCard(
+            title: "Component Health",
+            icon: "checkmark.seal.fill",
+            color: overallComponentColor(metrics: metrics)
+        ) {
+            VStack(spacing: 12) {
+                // RSS Ingestion
+                if let rssHealth = metrics.systemHealth.rssIngestion {
+                    ComponentStatusRow(
+                        label: "RSS Ingestion",
+                        icon: "antenna.radiowaves.left.and.right",
+                        health: rssHealth
+                    )
+                }
+                
+                // Story Clustering
+                if let clusteringHealth = metrics.systemHealth.storyClustering {
+                    ComponentStatusRow(
+                        label: "Story Clustering",
+                        icon: "link.circle.fill",
+                        health: clusteringHealth
+                    )
+                }
+                
+                // Summarization Change Feed
+                if let changefeedHealth = metrics.systemHealth.summarizationChangefeed {
+                    ComponentStatusRow(
+                        label: "AI Summarization (Live)",
+                        icon: "sparkles",
+                        health: changefeedHealth
+                    )
+                }
+                
+                // Summarization Backfill
+                if let backfillHealth = metrics.systemHealth.summarizationBackfill {
+                    ComponentStatusRow(
+                        label: "AI Summarization (Backfill)",
+                        icon: "arrow.circlepath",
+                        health: backfillHealth
+                    )
+                }
+                
+                // Breaking News Monitor
+                if let monitorHealth = metrics.systemHealth.breakingNewsMonitor {
+                    ComponentStatusRow(
+                        label: "Breaking News Monitor",
+                        icon: "bell.badge.fill",
+                        health: monitorHealth
+                    )
+                }
+            }
+        }
+    }
+    
     // MARK: - Database Stats
     
     private func databaseStatsSection(metrics: AdminMetrics) -> some View {
@@ -256,6 +319,28 @@ struct AdminDashboardView: View {
                 MetricRow(label: "Generated (24h)", value: metrics.summarization.summariesGenerated24h.formatted)
                 MetricRow(label: "Avg Word Count", value: metrics.summarization.avgWordCount.formatted)
                 MetricRow(label: "Cost (24h)", value: String(format: "$%.4f", metrics.summarization.cost24h))
+            }
+        }
+    }
+    
+    // MARK: - Batch Processing
+    
+    private func batchProcessingSection(metrics: AdminMetrics) -> some View {
+        DashboardCard(title: "Batch Processing", icon: "square.stack.3d.up.fill", color: .purple) {
+            VStack(spacing: 12) {
+                StatusRow(
+                    label: "Status",
+                    value: metrics.batchProcessing.enabled ? "Enabled" : "Disabled",
+                    status: metrics.batchProcessing.enabled ? .healthy : .warning
+                )
+                
+                if metrics.batchProcessing.enabled {
+                    MetricRow(label: "Success Rate", value: String(format: "%.1f%%", metrics.batchProcessing.batchSuccessRate * 100))
+                    MetricRow(label: "Batches Completed (24h)", value: "\(metrics.batchProcessing.batchesCompleted24h)/\(metrics.batchProcessing.batchesSubmitted24h)")
+                    MetricRow(label: "Avg Batch Size", value: metrics.batchProcessing.avgBatchSize.formatted)
+                    MetricRow(label: "Stories in Queue", value: metrics.batchProcessing.storiesInQueue.formatted)
+                    MetricRow(label: "Batch Cost (24h)", value: String(format: "$%.4f", metrics.batchProcessing.batchCost24h))
+                }
             }
         }
     }
@@ -382,6 +467,28 @@ struct AdminDashboardView: View {
         default: return .error
         }
     }
+    
+    private func overallComponentColor(metrics: AdminMetrics) -> Color {
+        // Check if any component is down
+        let components = [
+            metrics.systemHealth.rssIngestion,
+            metrics.systemHealth.storyClustering,
+            metrics.systemHealth.summarizationChangefeed,
+            metrics.systemHealth.summarizationBackfill,
+            metrics.systemHealth.breakingNewsMonitor
+        ]
+        
+        let hasDown = components.compactMap { $0 }.contains { $0.status == "down" }
+        let hasDegraded = components.compactMap { $0 }.contains { $0.status == "degraded" }
+        
+        if hasDown {
+            return .red
+        } else if hasDegraded {
+            return .orange
+        } else {
+            return .green
+        }
+    }
 }
 
 // MARK: - Supporting Views
@@ -481,6 +588,62 @@ struct ServiceRow: View {
                 .font(.outfit(size: 13, weight: .semiBold))
                 .foregroundStyle(status == "running" ? .green : .orange)
         }
+    }
+}
+
+struct ComponentStatusRow: View {
+    let label: String
+    let icon: String
+    let health: ComponentHealth
+    
+    var statusColor: Color {
+        switch health.status {
+        case "healthy": return .green
+        case "degraded": return .orange
+        case "down": return .red
+        default: return .gray
+        }
+    }
+    
+    var statusIcon: String {
+        switch health.status {
+        case "healthy": return "checkmark.circle.fill"
+        case "degraded": return "exclamationmark.triangle.fill"
+        case "down": return "xmark.circle.fill"
+        default: return "questionmark.circle.fill"
+        }
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.system(size: 14))
+                    .foregroundStyle(.secondary)
+                
+                Text(label)
+                    .font(.outfit(size: 14, weight: .medium))
+                
+                Spacer()
+                
+                HStack(spacing: 4) {
+                    Image(systemName: statusIcon)
+                        .font(.system(size: 12))
+                        .foregroundStyle(statusColor)
+                    
+                    Text(health.status.capitalized)
+                        .font(.outfit(size: 13, weight: .semiBold))
+                        .foregroundStyle(statusColor)
+                }
+            }
+            
+            // Status message
+            Text(health.message)
+                .font(.outfit(size: 12, weight: .regular))
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+        }
+        .padding(.vertical, 4)
     }
 }
 

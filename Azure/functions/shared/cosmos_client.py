@@ -91,16 +91,25 @@ class CosmosDBClient:
             raise
     
     async def query_unprocessed_articles(self, limit: int = 100) -> List[Dict[str, Any]]:
-        """Query unprocessed articles"""
+        """Query unprocessed articles
+        
+        CRITICAL: NO ORDER BY to avoid Cosmos DB field omission bug!
+        We sort in Python instead.
+        """
         try:
             container = self._get_container(config.CONTAINER_RAW_ARTICLES)
-            query = "SELECT * FROM c WHERE c.processed = false ORDER BY c.published_at DESC"
+            # Query without ORDER BY, sort in Python
+            query = "SELECT * FROM c WHERE c.processed = false"
             items = list(container.query_items(
                 query=query,
-                enable_cross_partition_query=True,
-                max_item_count=limit
+                enable_cross_partition_query=True
             ))
-            return items
+            
+            # Sort in Python by published_at (descending)
+            sorted_items = sorted(items, key=lambda x: x.get('published_at', ''), reverse=True)
+            
+            # Apply limit
+            return sorted_items[:limit]
         except Exception as e:
             logger.error(f"Failed to query unprocessed articles: {e}")
             raise
@@ -208,42 +217,59 @@ class CosmosDBClient:
         category: Optional[str] = None,
         limit: int = 20
     ) -> List[Dict[str, Any]]:
-        """Query recent stories, optionally filtered by category"""
+        """Query recent stories, optionally filtered by category
+        
+        CRITICAL: NO ORDER BY to avoid Cosmos DB field omission bug!
+        We sort in Python instead.
+        """
         try:
             container = self._get_container(config.CONTAINER_STORY_CLUSTERS)
             
             if category:
-                query = "SELECT * FROM c WHERE c.category = @category AND c.status != 'MONITORING' ORDER BY c.last_updated DESC"
+                # Query without ORDER BY, sort in Python
+                query = "SELECT * FROM c WHERE c.category = @category AND c.status != 'MONITORING'"
                 parameters = [{"name": "@category", "value": category}]
                 items = list(container.query_items(
                     query=query,
-                    parameters=parameters,
-                    max_item_count=limit
+                    parameters=parameters
                 ))
             else:
-                query = "SELECT * FROM c WHERE c.status != 'MONITORING' ORDER BY c.last_updated DESC"
+                # Query without ORDER BY, sort in Python
+                query = "SELECT * FROM c WHERE c.status != 'MONITORING'"
                 items = list(container.query_items(
                     query=query,
-                    enable_cross_partition_query=True,
-                    max_item_count=limit
+                    enable_cross_partition_query=True
                 ))
             
-            return items
+            # Sort in Python by last_updated (descending)
+            sorted_items = sorted(items, key=lambda x: x.get('last_updated', ''), reverse=True)
+            
+            # Apply limit
+            return sorted_items[:limit]
         except Exception as e:
             logger.error(f"Failed to query recent stories: {e}")
             raise
     
     async def query_breaking_news(self, limit: int = 10) -> List[Dict[str, Any]]:
-        """Query breaking news stories"""
+        """Query breaking news stories
+        
+        CRITICAL: NO ORDER BY to avoid Cosmos DB field omission bug!
+        We sort in Python instead.
+        """
         try:
             container = self._get_container(config.CONTAINER_STORY_CLUSTERS)
-            query = "SELECT * FROM c WHERE c.status = 'BREAKING' ORDER BY c.breaking_detected_at DESC"
+            # Query without ORDER BY, sort in Python
+            query = "SELECT * FROM c WHERE c.status = 'BREAKING'"
             items = list(container.query_items(
                 query=query,
-                enable_cross_partition_query=True,
-                max_item_count=limit
+                enable_cross_partition_query=True
             ))
-            return items
+            
+            # Sort in Python by breaking_detected_at (descending)
+            sorted_items = sorted(items, key=lambda x: x.get('breaking_detected_at', x.get('last_updated', '')), reverse=True)
+            
+            # Apply limit
+            return sorted_items[:limit]
         except Exception as e:
             logger.error(f"Failed to query breaking news: {e}")
             raise
@@ -400,6 +426,78 @@ class CosmosDBClient:
         except Exception as e:
             logger.warning(f"Failed to update feed poll state for {feed_name}: {e}")
             # Don't raise - poll state tracking is not critical
+    
+    # ============================================================================
+    # BATCH TRACKING OPERATIONS
+    # ============================================================================
+    
+    async def create_batch_tracking(self, batch_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a batch tracking record
+        
+        Args:
+            batch_data: Dictionary containing:
+                - batch_id: Anthropic batch ID
+                - status: processing status
+                - story_ids: list of story IDs in this batch
+                - created_at: timestamp
+                - request_count: number of requests
+        """
+        try:
+            container = self._get_container(config.CONTAINER_BATCH_TRACKING)
+            result = container.create_item(body=batch_data)
+            logger.info(f"Created batch tracking record: {batch_data['batch_id']}")
+            return result
+        except Exception as e:
+            logger.error(f"Failed to create batch tracking: {e}")
+            raise
+    
+    async def get_batch_tracking(self, batch_id: str) -> Optional[Dict[str, Any]]:
+        """Get batch tracking record by batch ID"""
+        try:
+            container = self._get_container(config.CONTAINER_BATCH_TRACKING)
+            # Batch tracking uses batch_id as both id and partition key
+            item = container.read_item(item=batch_id, partition_key=batch_id)
+            return item
+        except exceptions.CosmosResourceNotFoundError:
+            return None
+        except Exception as e:
+            logger.error(f"Failed to get batch tracking {batch_id}: {e}")
+            raise
+    
+    async def update_batch_tracking(self, batch_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
+        """Update batch tracking record"""
+        try:
+            container = self._get_container(config.CONTAINER_BATCH_TRACKING)
+            
+            # Get existing record
+            existing = await self.get_batch_tracking(batch_id)
+            if not existing:
+                raise ValueError(f"Batch tracking record not found: {batch_id}")
+            
+            # Apply updates
+            existing.update(updates)
+            
+            # Upsert
+            result = container.upsert_item(body=existing)
+            logger.info(f"Updated batch tracking: {batch_id}")
+            return result
+        except Exception as e:
+            logger.error(f"Failed to update batch tracking {batch_id}: {e}")
+            raise
+    
+    async def query_pending_batches(self) -> List[Dict[str, Any]]:
+        """Query batches that are still in_progress"""
+        try:
+            container = self._get_container(config.CONTAINER_BATCH_TRACKING)
+            query = "SELECT * FROM c WHERE c.status = 'in_progress' ORDER BY c.created_at DESC"
+            items = list(container.query_items(
+                query=query,
+                enable_cross_partition_query=True
+            ))
+            return items
+        except Exception as e:
+            logger.error(f"Failed to query pending batches: {e}")
+            return []
 
 
 # Global instance

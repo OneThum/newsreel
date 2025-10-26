@@ -169,12 +169,16 @@ struct FeedView: View {
     @StateObject private var viewModel: FeedViewModel
     @State private var selectedStory: Story?
     @State private var showingSearch = false
-    @State private var showImages = true  // Load from preferences
+    @State private var showImages: Bool
     @Binding var notificationStoryId: String?
     
     init(notificationStoryId: Binding<String?> = .constant(nil)) {
         _viewModel = StateObject(wrappedValue: FeedViewModel())
         _notificationStoryId = notificationStoryId
+        // Initialize showImages from UserDefaults
+        let savedValue = UserDefaults.standard.bool(forKey: "showImages")
+        let hasValue = UserDefaults.standard.object(forKey: "showImages") != nil
+        _showImages = State(initialValue: hasValue ? savedValue : true)
     }
     
     var body: some View {
@@ -240,12 +244,16 @@ struct FeedView: View {
             // This prevents potential double-polling which was causing heating issues
         }
         .onAppear {
-            // Load images preference from UserDefaults
-            showImages = UserDefaults.standard.bool(forKey: "showImages", default: true)
+            // Reload images preference from UserDefaults (in case it was changed elsewhere)
+            let savedValue = UserDefaults.standard.bool(forKey: "showImages")
+            let hasValue = UserDefaults.standard.object(forKey: "showImages") != nil
+            showImages = hasValue ? savedValue : true
         }
         .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { _ in
             // Reload images preference when settings are changed
-            showImages = UserDefaults.standard.bool(forKey: "showImages", default: true)
+            let savedValue = UserDefaults.standard.bool(forKey: "showImages")
+            let hasValue = UserDefaults.standard.object(forKey: "showImages") != nil
+            showImages = hasValue ? savedValue : true
         }
         .onDisappear {
             // Stop polling when view disappears
@@ -989,6 +997,15 @@ struct SavedStoriesView: View {
     @EnvironmentObject var apiService: APIService
     @StateObject private var viewModel = SavedStoriesViewModel()
     @State private var selectedStory: Story?
+    @State private var showImages: Bool
+    
+    init() {
+        _viewModel = StateObject(wrappedValue: SavedStoriesViewModel())
+        // Initialize showImages from UserDefaults
+        let savedValue = UserDefaults.standard.bool(forKey: "showImages")
+        let hasValue = UserDefaults.standard.object(forKey: "showImages") != nil
+        _showImages = State(initialValue: hasValue ? savedValue : true)
+    }
     
     var body: some View {
         NavigationStack {
@@ -1061,7 +1078,7 @@ struct SavedStoriesView: View {
                                         onShare: {
                                             viewModel.shareStory(story)
                                         },
-                                        showImages: true // Pass preference
+                                        showImages: showImages // Pass preference
                                     )
                                 }
                             }
@@ -1076,7 +1093,7 @@ struct SavedStoriesView: View {
             .navigationTitle("Saved")
             .navigationBarTitleDisplayMode(.large)
             .sheet(item: $selectedStory) { story in
-                StoryDetailView(story: story, apiService: apiService)
+                StoryDetailView(story: story, apiService: apiService, showImages: showImages)
                     .environmentObject(authService)
             }
         }
@@ -1434,7 +1451,16 @@ struct SearchView: View {
     @State private var selectedStory: Story?
     @State private var searchCategory: NewsCategory?
     @FocusState private var isSearchFieldFocused: Bool
-    @State private var localShowImages = UserDefaults.standard.bool(forKey: "showImages", default: true)
+    @State private var localShowImages: Bool
+    
+    init(apiService: APIService, showImages: Bool) {
+        self.apiService = apiService
+        self.showImages = showImages
+        // Initialize localShowImages from UserDefaults
+        let savedValue = UserDefaults.standard.bool(forKey: "showImages")
+        let hasValue = UserDefaults.standard.object(forKey: "showImages") != nil
+        _localShowImages = State(initialValue: hasValue ? savedValue : true)
+    }
     
     var body: some View {
         NavigationStack {
@@ -1556,6 +1582,12 @@ struct SearchView: View {
                 if newValue.count >= 2 {
                     performSearch()
                 }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { _ in
+                // Reload images preference when settings are changed
+                let savedValue = UserDefaults.standard.bool(forKey: "showImages")
+                let hasValue = UserDefaults.standard.object(forKey: "showImages") != nil
+                localShowImages = hasValue ? savedValue : true
             }
         }
     }

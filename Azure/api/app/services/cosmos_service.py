@@ -1,7 +1,7 @@
 """Cosmos DB Service"""
 import logging
 from typing import List, Optional, Dict, Any
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from azure.cosmos import CosmosClient, exceptions
 from azure.cosmos.container import ContainerProxy
 from azure.cosmos.database import DatabaseProxy
@@ -75,9 +75,12 @@ class CosmosService:
                     enable_cross_partition_query=True
                 ))
             elif category:
-                query = """
+                # Query only recent stories (last 7 days) for better performance
+                seven_days_ago = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+                query = f"""
                     SELECT * FROM c 
                     WHERE c.category = @category
+                    AND c.last_updated >= '{seven_days_ago}'
                 """
                 parameters = [{"name": "@category", "value": category}]
                 items = list(container.query_items(
@@ -85,8 +88,11 @@ class CosmosService:
                     parameters=parameters
                 ))
             else:
-                query = """
+                # Query only recent stories (last 7 days) to avoid querying all 38,000+ stories
+                seven_days_ago = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+                query = f"""
                     SELECT * FROM c
+                    WHERE c.last_updated >= '{seven_days_ago}'
                 """
                 items = list(container.query_items(
                     query=query,
@@ -160,16 +166,14 @@ class CosmosService:
         """Query recent stories (BREAKING, DEVELOPING, and VERIFIED)"""
         try:
             container = self._get_container("story_clusters")
+            # Remove ORDER BY to ensure all fields are returned by Cosmos DB
+            # We'll sort in Python instead
             query = """
                 SELECT * FROM c
                 WHERE c.status IN ('BREAKING', 'DEVELOPING', 'VERIFIED')
-                ORDER BY c.last_updated DESC
-                OFFSET 0 LIMIT @limit
             """
-            parameters = [{"name": "@limit", "value": limit}]
             items = list(container.query_items(
                 query=query,
-                parameters=parameters,
                 enable_cross_partition_query=True
             ))
             
@@ -183,7 +187,11 @@ class CosmosService:
                 if 'source_articles' in first_item:
                     logger.info(f"   [COSMOS] First item source_articles length: {len(first_item['source_articles'])}")
             
-            return items
+            # Sort by last_updated in Python
+            items_sorted = sorted(items, key=lambda x: x.get('last_updated', ''), reverse=True)
+            
+            # Apply limit
+            return items_sorted[:limit]
         except Exception as e:
             logger.error(f"Error querying recent stories: {e}")
             raise

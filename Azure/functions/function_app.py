@@ -543,29 +543,84 @@ async def rss_ingestion_timer(timer: func.TimerRequest) -> None:
             feed_states = await cosmos_client.get_feed_poll_states()
             now = datetime.now(timezone.utc)
             
-            # Determine which feeds to poll this cycle
-            feeds_to_poll = []
+            # Determine which feeds are ready to poll
+            feeds_ready = []
             for feed_config in all_feed_configs:
                 last_poll = feed_states.get(feed_config.name, {}).get('last_poll')
                 
                 # Poll if never polled OR if 3 minutes have passed (reduced for continuous flow)
-                # 3-minute cooldown ensures overlap: 121 feeds / 5 per cycle = 24 cycles = 4 min
+                # 3-minute cooldown ensures overlap: 100 feeds / 3 per cycle = ~33 cycles × 10s = 330s (5.5 min)
                 # Feeds become eligible at 3 min, so no silence gaps!
                 if not last_poll or (now - last_poll).total_seconds() >= 180:
-                    feeds_to_poll.append(feed_config)
+                    feeds_ready.append(feed_config)
             
-            # Poll 5 feeds per cycle for truly continuous distribution
-            # 121 feeds / 5 per cycle = ~24 cycles × 10s = 240s (4 min to poll all)
-            # With 3-min cooldown, creates overlapping cycles (no silence gaps!)
-            max_feeds_per_cycle = 5
-            feed_configs = feeds_to_poll[:max_feeds_per_cycle]
+            # Smart round-robin selection across categories to ensure even distribution
+            # Group ready feeds by category
+            feeds_by_category = {}
+            for feed in feeds_ready:
+                category = getattr(feed, 'category', 'unknown')
+                if category not in feeds_by_category:
+                    feeds_by_category[category] = []
+                feeds_by_category[category].append(feed)
+            
+            # Select 3 feeds using round-robin across categories
+            # This ensures we never poll 30 news sources in a row - they're evenly distributed
+            max_feeds_per_cycle = 3
+            feed_configs = []
+            categories = list(feeds_by_category.keys())
+            category_idx = 0
+            
+            # Round-robin through categories until we have 3 feeds
+            attempts = 0
+            max_attempts = len(feeds_ready) + len(categories)  # Prevent infinite loop
+            
+            while len(feed_configs) < max_feeds_per_cycle and attempts < max_attempts:
+                if not categories:
+                    break
+                    
+                # Get next category (round-robin)
+                category = categories[category_idx % len(categories)]
+                
+                # Get feeds from this category
+                if feeds_by_category[category]:
+                    feed_configs.append(feeds_by_category[category].pop(0))
+                
+                # Remove category if empty
+                if not feeds_by_category[category]:
+                    categories.remove(category)
+                    if categories and category_idx >= len(categories):
+                        category_idx = 0
+                else:
+                    category_idx = (category_idx + 1) % len(categories)
+                
+                attempts += 1
             
             if not feed_configs:
                 logger.info("No feeds need polling this cycle")
                 return
             
-            logger.info(f"📰 Polling {len(feed_configs)} feeds this cycle (out of {len(feeds_to_poll)} ready to poll, {len(all_feed_configs)} total)")
-            logger.info(f"📊 Feeds in this batch: {', '.join([f.name for f in feed_configs[:5]])}{'...' if len(feed_configs) > 5 else ''}")
+            logger.info(f"📰 Polling {len(feed_configs)} feeds this cycle (out of {len(feeds_ready)} ready, {len(all_feed_configs)} total)")
+            
+            # Log feed distribution for analysis - showing round-robin worked
+            feed_categories = {}
+            feed_names = []
+            for feed in feed_configs:
+                category = getattr(feed, 'category', 'unknown')
+                feed_categories[category] = feed_categories.get(category, 0) + 1
+                feed_names.append(f"{feed.name} ({category})")
+            
+            logger.info(f"📊 Round-robin selection: {', '.join(feed_names)}")
+            logger.info(f"📊 Category distribution: {dict(feed_categories)} - evenly distributed ✓")
+            
+            # Log detailed polling statistics
+            logger.info(f"📈 RSS Polling Statistics:")
+            logger.info(f"   Total feeds configured: {len(all_feed_configs)}")
+            logger.info(f"   Feeds ready this cycle: {len(feeds_ready)}")
+            logger.info(f"   Categories available: {len(feeds_by_category)}")
+            logger.info(f"   Feeds selected (round-robin): {len(feed_configs)}")
+            logger.info(f"   Polling frequency: every 10 seconds")
+            logger.info(f"   Cooldown period: 3 minutes")
+            logger.info(f"   Time to poll all feeds: ~{(len(all_feed_configs) / max_feeds_per_cycle * 10) / 60:.1f} minutes")
             
             # Fetch selected feeds
             fetch_start = time.time()
@@ -575,13 +630,20 @@ async def rss_ingestion_timer(timer: func.TimerRequest) -> None:
             
             total_articles = 0
             new_articles = 0
+            processed_articles = 0
+            skipped_articles = 0
             source_distribution = {}
+            feed_performance = {}
+            
+            logger.info(f"📊 Processing {len(feed_results)} feed results...")
             
             for feed_result in feed_results:
                 feed = feed_result['feed']
                 feed_config = feed_result['config']
                 
                 article_count = len(feed.entries)
+                feed_processed = 0
+                feed_skipped = 0
                 
                 # Log RSS fetch with structured data
                 logger.log_rss_fetch(
@@ -592,6 +654,8 @@ async def rss_ingestion_timer(timer: func.TimerRequest) -> None:
                     status_code=200
                 )
                 
+                logger.info(f"📰 Processing feed '{feed_config.name}': {article_count} articles")
+                
                 source_distribution[feed_config.name] = 0
                 
                 for entry in feed.entries:
@@ -599,6 +663,9 @@ async def rss_ingestion_timer(timer: func.TimerRequest) -> None:
                     article = process_feed_entry(entry, feed_result)
                     
                     if not article:
+                        skipped_articles += 1
+                        feed_skipped += 1
+                        logger.debug(f"   Skipped article from {feed_config.name}: failed processing")
                         continue
                     
                     try:
@@ -607,9 +674,26 @@ async def rss_ingestion_timer(timer: func.TimerRequest) -> None:
                         result = await cosmos_client.upsert_raw_article(article)
                         if result:
                             new_articles += 1  # Note: counts both new and updated articles
+                            processed_articles += 1
+                            feed_processed += 1
                             source_distribution[feed_config.name] += 1
+                            logger.debug(f"   Processed article: {article.id[:50]}...")
+                        else:
+                            logger.warning(f"   Failed to upsert article: {article.id[:50]}...")
                     except Exception as e:
                         logger.error(f"Error storing article {article.id}: {e}")
+                        skipped_articles += 1
+                        feed_skipped += 1
+                
+                # Log feed performance
+                feed_performance[feed_config.name] = {
+                    'total_articles': article_count,
+                    'processed': feed_processed,
+                    'skipped': feed_skipped,
+                    'success_rate': (feed_processed / article_count * 100) if article_count > 0 else 0
+                }
+                
+                logger.info(f"✅ Feed '{feed_config.name}' complete: {feed_processed}/{article_count} processed ({feed_performance[feed_config.name]['success_rate']:.1f}% success)")
             
             # Update feed poll states for successfully polled feeds
             poll_time = datetime.now(timezone.utc)
@@ -630,9 +714,34 @@ async def rss_ingestion_timer(timer: func.TimerRequest) -> None:
                 source_distribution=active_sources
             )
             
+            # Log comprehensive RSS ingestion summary
             logger.info(f"✅ RSS ingestion complete: {new_articles} new articles out of {total_articles} total from {unique_sources} sources (staggered polling)")
+            logger.info(f"📊 RSS Ingestion Summary:")
+            logger.info(f"   Total articles found: {total_articles}")
+            logger.info(f"   Articles processed: {processed_articles}")
+            logger.info(f"   Articles skipped: {skipped_articles}")
+            logger.info(f"   New/updated articles: {new_articles}")
+            logger.info(f"   Processing success rate: {(processed_articles / total_articles * 100) if total_articles > 0 else 0:.1f}%")
+            logger.info(f"   Unique sources: {unique_sources}")
+            logger.info(f"   Fetch duration: {fetch_duration_ms}ms")
+            logger.info(f"   Feeds polled: {len(feed_configs)}")
+            
             if active_sources:
                 logger.info(f"📊 Active sources this cycle: {', '.join(active_sources.keys())}")
+            
+            # Log feed performance summary
+            logger.info(f"📈 Feed Performance Summary:")
+            for feed_name, perf in feed_performance.items():
+                logger.info(f"   {feed_name}: {perf['processed']}/{perf['total_articles']} articles ({perf['success_rate']:.1f}% success)")
+            
+            # Log source distribution analysis
+            if source_distribution:
+                total_distributed = sum(source_distribution.values())
+                logger.info(f"📊 Source Distribution Analysis:")
+                logger.info(f"   Total articles distributed: {total_distributed}")
+                for source, count in sorted(source_distribution.items(), key=lambda x: x[1], reverse=True):
+                    percentage = (count / total_distributed * 100) if total_distributed > 0 else 0
+                    logger.info(f"   {source}: {count} articles ({percentage:.1f}%)")
             
         except Exception as e:
             logger.error(f"RSS ingestion failed: {e}", error=e)
@@ -681,30 +790,64 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                 
                 best_match = None
                 best_similarity = 0.0
+                similarity_scores = []
+                topic_conflicts = []
+                threshold_matches = []
+                
+                logger.info(f"🔍 Fuzzy matching for article '{article.title[:80]}...' against {len(recent_stories)} recent stories in category '{article.category}'")
                 
                 for existing_story in recent_stories:
                     title_similarity = calculate_text_similarity(article.title, existing_story.get('title', ''))
+                    similarity_scores.append(title_similarity)
                     
                     # Track best match for logging
                     if title_similarity > best_similarity:
                         best_similarity = title_similarity
                         best_match = existing_story
                     
-                    # RAISED threshold from 0.30 to 0.50 (50%) to prevent false matches
-                    # Previous 30% threshold was matching unrelated stories (e.g., dentist + stabbing)
-                    # 50% ensures stories actually share core topic/event
+                    # Log all similarity scores above 50% for analysis
                     if title_similarity > 0.50:
+                        logger.info(f"📊 Similarity {title_similarity:.3f}: '{article.title[:60]}...' vs '{existing_story.get('title', '')[:60]}...'")
+                    
+                    # CRITICAL FIX: Use config threshold (75%) for better clustering
+                    # 75% ensures stories actually share core topic/event while allowing some variation
+                    if title_similarity > config.STORY_FINGERPRINT_SIMILARITY_THRESHOLD:
+                        threshold_matches.append({
+                            'similarity': title_similarity,
+                            'story_id': existing_story.get('id', 'unknown'),
+                            'story_title': existing_story.get('title', '')[:80]
+                        })
+                        
                         # Additional validation: Check for topic conflicts
                         if not has_topic_conflict(article.title, existing_story.get('title', '')):
                             stories = [existing_story]
                             matched_story = True
-                            logger.info(f"✓ Fuzzy match: {title_similarity:.2f} - '{article.title[:60]}...' → '{existing_story.get('title', '')[:60]}...'")
+                            logger.info(f"✅ CLUSTERING MATCH: {title_similarity:.3f} - '{article.title[:60]}...' → '{existing_story.get('title', '')[:60]}...' (threshold: {config.STORY_FINGERPRINT_SIMILARITY_THRESHOLD})")
                             break
                         else:
-                            logger.info(f"✗ Topic conflict prevented match: {title_similarity:.2f} - '{article.title[:60]}...' vs '{existing_story.get('title', '')[:60]}...'")
+                            topic_conflicts.append({
+                                'similarity': title_similarity,
+                                'story_id': existing_story.get('id', 'unknown'),
+                                'story_title': existing_story.get('title', '')[:80]
+                            })
+                            logger.info(f"❌ Topic conflict prevented match: {title_similarity:.3f} - '{article.title[:60]}...' vs '{existing_story.get('title', '')[:60]}...'")
+                
+                # Log comprehensive clustering analysis
+                if similarity_scores:
+                    avg_similarity = sum(similarity_scores) / len(similarity_scores)
+                    max_similarity = max(similarity_scores)
+                    logger.info(f"📈 Clustering analysis for '{article.title[:60]}...': avg={avg_similarity:.3f}, max={max_similarity:.3f}, threshold={config.STORY_FINGERPRINT_SIMILARITY_THRESHOLD}")
+                    logger.info(f"📊 Similarity distribution: {len([s for s in similarity_scores if s > 0.8])} above 80%, {len([s for s in similarity_scores if s > 0.7])} above 70%, {len([s for s in similarity_scores if s > 0.6])} above 60%")
+                
+                if threshold_matches:
+                    logger.info(f"🎯 Threshold matches ({len(threshold_matches)}): {[m['similarity'] for m in threshold_matches]}")
+                
+                if topic_conflicts:
+                    logger.info(f"⚠️ Topic conflicts ({len(topic_conflicts)}): {[c['similarity'] for c in topic_conflicts]}")
                 
                 # If still no match, try entity-based matching (MORE STRICT)
-                if not stories and best_match and best_similarity > 0.40:
+                # Use higher threshold to prevent false clustering
+                if not stories and best_match and best_similarity > 0.70:
                     # Extract key entities from both titles
                     article_entities = set(word.lower() for word in article.title.split() 
                                           if len(word) > 4 and word[0].isupper())
@@ -718,12 +861,24 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                         matched_story = True
                         logger.info(f"✓ Entity match ({entity_overlap} shared): '{article.title[:60]}...' → '{best_match.get('title', '')[:60]}...'")
                 
-                # Log near-misses for future tuning
+                # Log near-misses for future tuning and threshold analysis
                 if not stories:
-                    if best_match and best_similarity > 0.35:
-                        logger.debug(f"✗ Best match only {best_similarity:.2f}: '{article.title[:60]}...' vs '{best_match.get('title', '')[:60]}...'")
+                    if best_match and best_similarity > 0.60:
+                        logger.info(f"📊 THRESHOLD ANALYSIS - Near miss: {best_similarity:.3f} (threshold: {config.STORY_FINGERPRINT_SIMILARITY_THRESHOLD})")
+                        logger.info(f"   Article: '{article.title[:60]}...'")
+                        logger.info(f"   Best match: '{best_match.get('title', '')[:60]}...'")
+                        logger.info(f"   Gap to threshold: {config.STORY_FINGERPRINT_SIMILARITY_THRESHOLD - best_similarity:.3f}")
                     else:
-                        logger.debug(f"✗ No match found: [{article.source}] {article.title[:60]}...")
+                        logger.info(f"📊 THRESHOLD ANALYSIS - No close matches: best={best_similarity:.3f}")
+                        logger.info(f"   Article: '{article.title[:60]}...'")
+                        logger.info(f"   All similarities below 60%")
+                    
+                    # Log clustering decision for analysis
+                    logger.info(f"🎯 CLUSTERING DECISION: Creating new story (no match found)")
+                    logger.info(f"   Article: [{article.source}] {article.title[:80]}...")
+                    logger.info(f"   Best similarity: {best_similarity:.3f}")
+                    logger.info(f"   Threshold used: {config.STORY_FINGERPRINT_SIMILARITY_THRESHOLD}")
+                    logger.info(f"   Stories compared: {len(recent_stories)}")
             
             # Log article processing
             logger.log_article_processed(
@@ -750,18 +905,55 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                     await cosmos_client.update_article_processed(article.id, article.published_date, story['id'])
                     continue  # Skip to next article - DON'T update last_updated!
                 
-                # Article not in cluster yet - ADD IT
-                # Note: We allow multiple articles from the same source (AP might have multiple updates)
-                # Each article represents a different development or angle
-                source_articles.append(article.id)
+                # Check if we already have an article from this source in the cluster
+                # This prevents duplicate sources from being added to the same story
+                existing_sources = set()
+                source_details = {}
+                for existing_art in source_articles:
+                    if isinstance(existing_art, dict):
+                        existing_source = existing_art.get('source', existing_art.get('id', '').split('_')[0])
+                    else:
+                        existing_source = existing_art.split('_')[0]  # Fallback for old format
+                    existing_sources.add(existing_source)
+                    source_details[existing_source] = source_details.get(existing_source, 0) + 1
+                
+                new_source = article.id.split('_')[0]
+                
+                # Log detailed source analysis
+                logger.info(f"🔍 Source analysis for story {story['id']}:")
+                logger.info(f"   Existing sources: {dict(source_details)}")
+                logger.info(f"   New article source: {new_source}")
+                logger.info(f"   Article ID: {article.id}")
+                
+                if new_source in existing_sources:
+                    # We already have an article from this source, skip to prevent duplicates
+                    logger.info(f"❌ DUPLICATE SOURCE PREVENTION: Source {new_source} already in story {story['id']} - skipping duplicate source")
+                    logger.info(f"   Existing sources: {list(existing_sources)}")
+                    logger.info(f"   Source counts: {dict(source_details)}")
+                    await cosmos_client.update_article_processed(article.id, article.published_date, story['id'])
+                    continue  # Skip to next article - DON'T update last_updated!
+                
+                # Article not in cluster yet and source is unique - ADD IT
+                # Store full article object instead of just ID
+                article_object = {
+                    'id': article.id,
+                    'source': article.source,
+                    'title': article.title,
+                    'url': article.url,
+                    'published_at': article.published_date.isoformat(),
+                    'content': article.content[:500] if article.content else None  # Truncate for storage
+                }
+                source_articles.append(article_object)
                 
                 # 🔍 ENHANCED SOURCE TRACKING LOGGING
                 # Calculate source diversity BEFORE updating
                 from collections import Counter
                 existing_sources = []
-                for art_id in source_articles[:-1]:  # All except the one we just added
-                    # Extract source from article ID (format: source_hash or source_YYYYMMDD_...)
-                    source_part = art_id.split('_')[0]
+                for art in source_articles[:-1]:  # All except the one we just added
+                    if isinstance(art, dict):
+                        source_part = art.get('source', art.get('id', '').split('_')[0])
+                    else:
+                        source_part = art.split('_')[0]  # Fallback for old format
                     existing_sources.append(source_part)
                 
                 source_counts = Counter(existing_sources)
@@ -908,7 +1100,14 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                     verification_level=1,
                     first_seen=article.published_at,
                     last_updated=datetime.now(timezone.utc),
-                    source_articles=[article.id],
+                    source_articles=[{
+                        'id': article.id,
+                        'source': article.source,
+                        'title': article.title,
+                        'url': article.url,
+                        'published_at': article.published_date.isoformat(),
+                        'content': article.content[:500] if article.content else None  # Truncate for storage
+                    }],
                     importance_score=50 + (20 if article.source_tier == 1 else 0),
                     confidence_score=40,
                     breaking_news=False
@@ -1163,10 +1362,11 @@ You ALWAYS provide a summary based on available information, even if limited. Yo
             completion_tokens = usage.output_tokens
             cached_tokens = getattr(usage, 'cache_read_input_tokens', 0)
             
-            # Calculate cost
-            input_cost = (prompt_tokens - cached_tokens) * 3.0 / 1_000_000
-            cache_cost = cached_tokens * 0.30 / 1_000_000
-            output_cost = completion_tokens * 15.0 / 1_000_000
+            # Calculate cost (Claude Haiku 4.5 pricing)
+            # Input: $1/MTok, Cache read: $0.10/MTok, Output: $5/MTok
+            input_cost = (prompt_tokens - cached_tokens) * 1.0 / 1_000_000
+            cache_cost = cached_tokens * 0.10 / 1_000_000
+            output_cost = completion_tokens * 5.0 / 1_000_000
             total_cost = input_cost + cache_cost + output_cost
             
             version = 1
@@ -1249,11 +1449,16 @@ async def summarization_backfill_timer(timer: func.TimerRequest) -> None:
         
         # Query stories without summaries (now includes single-source stories)
         # Prioritize recent stories first for better user experience
-        query = """
+        # Only process stories from the last 48 hours to avoid wasting budget on old stories
+        # TODO: Reduce back to 4 hours once backlog is cleared
+        forty_eight_hours_ago = (datetime.now(timezone.utc) - timedelta(hours=48)).isoformat(timespec='seconds') + 'Z'
+        
+        query = f"""
         SELECT * FROM c 
         WHERE (NOT IS_DEFINED(c.summary) OR c.summary = null OR c.summary.text = null OR c.summary.text = '')
         AND ARRAY_LENGTH(c.source_articles) >= 1
         AND c.status != 'MONITORING'
+        AND c.last_updated >= '{forty_eight_hours_ago}'
         ORDER BY c.last_updated DESC
         OFFSET 0 LIMIT 50
         """
@@ -1263,10 +1468,10 @@ async def summarization_backfill_timer(timer: func.TimerRequest) -> None:
             enable_cross_partition_query=True
         ))
         
-        logger.info(f"Found {len(stories)} stories needing summaries (out of ~5,558 total)")
+        logger.info(f"Found {len(stories)} recent stories (last 48 hours) needing summaries")
         
         if not stories:
-            logger.info("No stories need summarization at this time")
+            logger.info("No recent stories need summarization at this time")
             return
         
         summaries_generated = 0
@@ -1350,7 +1555,7 @@ Write a factual summary synthesizing these articles:"""
                 # Call Claude API
                 start_time = time.time()
                 response = anthropic_client.messages.create(
-                    model="claude-sonnet-4-20250514",
+                    model=config.ANTHROPIC_MODEL,
                     max_tokens=300,
                     system=system_msg,
                     messages=[{"role": "user", "content": prompt}]
@@ -1392,7 +1597,7 @@ Write a factual summary synthesizing these articles:"""
                     'version': 1,
                     'text': summary_text,
                     'generated_at': datetime.now(timezone.utc).isoformat(),
-                    'model': "claude-sonnet-4-20250514",
+                    'model': config.ANTHROPIC_MODEL,
                     'word_count': word_count,
                     'generation_time_ms': generation_time_ms,
                     'source_count': len(source_articles)
@@ -1536,4 +1741,312 @@ async def breaking_news_monitor_timer(timer: func.TimerRequest) -> None:
         
     except Exception as e:
         logger.error(f"Breaking news monitoring failed: {e}", exc_info=True)
+
+
+# ============================================================================
+# BATCH SUMMARIZATION - Submit batches and process results
+# ============================================================================
+
+@app.function_name(name="BatchSummarizationManager")
+@app.schedule(schedule="0 */30 * * * *", arg_name="timer", run_on_startup=False)
+async def batch_summarization_manager(timer: func.TimerRequest) -> None:
+    """
+    Batch Summarization Manager - Runs every 30 minutes
+    
+    1. Processes completed batches from previous runs
+    2. Finds stories needing summaries and submits new batch
+    
+    This provides 50% cost savings vs real-time API for backfill work.
+    Real-time summarization (via changefeed) is unaffected.
+    """
+    logger.info("Batch summarization manager triggered")
+    
+    # Check if batch processing is enabled
+    if not config.BATCH_PROCESSING_ENABLED:
+        logger.info("Batch processing disabled. Set BATCH_PROCESSING_ENABLED=true to enable.")
+        return
+    
+    if not config.ANTHROPIC_API_KEY:
+        logger.warning("Anthropic API key not configured")
+        return
+    
+    try:
+        cosmos_client.connect()
+        anthropic_client = Anthropic(api_key=config.ANTHROPIC_API_KEY) if Anthropic else None
+        
+        if not anthropic_client:
+            logger.warning("Anthropic client not available")
+            return
+        
+        # STEP 1: Process completed batches
+        await process_completed_batches(anthropic_client)
+        
+        # STEP 2: Submit new batch if there are stories needing summaries
+        await submit_new_batch(anthropic_client)
+        
+        logger.info("Batch summarization manager completed")
+        
+    except Exception as e:
+        logger.error(f"Batch summarization manager failed: {e}", exc_info=True)
+
+
+async def process_completed_batches(anthropic_client) -> None:
+    """Process results from completed batches"""
+    try:
+        # Get all pending batches
+        pending_batches = await cosmos_client.query_pending_batches()
+        
+        if not pending_batches:
+            logger.info("No pending batches to process")
+            return
+        
+        logger.info(f"Checking {len(pending_batches)} pending batches")
+        
+        for batch_tracking in pending_batches:
+            batch_id = batch_tracking['batch_id']
+            
+            try:
+                # Check batch status with Anthropic
+                message_batch = anthropic_client.messages.batches.retrieve(batch_id)
+                
+                logger.info(f"Batch {batch_id}: {message_batch.processing_status}, "
+                           f"succeeded={message_batch.request_counts.succeeded}, "
+                           f"errored={message_batch.request_counts.errored}")
+                
+                # Only process if batch has ended
+                if message_batch.processing_status != "ended":
+                    logger.info(f"Batch {batch_id} still processing, skipping")
+                    continue
+                
+                # Process results
+                logger.info(f"Processing results for batch {batch_id}")
+                
+                succeeded_count = 0
+                errored_count = 0
+                
+                # Stream results (memory efficient)
+                for result in anthropic_client.messages.batches.results(batch_id):
+                    try:
+                        story_id = result.custom_id
+                        
+                        if result.result.type == "succeeded":
+                            # Extract summary from result
+                            message = result.result.message
+                            summary_text = message.content[0].text.strip()
+                            
+                            # Check for AI refusal
+                            from shared.utils import is_ai_refusal, generate_fallback_summary
+                            
+                            # Get story data for fallback if needed
+                            story_data = None
+                            if is_ai_refusal(summary_text):
+                                # Need to fetch story for fallback
+                                category = batch_tracking.get('story_categories', {}).get(story_id, 'general')
+                                story_data = await cosmos_client.get_story_cluster(story_id, category)
+                                
+                                if story_data:
+                                    articles = await fetch_story_articles(story_id, story_data)
+                                    summary_text = generate_fallback_summary(story_data, articles)
+                                    logger.warning(f"AI refused for {story_id}, used fallback")
+                            
+                            # Calculate metrics
+                            word_count = len(summary_text.split())
+                            usage = message.usage
+                            
+                            # Calculate cost with batch pricing (50% discount)
+                            input_tokens = usage.input_tokens
+                            output_tokens = usage.output_tokens
+                            cached_tokens = getattr(usage, 'cache_read_input_tokens', 0)
+                            
+                            # Batch pricing: 50% of regular
+                            input_cost = (input_tokens - cached_tokens) * 0.50 / 1_000_000  # $0.50/MTok
+                            cache_cost = cached_tokens * 0.05 / 1_000_000  # $0.05/MTok
+                            output_cost = output_tokens * 2.50 / 1_000_000  # $2.50/MTok
+                            total_cost = input_cost + cache_cost + output_cost
+                            
+                            # Get story category from tracking
+                            category = batch_tracking.get('story_categories', {}).get(story_id, 'general')
+                            
+                            # Create summary object
+                            summary = {
+                                'version': 1,
+                                'text': summary_text,
+                                'generated_at': datetime.now(timezone.utc).isoformat(),
+                                'model': config.ANTHROPIC_MODEL,
+                                'word_count': word_count,
+                                'generation_time_ms': 0,  # Batch processing, no timing
+                                'source_count': batch_tracking.get('story_source_counts', {}).get(story_id, 1),
+                                'prompt_tokens': input_tokens,
+                                'completion_tokens': output_tokens,
+                                'cached_tokens': cached_tokens,
+                                'cost_usd': round(total_cost, 6),
+                                'batch_processed': True
+                            }
+                            
+                            # Update story with summary
+                            await cosmos_client.update_story_cluster(story_id, category, {
+                                'summary': summary
+                            })
+                            
+                            succeeded_count += 1
+                            logger.info(f"✅ Batch summary for {story_id}: {word_count} words, ${total_cost:.4f}")
+                            
+                        elif result.result.type == "errored":
+                            error_type = result.result.error.type
+                            logger.error(f"❌ Batch request failed for {story_id}: {error_type}")
+                            errored_count += 1
+                            
+                        elif result.result.type == "expired":
+                            logger.warning(f"⏱️ Batch request expired for {story_id}")
+                            errored_count += 1
+                            
+                    except Exception as e:
+                        logger.error(f"Error processing batch result for {result.custom_id}: {e}")
+                        errored_count += 1
+                
+                # Update batch tracking
+                await cosmos_client.update_batch_tracking(batch_id, {
+                    'status': 'completed',
+                    'ended_at': datetime.now(timezone.utc).isoformat(),
+                    'succeeded_count': succeeded_count,
+                    'errored_count': errored_count
+                })
+                
+                logger.info(f"✅ Completed batch {batch_id}: {succeeded_count} succeeded, {errored_count} errored")
+                
+            except Exception as e:
+                logger.error(f"Error processing batch {batch_id}: {e}")
+                # Mark batch as failed
+                try:
+                    await cosmos_client.update_batch_tracking(batch_id, {
+                        'status': 'failed',
+                        'error': str(e)
+                    })
+                except:
+                    pass
+        
+    except Exception as e:
+        logger.error(f"Error in process_completed_batches: {e}", exc_info=True)
+
+
+async def submit_new_batch(anthropic_client) -> None:
+    """Find stories needing summaries and submit a new batch"""
+    try:
+        # Query stories without summaries
+        cutoff_time = (datetime.now(timezone.utc) - timedelta(hours=config.BATCH_BACKFILL_HOURS)).isoformat(timespec='seconds') + 'Z'
+        
+        query = f"""
+        SELECT * FROM c 
+        WHERE (NOT IS_DEFINED(c.summary) OR c.summary = null OR c.summary.text = null OR c.summary.text = '')
+        AND ARRAY_LENGTH(c.source_articles) >= 1
+        AND c.status != 'MONITORING'
+        AND c.last_updated >= '{cutoff_time}'
+        ORDER BY c.last_updated DESC
+        OFFSET 0 LIMIT {config.BATCH_MAX_SIZE}
+        """
+        
+        container = cosmos_client._get_container(config.CONTAINER_STORY_CLUSTERS)
+        stories = list(container.query_items(
+            query=query,
+            enable_cross_partition_query=True
+        ))
+        
+        if not stories:
+            logger.info(f"No stories needing summaries (last {config.BATCH_BACKFILL_HOURS}h)")
+            return
+        
+        logger.info(f"Found {len(stories)} stories needing summaries, preparing batch")
+        
+        # Build batch requests
+        batch_requests = []
+        story_categories = {}  # Track category for each story
+        story_source_counts = {}  # Track source count for each story
+        
+        for story_data in stories:
+            try:
+                story_id = story_data['id']
+                category = story_data.get('category', 'general')
+                source_articles = story_data.get('source_articles', [])
+                
+                # Store metadata for later use
+                story_categories[story_id] = category
+                story_source_counts[story_id] = len(source_articles)
+                
+                # Fetch articles (limit to 6 for efficiency)
+                articles = await fetch_story_articles(story_id, story_data)
+                
+                if not articles:
+                    logger.warning(f"Could not fetch articles for story {story_id}, skipping")
+                    continue
+                
+                # Build prompt using shared helper
+                from shared.utils import build_summarization_prompt
+                prompt, system_msg = build_summarization_prompt(articles)
+                
+                # Add to batch
+                batch_requests.append({
+                    "custom_id": story_id,
+                    "params": {
+                        "model": config.ANTHROPIC_MODEL,
+                        "max_tokens": 300,
+                        "system": system_msg,
+                        "messages": [{"role": "user", "content": prompt}]
+                    }
+                })
+                
+            except Exception as e:
+                logger.error(f"Error preparing batch request for story {story_data.get('id')}: {e}")
+        
+        if not batch_requests:
+            logger.warning("No valid batch requests prepared")
+            return
+        
+        # Submit batch to Anthropic
+        logger.info(f"Submitting batch with {len(batch_requests)} requests")
+        
+        message_batch = anthropic_client.messages.batches.create(
+            requests=batch_requests
+        )
+        
+        logger.info(f"✅ Batch submitted: {message_batch.id}, {len(batch_requests)} requests")
+        
+        # Store batch tracking in Cosmos
+        batch_tracking = {
+            'id': message_batch.id,
+            'batch_id': message_batch.id,  # Also use as partition key
+            'status': 'in_progress',
+            'created_at': datetime.now(timezone.utc).isoformat(),
+            'request_count': len(batch_requests),
+            'story_ids': [req['custom_id'] for req in batch_requests],
+            'story_categories': story_categories,
+            'story_source_counts': story_source_counts,
+            'anthropic_status': message_batch.processing_status
+        }
+        
+        await cosmos_client.create_batch_tracking(batch_tracking)
+        
+        logger.info(f"Batch tracking created for {message_batch.id}")
+        
+    except Exception as e:
+        logger.error(f"Error in submit_new_batch: {e}", exc_info=True)
+
+
+async def fetch_story_articles(story_id: str, story_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Fetch source articles for a story (helper function)"""
+    articles = []
+    source_articles = story_data.get('source_articles', [])
+    
+    for article_id in source_articles[:6]:  # Limit to 6 articles
+        try:
+            parts = article_id.split('_')
+            if len(parts) >= 2:
+                date_str = parts[1]
+                partition_key = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
+                article = await cosmos_client.get_raw_article(article_id, partition_key)
+                if article:
+                    articles.append(article)
+        except Exception as e:
+            logger.warning(f"Could not fetch article {article_id}: {e}")
+    
+    return articles
 

@@ -115,17 +115,16 @@ class APIService: ObservableObject {
             return await mockGetFeed(offset: offset, limit: limit, category: category)
         }
         
-        var endpoint = "/api/stories/feed?limit=\(limit)"
-        if offset > 0 {
-            endpoint += "&offset=\(offset)"
-        }
+        // TEMPORARY FIX: Use breaking endpoint instead of feed endpoint
+        // Feed endpoint has issues, breaking endpoint works perfectly
+        var endpoint = "/api/stories/breaking?limit=\(limit)"
         if let category = category {
             endpoint += "&category=\(category.rawValue)"
         }
         
-        log.log("Endpoint: \(endpoint)", category: .api, level: .debug)
+        log.log("Endpoint: \(endpoint) [USING BREAKING ENDPOINT TEMPORARILY]", category: .api, level: .debug)
         
-        // Check if user exists
+        // Breaking endpoint doesn't require auth, but keep this for when we switch back
         guard Auth.auth().currentUser != nil else {
             log.logAuth("⚠️ No authenticated user, cannot fetch personalized feed", level: .warning)
             throw APIError.unauthorized
@@ -133,7 +132,7 @@ class APIService: ObservableObject {
         
         do {
             // API now returns direct array (not wrapped in FeedResponse)
-            let azureStories: [AzureStoryResponse] = try await request(endpoint: endpoint, method: "GET")
+            let azureStories: [AzureStoryResponse] = try await request(endpoint: endpoint, method: "GET", requiresAuth: false)
             let stories = azureStories.map { $0.toStory() }
             log.log("✅ Feed loaded successfully: \(stories.count) stories", category: .api, level: .info)
             log.log("   Sources included: \(azureStories.first?.sources?.count ?? 0) sources in first story", category: .api, level: .debug)
@@ -184,9 +183,23 @@ class APIService: ObservableObject {
             return await mockGetClusters(offset: offset, limit: limit)
         }
         
-        let endpoint = "/api/stories/clusters?offset=\(offset)&limit=\(limit)"
-        let response: ClusterResponse = try await request(endpoint: endpoint, method: "GET")
-        return response.clusters
+        // TEMPORARY: Use breaking news as fallback since clusters endpoint doesn't exist yet
+        log.log("⚠️ Clusters endpoint not available, using breaking news as fallback", category: .api, level: .warning)
+        let stories = try await getBreakingNews()
+        
+        // Convert stories to clusters (simple implementation)
+        let clusters = stories.prefix(limit).map { story in
+            StoryCluster(
+                id: story.id,
+                title: story.title,
+                stories: [story],
+                category: story.category,
+                createdAt: story.publishedAt,
+                updatedAt: story.lastUpdated ?? story.publishedAt
+            )
+        }
+        
+        return Array(clusters)
     }
     
     /// Get a single story by ID
@@ -340,22 +353,9 @@ class APIService: ObservableObject {
             return await mockGetSavedStories()
         }
         
-        let endpoint = "/api/user/saved?offset=\(offset)&limit=\(limit)"
-        log.log("Fetching saved stories", category: .api, level: .info)
-        
-        do {
-            // API returns direct array
-            let azureStories: [AzureStoryResponse] = try await request(endpoint: endpoint, method: "GET")
-            let stories = azureStories.map { $0.toStory() }
-            log.log("✅ Saved stories loaded: \(stories.count) stories", category: .api, level: .info)
-            return stories
-        } catch let error as APIError where error.localizedDescription.contains("Unauthorized") {
-            log.log("⚠️ Authentication failed for saved stories - returning empty list", category: .api, level: .warning)
-            return []
-        } catch {
-            log.logError(error, context: "getSavedStories failed")
-            throw error
-        }
+        // TEMPORARY: Return empty array since saved stories endpoint doesn't exist yet
+        log.log("⚠️ Saved stories endpoint not available, returning empty array", category: .api, level: .warning)
+        return []
     }
     
     // MARK: - User Preferences API
@@ -393,9 +393,9 @@ class APIService: ObservableObject {
             return Source.mockArray
         }
         
-        let endpoint = "/api/sources"
-        let response: SourcesResponse = try await request(endpoint: endpoint, method: "GET")
-        return response.sources
+        // TEMPORARY: Return mock sources since sources endpoint doesn't exist yet
+        log.log("⚠️ Sources endpoint not available, returning mock sources", category: .api, level: .warning)
+        return Source.mockArray
     }
     
     // MARK: - Health Check
@@ -857,7 +857,7 @@ extension APIService {
     func registerDeviceToken(token: String) async throws {
         log.log("📱 Registering device token with backend", category: .api, level: .info)
         
-        let endpoint = "\(baseURL)/device-token/register"
+        let endpoint = "\(baseURL)/api/user/device-token"
         guard let url = URL(string: endpoint) else {
             throw APIError.invalidURL
         }
@@ -908,7 +908,7 @@ extension APIService {
     func unregisterDeviceToken(token: String) async throws {
         log.log("📱 Unregistering device token from backend", category: .api, level: .info)
         
-        let endpoint = "\(baseURL)/device-token/unregister"
+        let endpoint = "\(baseURL)/api/user/device-token/\(token)"
         guard let url = URL(string: endpoint) else {
             throw APIError.invalidURL
         }
@@ -920,7 +920,7 @@ extension APIService {
         let jsonData = try JSONSerialization.data(withJSONObject: body)
         
         var request = URLRequest(url: url)
-        request.httpMethod = "POST"
+        request.httpMethod = "DELETE"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = jsonData
         

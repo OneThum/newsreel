@@ -532,161 +532,6 @@ def get_all_feeds() -> List[RSSFeedConfig]:
         ),
         
         # ========================================
-        # US NEWS (15 feeds)
-        # ========================================
-        
-        RSSFeedConfig(
-            id="cnn",
-            name="CNN Top Stories",
-            url="http://rss.cnn.com/rss/cnn_topstories.rss",
-            source_id="cnn",
-            category="us",
-            tier=2,
-            language="en",
-            country="US"
-        ),
-        RSSFeedConfig(
-            id="npr",
-            name="NPR News",
-            url="https://feeds.npr.org/1001/rss.xml",
-            source_id="npr",
-            category="us",
-            tier=2,
-            language="en",
-            country="US"
-        ),
-        RSSFeedConfig(
-            id="nyt",
-            name="New York Times HomePage",
-            url="https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",
-            source_id="nyt",
-            category="us",
-            tier=2,
-            language="en",
-            country="US"
-        ),
-        RSSFeedConfig(
-            id="washpost",
-            name="Washington Post National",
-            url="https://feeds.washingtonpost.com/rss/national",
-            source_id="washingtonpost",
-            category="us",
-            tier=2,
-            language="en",
-            country="US"
-        ),
-        RSSFeedConfig(
-            id="usatoday",
-            name="USA Today News",
-            url="http://rssfeeds.usatoday.com/usatoday-NewsTopStories",
-            source_id="usatoday",
-            category="us",
-            tier=2,
-            language="en",
-            country="US"
-        ),
-        RSSFeedConfig(
-            id="cbs",
-            name="CBS News",
-            url="https://www.cbsnews.com/latest/rss/main",
-            source_id="cbs",
-            category="us",
-            tier=2,
-            language="en",
-            country="US"
-        ),
-        RSSFeedConfig(
-            id="nbc",
-            name="NBC News Top Stories",
-            url="https://feeds.nbcnews.com/nbcnews/public/news",
-            source_id="nbc",
-            category="us",
-            tier=2,
-            language="en",
-            country="US"
-        ),
-        RSSFeedConfig(
-            id="abc",
-            name="ABC News Top Stories",
-            url="https://abcnews.go.com/abcnews/topstories",
-            source_id="abc",
-            category="us",
-            tier=2,
-            language="en",
-            country="US"
-        ),
-        RSSFeedConfig(
-            id="fox",
-            name="Fox News Latest",
-            url="https://moxie.foxnews.com/google-publisher/latest.xml",
-            source_id="fox",
-            category="us",
-            tier=2,
-            language="en",
-            country="US"
-        ),
-        RSSFeedConfig(
-            id="politico_us",
-            name="Politico",
-            url="https://www.politico.com/rss/politics08.xml",
-            source_id="politico",
-            category="us",
-            tier=2,
-            language="en",
-            country="US"
-        ),
-        RSSFeedConfig(
-            id="thehill",
-            name="The Hill",
-            url="https://thehill.com/feed/",
-            source_id="thehill",
-            category="us",
-            tier=2,
-            language="en",
-            country="US"
-        ),
-        RSSFeedConfig(
-            id="latimes",
-            name="Los Angeles Times",
-            url="https://www.latimes.com/rss2.0.xml",
-            source_id="latimes",
-            category="us",
-            tier=2,
-            language="en",
-            country="US"
-        ),
-        RSSFeedConfig(
-            id="chicagotribune",
-            name="Chicago Tribune",
-            url="https://www.chicagotribune.com/arcio/rss/",
-            source_id="chicagotribune",
-            category="us",
-            tier=2,
-            language="en",
-            country="US"
-        ),
-        RSSFeedConfig(
-            id="bostonglobe",
-            name="Boston Globe",
-            url="https://www.bostonglobe.com/rss/",
-            source_id="bostonglobe",
-            category="us",
-            tier=2,
-            language="en",
-            country="US"
-        ),
-        RSSFeedConfig(
-            id="miamiherald",
-            name="Miami Herald",
-            url="https://www.miamiherald.com/news/?widgetName=rssfeed&widgetContentId=712015",
-            source_id="miamiherald",
-            category="us",
-            tier=2,
-            language="en",
-            country="US"
-        ),
-        
-        # ========================================
         # AUSTRALIAN & ASIA-PACIFIC NEWS (10 feeds)
         # ========================================
         
@@ -1268,12 +1113,28 @@ def get_initial_feeds() -> List[RSSFeedConfig]:
     Get initial feeds for testing
     Using verified working feeds only
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
     # Import from working_feeds module
     try:
         from .working_feeds import get_verified_working_feeds
-        return get_verified_working_feeds()
-    except:
-        # Fallback to BBC only (we know this works)
+        feeds = get_verified_working_feeds()
+        logger.info(f"✅ Loaded {len(feeds)} verified working feeds")
+        return feeds
+    except ImportError as e:
+        logger.error(f"❌ Failed to import working_feeds: {e}")
+        # Fallback to manually defined feeds if import fails
+        logger.warning("Falling back to manual feed definitions")
+        all_feeds = get_all_feeds()
+        bbc_feeds = [feed for feed in all_feeds if feed.source_id in ["bbc", "bbc_uk", "bbc_tech", "bbc_business", "bbc_science"]]
+        guardian_feeds = [feed for feed in all_feeds if feed.source_id in ["guardian", "guardian_us", "guardian_tech"]]
+        other_feeds = [feed for feed in all_feeds if feed.source_id in ["aljazeera", "techcrunch", "theverge", "arstechnica", "wired", "reuters", "ap"]]
+        return bbc_feeds + guardian_feeds + other_feeds[:5]  # At least 13 feeds
+    except Exception as e:
+        logger.error(f"❌ Unexpected error in get_initial_feeds: {e}")
+        # Last resort: Return BBC only to ensure something works
+        logger.warning("Last resort: Using BBC only")
         all_feeds = get_all_feeds()
         return [feed for feed in all_feeds if feed.id == "bbc_world"]
 

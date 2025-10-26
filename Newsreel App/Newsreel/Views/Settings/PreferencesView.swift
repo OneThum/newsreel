@@ -247,6 +247,9 @@ class PreferencesViewModel: ObservableObject {
         UserDefaults.standard.set(personalizedFeed, forKey: "personalizedFeed")
         UserDefaults.standard.set(trackingEnabled, forKey: "trackingEnabled")
         
+        // Post notification so views update immediately
+        NotificationCenter.default.post(name: UserDefaults.didChangeNotification, object: nil)
+        
         // Simulate API call
         try? await Task.sleep(nanoseconds: 500_000_000)
         
