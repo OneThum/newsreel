@@ -186,7 +186,7 @@ class TestBatchCostTracking:
         # Act: Verify cost tracking
         assert 'total_cost' in batch
         assert batch['total_cost'] > 0
-        assert batch['total_cost'] == 0.015  # As specified in fixture
+        assert batch['total_cost'] == 0.0015  # As specified in fixture
         
     @pytest.mark.asyncio
     async def test_batch_vs_realtime_cost_savings(self):

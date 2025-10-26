@@ -5,7 +5,7 @@ import os
 import sys
 import pytest
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List
 from dotenv import load_dotenv
 
@@ -468,7 +468,8 @@ def sample_verified_story():
             {'source': 'cnn', 'source_name': 'CNN', 'article_id': 'cnn_article1', 'title': 'New Climate Policy Revealed'}
         ],
         'article_count': 3,
-        'entities': {'people': ['President']}
+        'entities': {'people': ['President']},
+        'first_seen': (datetime.now(timezone.utc) - timedelta(minutes=15)).isoformat()
     }
 
 
@@ -502,7 +503,10 @@ def sample_breaking_story():
         'sources': [
             {'source': 'reuters', 'source_name': 'Reuters', 'article_id': 'reuters_eq1'}
         ],
-        'article_count': 4
+        'article_count': 4,
+        'first_seen': (datetime.now(timezone.utc) - timedelta(minutes=20)).isoformat(),
+        'breaking_triggered_at': (datetime.now(timezone.utc) - timedelta(minutes=5)).isoformat(),
+        'notification_sent': True
     }
 
 
