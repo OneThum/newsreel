@@ -124,7 +124,7 @@ class StoryCluster(BaseModel):
     verification_level: int  # Number of sources
     first_seen: datetime
     last_updated: datetime
-    source_articles: List[str] = Field(default_factory=list)
+    source_articles: List[Dict[str, Any]] = Field(default_factory=list)
     summary: Optional[SummaryVersion] = None
     version_history: List[VersionHistory] = Field(default_factory=list)
     location: Optional[Location] = None
@@ -147,6 +147,11 @@ class StoryCluster(BaseModel):
         json_encoders = {
             datetime: lambda v: v.isoformat()
         }
+    
+    @property
+    def article_count(self) -> int:
+        """Number of articles in this story cluster"""
+        return len(self.source_articles)
 
 
 class NotificationSettings(BaseModel):

@@ -942,7 +942,7 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                     'source': article.source,
                     'title': article.title,
                     'url': article.article_url,
-                    'published_at': article.published_date.isoformat(),
+                    'published_at': article.published_at.isoformat(),
                     'content': article.content[:500] if article.content else None  # Truncate for storage
                 }
                 source_articles.append(article_object)
@@ -1107,7 +1107,7 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                         'source': article.source,
                         'title': article.title,
                         'url': article.article_url,
-                        'published_at': article.published_date.isoformat(),
+                        'published_at': article.published_at.isoformat(),
                         'content': article.content[:500] if article.content else None  # Truncate for storage
                     }],
                     importance_score=50 + (20 if article.source_tier == 1 else 0),
