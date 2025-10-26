@@ -269,3 +269,247 @@ These scripts are designed for **testing/development** environments.
 **Last Updated**: October 26, 2025  
 **Status**: ✅ Production Ready (for dev/test environments)
 
+## Firebase JWT Token Generation
+
+### Overview
+
+The Newsreel API requires Firebase JWT tokens for authentication. These scripts help you generate and manage tokens for testing.
+
+### Quick Start
+
+#### 1. Get a Token from Command Line
+
+```bash
+# Generate and print token
+python3 scripts/get_firebase_token.py
+
+# Export to environment variable
+export NEWSREEL_JWT_TOKEN=$(python3 scripts/get_firebase_token.py --get-token)
+
+# Save to file for future use
+python3 scripts/get_firebase_token.py --save
+
+# Use custom credentials
+python3 scripts/get_firebase_token.py --email user@example.com --password MyPassword123
+```
+
+#### 2. Use in Test Fixtures
+
+Add to your `conftest.py`:
+
+```python
+import pytest
+from scripts.firebase_auth_helper import FirebaseAuthHelper
+
+# Create auth helper
+auth_helper = FirebaseAuthHelper(verbose=True)
+
+@pytest.fixture
+def auth_token():
+    """Get Firebase JWT token for tests"""
+    token = auth_helper.get_token()
+    if not token:
+        pytest.skip("Firebase token not available")
+    return token
+
+@pytest.fixture
+def auth_headers(auth_token):
+    """Get Authorization headers for API requests"""
+    return {"Authorization": f"Bearer {auth_token}"}
+
+@pytest.fixture
+def api_client_authenticated(auth_headers):
+    """HTTP client with Firebase auth"""
+    import requests
+    client = requests.Session()
+    client.headers.update(auth_headers)
+    return client
+```
+
+#### 3. Use in Test Code
+
+```python
+def test_authenticated_endpoint(api_client_authenticated):
+    response = api_client_authenticated.get("/api/stories/feed")
+    assert response.status_code == 200
+
+def test_with_auth_token(auth_token):
+    import requests
+    headers = {"Authorization": f"Bearer {auth_token}"}
+    response = requests.get(
+        "https://newsreel-api.thankfulpebble-0dde6120.centralus.azurecontainerapps.io/api/stories/feed",
+        headers=headers,
+        timeout=10
+    )
+    assert response.status_code == 200
+```
+
+### Token Sources (Priority Order)
+
+The token helper tries multiple sources in this order:
+
+1. **Cached token** - Fast, reused from previous call
+2. **Environment variable** - `NEWSREEL_JWT_TOKEN`
+3. **Local file** - `firebase_token.txt`
+4. **Firebase API** - Generate new token (creates user if needed)
+
+### Environment Variables
+
+You can customize behavior with environment variables:
+
+```bash
+# Use different Firebase project
+export FIREBASE_PROJECT_ID="my-project-id"
+export FIREBASE_API_KEY="my-api-key"
+
+# Use different test account
+export FIREBASE_TEST_EMAIL="my-test-user@example.com"
+export FIREBASE_TEST_PASSWORD="MyPassword123"
+
+# Reuse existing token
+export NEWSREEL_JWT_TOKEN="eyJhbGciOiJSUzI1NiIs..."
+```
+
+### API Reference
+
+#### `get_firebase_token.py`
+
+**Functions:**
+
+- `get_firebase_jwt_token(email, password, create_if_missing=True)` - Get JWT token
+- `create_test_user(email, password)` - Create new Firebase user
+- `login_user(email, password)` - Sign in existing user
+- `save_token_to_file(token, filename)` - Save token to file
+- `load_token_from_file(filename)` - Load token from file
+- `get_token_with_env_fallback(email, password)` - Get token with all fallbacks
+
+#### `firebase_auth_helper.py`
+
+**Class: `FirebaseAuthHelper`**
+
+```python
+helper = FirebaseAuthHelper(verbose=True)
+
+# Get token with caching
+token = helper.get_token()
+
+# Force refresh
+token = helper.get_token(force_refresh=True)
+
+# Get as header dict
+headers = helper.get_auth_header()
+
+# Validate token exists
+is_valid = helper.validate_token_exists()
+
+# Clear cache
+helper.clear_cache()
+
+# Direct access
+token_from_env = helper.get_token_from_env()
+token_from_file = helper.get_token_from_file("custom_file.txt")
+helper.save_token(token, "custom_file.txt")
+```
+
+**Convenience functions:**
+
+```python
+from scripts.firebase_auth_helper import get_token, get_auth_headers
+
+token = get_token()
+headers = get_auth_headers()
+```
+
+### Common Scenarios
+
+#### Scenario 1: First-time test setup
+
+```bash
+# Generate and save token
+python3 scripts/get_firebase_token.py --save
+
+# Now all tests can use it
+pytest tests/integration/
+```
+
+#### Scenario 2: CI/CD Pipeline
+
+```bash
+# In your CI pipeline, generate token once
+TOKEN=$(python3 scripts/get_firebase_token.py --get-token)
+export NEWSREEL_JWT_TOKEN=$TOKEN
+
+# Run all tests
+pytest tests/
+```
+
+#### Scenario 3: Local development with test account
+
+```bash
+# Create a persistent test account
+python3 scripts/get_firebase_token.py \
+  --email testdev@newsreel.local \
+  --password DevPassword123 \
+  --save
+
+# Reuse in all tests
+export NEWSREEL_JWT_TOKEN=$(cat firebase_token.txt)
+```
+
+#### Scenario 4: Running tests without setup
+
+If `firebase_token.txt` doesn't exist and no environment variable is set, the token will be generated on first use and saved automatically.
+
+```python
+# First test run generates and caches token
+def test_api(auth_token):
+    # Token auto-generated if needed
+    assert auth_token is not None
+```
+
+### Troubleshooting
+
+#### Issue: "Failed to sign in" error
+
+**Solution**: The test account doesn't exist. Run:
+
+```bash
+python3 scripts/get_firebase_token.py --save
+```
+
+This will create the test account automatically.
+
+#### Issue: "Firebase API error: 400"
+
+**Solution**: Your Firebase API key may be invalid. Check:
+
+```bash
+# Verify API key is set
+echo $FIREBASE_API_KEY
+
+# Or verify in the script
+grep FIREBASE_API_KEY scripts/get_firebase_token.py
+```
+
+#### Issue: Token is expired
+
+**Solution**: Regenerate with force refresh:
+
+```python
+token = auth_helper.get_token(force_refresh=True)
+```
+
+Or from command line:
+
+```bash
+rm firebase_token.txt
+python3 scripts/get_firebase_token.py --save
+```
+
+### Security Notes
+
+- **Never commit tokens** - `firebase_token.txt` should be in `.gitignore`
+- **Test account only** - The default test account is for testing only
+- **Rotate tokens** - Regenerate tokens periodically
+- **Environment variable** - Only set `NEWSREEL_JWT_TOKEN` for CI/CD, not locally
+

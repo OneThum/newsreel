@@ -288,6 +288,51 @@ def api_client(test_config):
 
 
 # ============================================================================
+# FIREBASE AUTHENTICATION FIXTURES
+# ============================================================================
+
+@pytest.fixture
+def firebase_auth_helper():
+    """Firebase authentication helper for tests"""
+    try:
+        from scripts.firebase_auth_helper import FirebaseAuthHelper
+        return FirebaseAuthHelper(verbose=False)
+    except ImportError:
+        pytest.skip("Firebase auth helper not available")
+
+
+@pytest.fixture
+def auth_token(firebase_auth_helper):
+    """Get Firebase JWT token for authenticated API tests"""
+    token = firebase_auth_helper.get_token()
+    if not token:
+        pytest.skip("Firebase token not available - run: python scripts/get_firebase_token.py --save")
+    return token
+
+
+@pytest.fixture
+def auth_headers(auth_token):
+    """Get authorization headers with Firebase JWT token"""
+    return {"Authorization": f"Bearer {auth_token}"}
+
+
+@pytest.fixture
+def api_client_authenticated(test_config, auth_headers):
+    """HTTP client with Firebase authentication headers"""
+    import requests
+    
+    if not test_config['api_url']:
+        pytest.skip("API URL not configured")
+    
+    client = requests.Session()
+    client.headers.update(auth_headers)
+    client.base_url = test_config['api_url']
+    
+    yield client
+    client.close()
+
+
+# ============================================================================
 # MOCK FIXTURES
 # ============================================================================
 

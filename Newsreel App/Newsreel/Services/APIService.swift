@@ -191,10 +191,15 @@ class APIService: ObservableObject {
             StoryCluster(
                 id: story.id,
                 title: story.title,
-                stories: [story],
+                summary: story.summary,
                 category: story.category,
-                createdAt: story.publishedAt,
-                updatedAt: story.lastUpdated ?? story.publishedAt
+                imageURL: story.imageURL,
+                publishedAt: story.publishedAt,
+                stories: [story],
+                sourceCount: story.sources.count,
+                credibilityScore: 0.9,
+                trendingScore: 0.8,
+                perspectives: []
             )
         }
         
