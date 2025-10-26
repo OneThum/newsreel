@@ -279,7 +279,6 @@ class CosmosDBClient:
         try:
             container = self._get_container(config.CONTAINER_STORY_CLUSTERS)
             # Query stories with specific status
-            # SIMPLIFIED: Filter out feed_poll_state documents in Python instead of SQL
             query = "SELECT * FROM c WHERE c.status = @status"
             items = list(container.query_items(
                 query=query,
@@ -287,8 +286,8 @@ class CosmosDBClient:
                 enable_cross_partition_query=True
             ))
             
-            # Filter out feed_poll_state documents
-            stories = [item for item in items if item.get('doc_type') != 'feed_poll_state']
+            # No longer need to filter feed_poll_state documents since they're in a separate container
+            stories = items
             
             # Sort in Python by first_seen (newest first) for age-based transitions
             stories_sorted = sorted(stories, key=lambda x: x.get('first_seen', ''), reverse=True)
@@ -377,10 +376,11 @@ class CosmosDBClient:
         """
         try:
             from datetime import datetime, timezone
-            container = self._get_container(config.CONTAINER_STORY_CLUSTERS)
+            # Use dedicated feed_poll_states container instead of story_clusters
+            container = self._get_container('feed_poll_states')
             
-            # Use a special document type 'feed_poll_state' in story_clusters container
-            query = "SELECT * FROM c WHERE c.doc_type = 'feed_poll_state'"
+            # Query all documents (no need to filter by doc_type now)
+            query = "SELECT * FROM c"
             items = list(container.query_items(query=query, enable_cross_partition_query=True))
             
             # Convert to dict format
@@ -408,13 +408,13 @@ class CosmosDBClient:
     ) -> None:
         """Update poll state for a feed"""
         try:
-            container = self._get_container(config.CONTAINER_STORY_CLUSTERS)
+            # Use dedicated feed_poll_states container instead of story_clusters
+            container = self._get_container('feed_poll_states')
             
             doc_id = f"feed_poll_state_{feed_name.replace(' ', '_').lower()}"
             
             document = {
                 'id': doc_id,
-                'doc_type': 'feed_poll_state',
                 'feed_name': feed_name,
                 'last_poll': last_poll.isoformat(),
                 'articles_found': articles_found
