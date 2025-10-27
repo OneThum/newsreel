@@ -936,16 +936,8 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                     continue  # Skip to next article - DON'T update last_updated!
                 
                 # Article not in cluster yet and source is unique - ADD IT
-                # Store full article object instead of just ID
-                article_object = {
-                    'id': article.id,
-                    'source': article.source,
-                    'title': article.title,
-                    'url': article.article_url,
-                    'published_at': article.published_at.isoformat(),
-                    'content': article.content[:500] if article.content else None  # Truncate for storage
-                }
-                source_articles.append(article_object)
+                # Store article ID instead of full object for API to fetch
+                source_articles.append(article.id)
                 
                 # 🔍 ENHANCED SOURCE TRACKING LOGGING
                 # Calculate source diversity BEFORE updating
@@ -1104,14 +1096,7 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                     verification_level=1,
                     first_seen=article.published_at,
                     last_updated=datetime.now(timezone.utc),
-                    source_articles=[{
-                        'id': article.id,
-                        'source': article.source,
-                        'title': article.title,
-                        'url': article.article_url,
-                        'published_at': article.published_at.isoformat(),
-                        'content': article.content[:500] if article.content else None  # Truncate for storage
-                    }],
+                    source_articles=[article.id],
                     importance_score=50 + (20 if article.source_tier == 1 else 0),
                     confidence_score=40,
                     breaking_news=False
