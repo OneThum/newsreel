@@ -25,6 +25,7 @@ class TestClusteringToSummarizationFlow:
         now = datetime.now(timezone.utc)
         
         # Arrange: Create and store a VERIFIED story
+        from conftest import create_test_source_articles
         story = StoryCluster(
             id=f"story_verified_{now.strftime('%Y%m%d_%H%M%S')}",
             event_fingerprint="test_verify_fingerprint",
@@ -35,7 +36,7 @@ class TestClusteringToSummarizationFlow:
             verification_level=3,
             first_seen=now,
             last_updated=now,
-            source_articles=["reuters_1", "bbc_1", "cnn_1"],  # 3+ sources
+            source_articles=create_test_source_articles(3),  # Fixed: use helper
             importance_score=85,
             confidence_score=90,
             breaking_news=False
@@ -63,6 +64,7 @@ class TestClusteringToSummarizationFlow:
         now = datetime.now(timezone.utc)
         
         # Arrange: Create and store a DEVELOPING story
+        from conftest import create_test_source_articles
         story = StoryCluster(
             id=f"story_develop_{now.strftime('%Y%m%d_%H%M%S')}",
             event_fingerprint="test_develop_fingerprint",
@@ -73,7 +75,7 @@ class TestClusteringToSummarizationFlow:
             verification_level=2,
             first_seen=now,
             last_updated=now,
-            source_articles=["reuters_2", "bbc_2"],  # Only 2 sources
+            source_articles=create_test_source_articles(2),  # Fixed: use helper with 2
             importance_score=50,
             confidence_score=60,
             breaking_news=False
@@ -131,6 +133,7 @@ Provide a balanced, factual summary combining information from all sources."""
         # Arrange: Create story and get AI summary
         ai_summary = mock_anthropic_response['content'][0]['text']
         
+        from conftest import create_test_source_articles
         story = StoryCluster(
             id=f"story_summary_{now.strftime('%Y%m%d_%H%M%S')}",
             event_fingerprint="test_summary_fingerprint",
@@ -141,7 +144,7 @@ Provide a balanced, factual summary combining information from all sources."""
             verification_level=3,
             first_seen=now,
             last_updated=now,
-            source_articles=["art1", "art2", "art3"],
+            source_articles=create_test_source_articles(3),  # Fixed: use helper
             importance_score=75,
             confidence_score=80,
             breaking_news=False,
@@ -169,6 +172,7 @@ Provide a balanced, factual summary combining information from all sources."""
         now = datetime.now(timezone.utc)
         
         # Arrange: Create story with 2 sources
+        from conftest import create_test_source_articles
         story = StoryCluster(
             id=f"story_headline_{now.strftime('%Y%m%d_%H%M%S')}",
             event_fingerprint="test_headline_fingerprint",
@@ -179,7 +183,7 @@ Provide a balanced, factual summary combining information from all sources."""
             verification_level=2,
             first_seen=now,
             last_updated=now,
-            source_articles=["art1", "art2"],  # 2 sources
+            source_articles=create_test_source_articles(2),  # Fixed: use helper with 2
             importance_score=60,
             confidence_score=70,
             breaking_news=False
@@ -230,6 +234,7 @@ class TestSummarizationWorkflow:
         now = datetime.now(timezone.utc)
         
         # Arrange: Create a story that just reached VERIFIED
+        from conftest import create_test_source_articles
         story = StoryCluster(
             id=f"story_realtime_{now.strftime('%Y%m%d_%H%M%S')}",
             event_fingerprint="test_realtime_fingerprint",
@@ -240,7 +245,7 @@ class TestSummarizationWorkflow:
             verification_level=3,
             first_seen=now,
             last_updated=now,
-            source_articles=["art1", "art2", "art3"],
+            source_articles=create_test_source_articles(3),  # Fixed: use helper
             importance_score=80,
             confidence_score=85,
             breaking_news=False
@@ -298,6 +303,7 @@ class TestSummarizationWorkflow:
         now = datetime.now(timezone.utc)
         
         # Arrange: Create story for fallback testing
+        from conftest import create_test_source_articles
         story = StoryCluster(
             id=f"story_fallback_{now.strftime('%Y%m%d_%H%M%S')}",
             event_fingerprint="test_fallback_fingerprint",
@@ -308,7 +314,7 @@ class TestSummarizationWorkflow:
             verification_level=3,
             first_seen=now,
             last_updated=now,
-            source_articles=["art1", "art2", "art3"],
+            source_articles=create_test_source_articles(3),  # Fixed: use helper
             importance_score=70,
             confidence_score=75,
             breaking_news=False

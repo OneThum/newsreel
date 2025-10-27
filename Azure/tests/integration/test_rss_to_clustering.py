@@ -189,6 +189,7 @@ class TestRSSToClusteringFlow:
         source_id = "bbc"
         now = datetime.now(timezone.utc)
         
+        from conftest import create_test_source_articles
         story = StoryCluster(
             id=f"story_dedup_{now.strftime('%Y%m%d_%H%M%S')}",
             event_fingerprint="test_dedup_fingerprint",
@@ -199,7 +200,7 @@ class TestRSSToClusteringFlow:
             verification_level=1,
             first_seen=now,
             last_updated=now,
-            source_articles=["art1"],  # One source
+            source_articles=create_test_source_articles(1),  # Fixed: use helper with 1 article
             importance_score=50,
             confidence_score=50,
             breaking_news=False
@@ -355,21 +356,21 @@ class TestRSSProcessingPipeline:
         
     @pytest.mark.asyncio
     async def test_story_status_progression(self, cosmos_client_for_tests, clean_test_data):
-        """Test that story status evolves correctly as sources are added"""
+        """Test story progressing through status lifecycle"""
         now = datetime.now(timezone.utc)
         
-        # Arrange: Create a story and verify status progression logic
+        from conftest import create_test_source_articles
         story = StoryCluster(
-            id=f"story_status_{now.strftime('%Y%m%d_%H%M%S')}",
-            event_fingerprint="test_status_fingerprint",
-            title="Test Story Status",
+            id=f"story_progress_{now.strftime('%Y%m%d_%H%M%S')}",
+            event_fingerprint="test_progress_fingerprint",
+            title="Status Progression Test",
             category="world",
             tags=["test"],
             status="MONITORING",
             verification_level=1,
             first_seen=now,
             last_updated=now,
-            source_articles=["art1"],  # 1 source
+            source_articles=create_test_source_articles(1),  # Fixed: use helper with 1 article
             importance_score=50,
             confidence_score=50,
             breaking_news=False

@@ -1,0 +1,1000 @@
+[1m============================= test session starts ==============================[0m
+platform darwin -- Python 3.9.6, pytest-7.4.3, pluggy-1.6.0 -- /Applications/Xcode.app/Contents/Developer/usr/bin/python3
+cachedir: .pytest_cache
+metadata: {'Python': '3.9.6', 'Platform': 'macOS-26.0.1-arm64-arm-64bit', 'Packages': {'pytest': '7.4.3', 'pluggy': '1.6.0'}, 'Plugins': {'timeout': '2.2.0', 'html': '4.1.1', 'json-report': '1.5.0', 'metadata': '3.1.1', 'cov': '4.1.0', 'asyncio': '0.21.1', 'anyio': '4.10.0', 'mock': '3.12.0'}}
+rootdir: /Users/davemac/Library/CloudStorage/OneDrive-OneThumSoftware/One Thum Software/Newsreel/Azure/tests
+configfile: pytest.ini
+plugins: timeout-2.2.0, html-4.1.1, json-report-1.5.0, metadata-3.1.1, cov-4.1.0, asyncio-0.21.1, anyio-4.10.0, mock-3.12.0
+timeout: 300.0s
+timeout method: signal
+timeout func_only: False
+asyncio: mode=auto
+[1mcollecting ... [0mcollected 48 items
+
+integration/test_batch_processing.py::TestBatchSubmission::test_batch_creation_from_unsummarized_stories [31mFAILED[0m[31m [  2%][0m
+integration/test_batch_processing.py::TestBatchSubmission::test_batch_size_limits [31mFAILED[0m[31m [  4%][0m
+integration/test_batch_processing.py::TestBatchSubmission::test_batch_request_format [32mPASSED[0m[31m [  6%][0m
+integration/test_batch_processing.py::TestBatchProcessing::test_batch_status_polling [32mPASSED[0m[31m [  8%][0m
+integration/test_batch_processing.py::TestBatchProcessing::test_batch_completion_detection [32mPASSED[0m[31m [ 10%][0m
+integration/test_batch_processing.py::TestBatchProcessing::test_batch_result_extraction [32mPASSED[0m[31m [ 12%][0m
+integration/test_batch_processing.py::TestBatchProcessing::test_batch_result_storage [31mFAILED[0m[31m [ 14%][0m
+integration/test_batch_processing.py::TestBatchCostTracking::test_batch_cost_calculation [32mPASSED[0m[31m [ 16%][0m
+integration/test_batch_processing.py::TestBatchCostTracking::test_batch_vs_realtime_cost_savings [32mPASSED[0m[31m [ 18%][0m
+integration/test_batch_processing.py::TestBatchCostTracking::test_monthly_cost_projection [32mPASSED[0m[31m [ 20%][0m
+integration/test_batch_processing.py::TestBatchWorkflowEnd2End::test_complete_batch_workflow [31mFAILED[0m[31m [ 22%][0m
+integration/test_batch_processing.py::TestBatchPerformance::test_batch_processing_latency [32mPASSED[0m[31m [ 25%][0m
+integration/test_batch_processing.py::TestBatchPerformance::test_batch_throughput [32mPASSED[0m[31m [ 27%][0m
+integration/test_breaking_news_lifecycle.py::TestBreakingNewsDetection::test_verified_to_breaking_transition [31mFAILED[0m[31m [ 29%][0m
+integration/test_breaking_news_lifecycle.py::TestBreakingNewsDetection::test_monitoring_to_breaking_skip_developing [31mFAILED[0m[31m [ 31%][0m
+integration/test_breaking_news_lifecycle.py::TestBreakingNewsDetection::test_breaking_news_not_triggered_for_slow_stories [31mFAILED[0m[31m [ 33%][0m
+integration/test_breaking_news_lifecycle.py::TestBreakingNewsNotifications::test_notification_triggered_on_breaking_status [31mFAILED[0m[31m [ 35%][0m
+integration/test_breaking_news_lifecycle.py::TestBreakingNewsNotifications::test_notification_deduplication [31mFAILED[0m[31m [ 37%][0m
+integration/test_breaking_news_lifecycle.py::TestBreakingNewsNotifications::test_breaking_to_verified_demotion [31mFAILED[0m[31m [ 39%][0m
+integration/test_breaking_news_lifecycle.py::TestBreakingNewsLifecycle::test_verified_to_archived_lifecycle [31mFAILED[0m[31m [ 41%][0m
+integration/test_breaking_news_lifecycle.py::TestBreakingNewsLifecycle::test_complete_story_lifecycle_flow [31mFAILED[0m[31m [ 43%][0m
+integration/test_breaking_news_lifecycle.py::TestBreakingNewsLifecycle::test_breaking_news_detection_latency [31mFAILED[0m[31m [ 45%][0m
+integration/test_clustering_to_summarization.py::TestClusteringToSummarizationFlow::test_verified_story_triggers_summarization [31mFAILED[0m[31m [ 47%][0m
+integration/test_clustering_to_summarization.py::TestClusteringToSummarizationFlow::test_developing_story_no_summarization [31mFAILED[0m[31m [ 50%][0m
+integration/test_clustering_to_summarization.py::TestClusteringToSummarizationFlow::test_summary_prompt_construction [32mPASSED[0m[31m [ 52%][0m
+integration/test_clustering_to_summarization.py::TestClusteringToSummarizationFlow::test_summary_stored_in_cluster [31mFAILED[0m[31m [ 54%][0m
+integration/test_clustering_to_summarization.py::TestClusteringToSummarizationFlow::test_headline_regeneration_on_source_addition [31mFAILED[0m[31m [ 56%][0m
+integration/test_clustering_to_summarization.py::TestClusteringToSummarizationFlow::test_cost_tracking_for_summarization [32mPASSED[0m[31m [ 58%][0m
+integration/test_clustering_to_summarization.py::TestSummarizationWorkflow::test_real_time_summarization_flow [31mFAILED[0m[31m [ 60%][0m
+integration/test_clustering_to_summarization.py::TestSummarizationWorkflow::test_batch_summarization_flow [32mPASSED[0m[31m [ 62%][0m
+integration/test_clustering_to_summarization.py::TestSummarizationWorkflow::test_batch_result_processing [32mPASSED[0m[31m [ 64%][0m
+integration/test_clustering_to_summarization.py::TestSummarizationWorkflow::test_summary_fallback_on_ai_refusal [31mFAILED[0m[31m [ 66%][0m
+integration/test_clustering_to_summarization.py::TestSummarizationQuality::test_summary_length_validation [32mPASSED[0m[31m [ 68%][0m
+integration/test_clustering_to_summarization.py::TestSummarizationQuality::test_summary_includes_key_information [32mPASSED[0m[31m [ 70%][0m
+integration/test_clustering_to_summarization.py::TestSummarizationQuality::test_summary_prompt_cache_usage [32mPASSED[0m[31m [ 72%][0m
+integration/test_clustering_to_summarization.py::TestSummarizationPerformance::test_batch_vs_realtime_cost [32mPASSED[0m[31m [ 75%][0m
+integration/test_clustering_to_summarization.py::TestSummarizationPerformance::test_summarization_rate_limit [32mPASSED[0m[31m [ 77%][0m
+integration/test_rss_to_clustering.py::TestRSSToClusteringFlow::test_new_article_creates_new_cluster [33mSKIPPED[0mttribute 'upsert_article')[31m [ 79%][0m
+integration/test_rss_to_clustering.py::TestRSSToClusteringFlow::test_similar_article_clusters_with_existing [33mSKIPPED[0mert_article')[31m [ 81%][0m
+integration/test_rss_to_clustering.py::TestRSSToClusteringFlow::test_duplicate_source_prevented [31mFAILED[0m[31m [ 83%][0m
+integration/test_rss_to_clustering.py::TestRSSProcessingPipeline::test_full_rss_to_cluster_pipeline [33mSKIPPED[0mert_article')[31m [ 85%][0m
+integration/test_rss_to_clustering.py::TestRSSProcessingPipeline::test_multiple_articles_same_story [33mSKIPPED[0mert_article')[31m [ 87%][0m
+integration/test_rss_to_clustering.py::TestRSSProcessingPipeline::test_story_status_progression [31mFAILED[0m[31m [ 89%][0m
+integration/test_rss_to_clustering.py::TestRSSFeedQuality::test_invalid_feed_handling [32mPASSED[0m[31m [ 91%][0m
+integration/test_rss_to_clustering.py::TestRSSFeedQuality::test_missing_required_fields [32mPASSED[0m[31m [ 93%][0m
+integration/test_rss_to_clustering.py::TestRSSFeedQuality::test_html_cleaning_in_pipeline [32mPASSED[0m[31m [ 95%][0m
+integration/test_rss_to_clustering.py::TestRSSClusteringPerformance::test_clustering_100_articles [33mSKIPPED[0m has no attribute
+'upsert_article')[31m                                                        [ 97%][0m
+integration/test_rss_to_clustering.py::TestRSSClusteringPerformance::test_fuzzy_matching_performance [32mPASSED[0m[31m [100%][0m
+
+=================================== FAILURES ===================================
+[31m[1m______ TestBatchSubmission.test_batch_creation_from_unsummarized_stories _______[0m
+[1m[31mintegration/test_batch_processing.py[0m:30: in test_batch_creation_from_unsummarized_stories
+    story = StoryCluster(
+[1m[31mE   pydantic_core._pydantic_core.ValidationError: 3 validation errors for StoryCluster[0m
+[1m[31mE   source_articles.0[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art1', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.1[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art2', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.2[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art3', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:511 Request URL: 'https://newsreel-db-1759951135.documents.azure.com:443/'
+Request method: 'GET'
+Request headers:
+    'Cache-Control': 'no-cache'
+    'x-ms-version': 'REDACTED'
+    'x-ms-documentdb-query-iscontinuationexpected': 'REDACTED'
+    'x-ms-date': 'REDACTED'
+    'authorization': 'REDACTED'
+    'Accept': 'application/json'
+    'Content-Length': '0'
+    'User-Agent': 'azsdk-python-cosmos/4.5.1 Python/3.9.6 (macOS-26.0.1-arm64-arm-64bit)'
+No body was attached to the request
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:554 Response status: 200
+Response headers:
+    'Content-Length': '1820'
+    'Date': 'Mon, 27 Oct 2025 01:28:03 GMT'
+    'Content-Type': 'application/json'
+    'Server': 'Microsoft-HTTPAPI/2.0'
+    'x-ms-gatewayversion': 'REDACTED'
+    'Cache-Control': 'no-store, no-cache'
+    'Pragma': 'no-cache'
+    'x-ms-max-media-storage-usage-mb': 'REDACTED'
+    'x-ms-media-storage-usage-mb': 'REDACTED'
+    'x-ms-databaseaccount-consumed-mb': 'REDACTED'
+    'x-ms-databaseaccount-reserved-mb': 'REDACTED'
+    'x-ms-databaseaccount-provisioned-mb': 'REDACTED'
+    'Strict-Transport-Security': 'REDACTED'
+    'Content-Location': 'REDACTED'
+[32mINFO    [0m functions.shared.cosmos_client:cosmos_client.py:32 Connected to Cosmos DB: newsreel-db
+[31m[1m__________________ TestBatchSubmission.test_batch_size_limits __________________[0m
+[1m[31mintegration/test_batch_processing.py[0m:76: in test_batch_size_limits
+    story = StoryCluster(
+[1m[31mE   pydantic_core._pydantic_core.ValidationError: 3 validation errors for StoryCluster[0m
+[1m[31mE   source_articles.0[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art1', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.1[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art2', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.2[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art3', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:511 Request URL: 'https://newsreel-db-1759951135.documents.azure.com:443/'
+Request method: 'GET'
+Request headers:
+    'Cache-Control': 'no-cache'
+    'x-ms-version': 'REDACTED'
+    'x-ms-documentdb-query-iscontinuationexpected': 'REDACTED'
+    'x-ms-date': 'REDACTED'
+    'authorization': 'REDACTED'
+    'Accept': 'application/json'
+    'Content-Length': '0'
+    'User-Agent': 'azsdk-python-cosmos/4.5.1 Python/3.9.6 (macOS-26.0.1-arm64-arm-64bit)'
+No body was attached to the request
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:554 Response status: 200
+Response headers:
+    'Content-Length': '1820'
+    'Date': 'Mon, 27 Oct 2025 01:28:05 GMT'
+    'Content-Type': 'application/json'
+    'Server': 'Microsoft-HTTPAPI/2.0'
+    'x-ms-gatewayversion': 'REDACTED'
+    'Cache-Control': 'no-store, no-cache'
+    'Pragma': 'no-cache'
+    'x-ms-max-media-storage-usage-mb': 'REDACTED'
+    'x-ms-media-storage-usage-mb': 'REDACTED'
+    'x-ms-databaseaccount-consumed-mb': 'REDACTED'
+    'x-ms-databaseaccount-reserved-mb': 'REDACTED'
+    'x-ms-databaseaccount-provisioned-mb': 'REDACTED'
+    'Strict-Transport-Security': 'REDACTED'
+    'Content-Location': 'REDACTED'
+[32mINFO    [0m functions.shared.cosmos_client:cosmos_client.py:32 Connected to Cosmos DB: newsreel-db
+[31m[1m________________ TestBatchProcessing.test_batch_result_storage _________________[0m
+[1m[31mintegration/test_batch_processing.py[0m:202: in test_batch_result_storage
+    story = StoryCluster(
+[1m[31mE   pydantic_core._pydantic_core.ValidationError: 3 validation errors for StoryCluster[0m
+[1m[31mE   source_articles.0[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art1', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.1[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art2', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.2[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art3', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:511 Request URL: 'https://newsreel-db-1759951135.documents.azure.com:443/'
+Request method: 'GET'
+Request headers:
+    'Cache-Control': 'no-cache'
+    'x-ms-version': 'REDACTED'
+    'x-ms-documentdb-query-iscontinuationexpected': 'REDACTED'
+    'x-ms-date': 'REDACTED'
+    'authorization': 'REDACTED'
+    'Accept': 'application/json'
+    'Content-Length': '0'
+    'User-Agent': 'azsdk-python-cosmos/4.5.1 Python/3.9.6 (macOS-26.0.1-arm64-arm-64bit)'
+No body was attached to the request
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:554 Response status: 200
+Response headers:
+    'Content-Length': '1820'
+    'Date': 'Mon, 27 Oct 2025 01:28:04 GMT'
+    'Content-Type': 'application/json'
+    'Server': 'Microsoft-HTTPAPI/2.0'
+    'x-ms-gatewayversion': 'REDACTED'
+    'Cache-Control': 'no-store, no-cache'
+    'Pragma': 'no-cache'
+    'x-ms-max-media-storage-usage-mb': 'REDACTED'
+    'x-ms-media-storage-usage-mb': 'REDACTED'
+    'x-ms-databaseaccount-consumed-mb': 'REDACTED'
+    'x-ms-databaseaccount-reserved-mb': 'REDACTED'
+    'x-ms-databaseaccount-provisioned-mb': 'REDACTED'
+    'Strict-Transport-Security': 'REDACTED'
+    'Content-Location': 'REDACTED'
+[32mINFO    [0m functions.shared.cosmos_client:cosmos_client.py:32 Connected to Cosmos DB: newsreel-db
+[31m[1m____________ TestBatchWorkflowEnd2End.test_complete_batch_workflow _____________[0m
+[1m[31mintegration/test_batch_processing.py[0m:306: in test_complete_batch_workflow
+    story = StoryCluster(
+[1m[31mE   pydantic_core._pydantic_core.ValidationError: 3 validation errors for StoryCluster[0m
+[1m[31mE   source_articles.0[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art1', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.1[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art2', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.2[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art3', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:511 Request URL: 'https://newsreel-db-1759951135.documents.azure.com:443/'
+Request method: 'GET'
+Request headers:
+    'Cache-Control': 'no-cache'
+    'x-ms-version': 'REDACTED'
+    'x-ms-documentdb-query-iscontinuationexpected': 'REDACTED'
+    'x-ms-date': 'REDACTED'
+    'authorization': 'REDACTED'
+    'Accept': 'application/json'
+    'Content-Length': '0'
+    'User-Agent': 'azsdk-python-cosmos/4.5.1 Python/3.9.6 (macOS-26.0.1-arm64-arm-64bit)'
+No body was attached to the request
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:554 Response status: 200
+Response headers:
+    'Content-Length': '1820'
+    'Date': 'Mon, 27 Oct 2025 01:28:05 GMT'
+    'Content-Type': 'application/json'
+    'Server': 'Microsoft-HTTPAPI/2.0'
+    'x-ms-gatewayversion': 'REDACTED'
+    'Cache-Control': 'no-store, no-cache'
+    'Pragma': 'no-cache'
+    'x-ms-max-media-storage-usage-mb': 'REDACTED'
+    'x-ms-media-storage-usage-mb': 'REDACTED'
+    'x-ms-databaseaccount-consumed-mb': 'REDACTED'
+    'x-ms-databaseaccount-reserved-mb': 'REDACTED'
+    'x-ms-databaseaccount-provisioned-mb': 'REDACTED'
+    'Strict-Transport-Security': 'REDACTED'
+    'Content-Location': 'REDACTED'
+[32mINFO    [0m functions.shared.cosmos_client:cosmos_client.py:32 Connected to Cosmos DB: newsreel-db
+[31m[1m________ TestBreakingNewsDetection.test_verified_to_breaking_transition ________[0m
+[1m[31mintegration/test_breaking_news_lifecycle.py[0m:28: in test_verified_to_breaking_transition
+    story = StoryCluster(
+[1m[31mE   pydantic_core._pydantic_core.ValidationError: 4 validation errors for StoryCluster[0m
+[1m[31mE   source_articles.0[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='reuters_1', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.1[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='bbc_1', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.2[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='cnn_1', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.3[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='ap_1', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:511 Request URL: 'https://newsreel-db-1759951135.documents.azure.com:443/'
+Request method: 'GET'
+Request headers:
+    'Cache-Control': 'no-cache'
+    'x-ms-version': 'REDACTED'
+    'x-ms-documentdb-query-iscontinuationexpected': 'REDACTED'
+    'x-ms-date': 'REDACTED'
+    'authorization': 'REDACTED'
+    'Accept': 'application/json'
+    'Content-Length': '0'
+    'User-Agent': 'azsdk-python-cosmos/4.5.1 Python/3.9.6 (macOS-26.0.1-arm64-arm-64bit)'
+No body was attached to the request
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:554 Response status: 200
+Response headers:
+    'Content-Length': '1820'
+    'Date': 'Mon, 27 Oct 2025 01:28:05 GMT'
+    'Content-Type': 'application/json'
+    'Server': 'Microsoft-HTTPAPI/2.0'
+    'x-ms-gatewayversion': 'REDACTED'
+    'Cache-Control': 'no-store, no-cache'
+    'Pragma': 'no-cache'
+    'x-ms-max-media-storage-usage-mb': 'REDACTED'
+    'x-ms-media-storage-usage-mb': 'REDACTED'
+    'x-ms-databaseaccount-consumed-mb': 'REDACTED'
+    'x-ms-databaseaccount-reserved-mb': 'REDACTED'
+    'x-ms-databaseaccount-provisioned-mb': 'REDACTED'
+    'Strict-Transport-Security': 'REDACTED'
+    'Content-Location': 'REDACTED'
+[32mINFO    [0m functions.shared.cosmos_client:cosmos_client.py:32 Connected to Cosmos DB: newsreel-db
+[31m[1m____ TestBreakingNewsDetection.test_monitoring_to_breaking_skip_developing _____[0m
+[1m[31mintegration/test_breaking_news_lifecycle.py[0m:64: in test_monitoring_to_breaking_skip_developing
+    story = StoryCluster(
+[1m[31mE   pydantic_core._pydantic_core.ValidationError: 4 validation errors for StoryCluster[0m
+[1m[31mE   source_articles.0[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='source1', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.1[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='source2', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.2[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='source3', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.3[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='source4', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:511 Request URL: 'https://newsreel-db-1759951135.documents.azure.com:443/'
+Request method: 'GET'
+Request headers:
+    'Cache-Control': 'no-cache'
+    'x-ms-version': 'REDACTED'
+    'x-ms-documentdb-query-iscontinuationexpected': 'REDACTED'
+    'x-ms-date': 'REDACTED'
+    'authorization': 'REDACTED'
+    'Accept': 'application/json'
+    'Content-Length': '0'
+    'User-Agent': 'azsdk-python-cosmos/4.5.1 Python/3.9.6 (macOS-26.0.1-arm64-arm-64bit)'
+No body was attached to the request
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:554 Response status: 200
+Response headers:
+    'Content-Length': '1820'
+    'Date': 'Mon, 27 Oct 2025 01:28:05 GMT'
+    'Content-Type': 'application/json'
+    'Server': 'Microsoft-HTTPAPI/2.0'
+    'x-ms-gatewayversion': 'REDACTED'
+    'Cache-Control': 'no-store, no-cache'
+    'Pragma': 'no-cache'
+    'x-ms-max-media-storage-usage-mb': 'REDACTED'
+    'x-ms-media-storage-usage-mb': 'REDACTED'
+    'x-ms-databaseaccount-consumed-mb': 'REDACTED'
+    'x-ms-databaseaccount-reserved-mb': 'REDACTED'
+    'x-ms-databaseaccount-provisioned-mb': 'REDACTED'
+    'Strict-Transport-Security': 'REDACTED'
+    'Content-Location': 'REDACTED'
+[32mINFO    [0m functions.shared.cosmos_client:cosmos_client.py:32 Connected to Cosmos DB: newsreel-db
+[31m[1m_ TestBreakingNewsDetection.test_breaking_news_not_triggered_for_slow_stories __[0m
+[1m[31mintegration/test_breaking_news_lifecycle.py[0m:103: in test_breaking_news_not_triggered_for_slow_stories
+    story = StoryCluster(
+[1m[31mE   pydantic_core._pydantic_core.ValidationError: 4 validation errors for StoryCluster[0m
+[1m[31mE   source_articles.0[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art1', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.1[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art2', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.2[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art3', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.3[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art4', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:511 Request URL: 'https://newsreel-db-1759951135.documents.azure.com:443/'
+Request method: 'GET'
+Request headers:
+    'Cache-Control': 'no-cache'
+    'x-ms-version': 'REDACTED'
+    'x-ms-documentdb-query-iscontinuationexpected': 'REDACTED'
+    'x-ms-date': 'REDACTED'
+    'authorization': 'REDACTED'
+    'Accept': 'application/json'
+    'Content-Length': '0'
+    'User-Agent': 'azsdk-python-cosmos/4.5.1 Python/3.9.6 (macOS-26.0.1-arm64-arm-64bit)'
+No body was attached to the request
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:554 Response status: 200
+Response headers:
+    'Content-Length': '1820'
+    'Date': 'Mon, 27 Oct 2025 01:28:05 GMT'
+    'Content-Type': 'application/json'
+    'Server': 'Microsoft-HTTPAPI/2.0'
+    'x-ms-gatewayversion': 'REDACTED'
+    'Cache-Control': 'no-store, no-cache'
+    'Pragma': 'no-cache'
+    'x-ms-max-media-storage-usage-mb': 'REDACTED'
+    'x-ms-media-storage-usage-mb': 'REDACTED'
+    'x-ms-databaseaccount-consumed-mb': 'REDACTED'
+    'x-ms-databaseaccount-reserved-mb': 'REDACTED'
+    'x-ms-databaseaccount-provisioned-mb': 'REDACTED'
+    'Strict-Transport-Security': 'REDACTED'
+    'Content-Location': 'REDACTED'
+[32mINFO    [0m functions.shared.cosmos_client:cosmos_client.py:32 Connected to Cosmos DB: newsreel-db
+[31m[1m_ TestBreakingNewsNotifications.test_notification_triggered_on_breaking_status _[0m
+[1m[31mintegration/test_breaking_news_lifecycle.py[0m:141: in test_notification_triggered_on_breaking_status
+    story = StoryCluster(
+[1m[31mE   pydantic_core._pydantic_core.ValidationError: 4 validation errors for StoryCluster[0m
+[1m[31mE   source_articles.0[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art1', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.1[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art2', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.2[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art3', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.3[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art4', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:511 Request URL: 'https://newsreel-db-1759951135.documents.azure.com:443/'
+Request method: 'GET'
+Request headers:
+    'Cache-Control': 'no-cache'
+    'x-ms-version': 'REDACTED'
+    'x-ms-documentdb-query-iscontinuationexpected': 'REDACTED'
+    'x-ms-date': 'REDACTED'
+    'authorization': 'REDACTED'
+    'Accept': 'application/json'
+    'Content-Length': '0'
+    'User-Agent': 'azsdk-python-cosmos/4.5.1 Python/3.9.6 (macOS-26.0.1-arm64-arm-64bit)'
+No body was attached to the request
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:554 Response status: 200
+Response headers:
+    'Content-Length': '1820'
+    'Date': 'Mon, 27 Oct 2025 01:28:05 GMT'
+    'Content-Type': 'application/json'
+    'Server': 'Microsoft-HTTPAPI/2.0'
+    'x-ms-gatewayversion': 'REDACTED'
+    'Cache-Control': 'no-store, no-cache'
+    'Pragma': 'no-cache'
+    'x-ms-max-media-storage-usage-mb': 'REDACTED'
+    'x-ms-media-storage-usage-mb': 'REDACTED'
+    'x-ms-databaseaccount-consumed-mb': 'REDACTED'
+    'x-ms-databaseaccount-reserved-mb': 'REDACTED'
+    'x-ms-databaseaccount-provisioned-mb': 'REDACTED'
+    'Strict-Transport-Security': 'REDACTED'
+    'Content-Location': 'REDACTED'
+[32mINFO    [0m functions.shared.cosmos_client:cosmos_client.py:32 Connected to Cosmos DB: newsreel-db
+[31m[1m________ TestBreakingNewsNotifications.test_notification_deduplication _________[0m
+[1m[31mintegration/test_breaking_news_lifecycle.py[0m:180: in test_notification_deduplication
+    story = StoryCluster(
+[1m[31mE   pydantic_core._pydantic_core.ValidationError: 4 validation errors for StoryCluster[0m
+[1m[31mE   source_articles.0[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art1', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.1[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art2', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.2[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art3', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.3[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art4', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:511 Request URL: 'https://newsreel-db-1759951135.documents.azure.com:443/'
+Request method: 'GET'
+Request headers:
+    'Cache-Control': 'no-cache'
+    'x-ms-version': 'REDACTED'
+    'x-ms-documentdb-query-iscontinuationexpected': 'REDACTED'
+    'x-ms-date': 'REDACTED'
+    'authorization': 'REDACTED'
+    'Accept': 'application/json'
+    'Content-Length': '0'
+    'User-Agent': 'azsdk-python-cosmos/4.5.1 Python/3.9.6 (macOS-26.0.1-arm64-arm-64bit)'
+No body was attached to the request
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:554 Response status: 200
+Response headers:
+    'Content-Length': '1820'
+    'Date': 'Mon, 27 Oct 2025 01:28:06 GMT'
+    'Content-Type': 'application/json'
+    'Server': 'Microsoft-HTTPAPI/2.0'
+    'x-ms-gatewayversion': 'REDACTED'
+    'Cache-Control': 'no-store, no-cache'
+    'Pragma': 'no-cache'
+    'x-ms-max-media-storage-usage-mb': 'REDACTED'
+    'x-ms-media-storage-usage-mb': 'REDACTED'
+    'x-ms-databaseaccount-consumed-mb': 'REDACTED'
+    'x-ms-databaseaccount-reserved-mb': 'REDACTED'
+    'x-ms-databaseaccount-provisioned-mb': 'REDACTED'
+    'Strict-Transport-Security': 'REDACTED'
+    'Content-Location': 'REDACTED'
+[32mINFO    [0m functions.shared.cosmos_client:cosmos_client.py:32 Connected to Cosmos DB: newsreel-db
+[31m[1m_______ TestBreakingNewsNotifications.test_breaking_to_verified_demotion _______[0m
+[1m[31mintegration/test_breaking_news_lifecycle.py[0m:217: in test_breaking_to_verified_demotion
+    story = StoryCluster(
+[1m[31mE   pydantic_core._pydantic_core.ValidationError: 4 validation errors for StoryCluster[0m
+[1m[31mE   source_articles.0[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art1', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.1[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art2', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.2[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art3', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.3[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art4', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:511 Request URL: 'https://newsreel-db-1759951135.documents.azure.com:443/'
+Request method: 'GET'
+Request headers:
+    'Cache-Control': 'no-cache'
+    'x-ms-version': 'REDACTED'
+    'x-ms-documentdb-query-iscontinuationexpected': 'REDACTED'
+    'x-ms-date': 'REDACTED'
+    'authorization': 'REDACTED'
+    'Accept': 'application/json'
+    'Content-Length': '0'
+    'User-Agent': 'azsdk-python-cosmos/4.5.1 Python/3.9.6 (macOS-26.0.1-arm64-arm-64bit)'
+No body was attached to the request
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:554 Response status: 200
+Response headers:
+    'Content-Length': '1820'
+    'Date': 'Mon, 27 Oct 2025 01:28:06 GMT'
+    'Content-Type': 'application/json'
+    'Server': 'Microsoft-HTTPAPI/2.0'
+    'x-ms-gatewayversion': 'REDACTED'
+    'Cache-Control': 'no-store, no-cache'
+    'Pragma': 'no-cache'
+    'x-ms-max-media-storage-usage-mb': 'REDACTED'
+    'x-ms-media-storage-usage-mb': 'REDACTED'
+    'x-ms-databaseaccount-consumed-mb': 'REDACTED'
+    'x-ms-databaseaccount-reserved-mb': 'REDACTED'
+    'x-ms-databaseaccount-provisioned-mb': 'REDACTED'
+    'Strict-Transport-Security': 'REDACTED'
+    'Content-Location': 'REDACTED'
+[32mINFO    [0m functions.shared.cosmos_client:cosmos_client.py:32 Connected to Cosmos DB: newsreel-db
+[31m[1m________ TestBreakingNewsLifecycle.test_verified_to_archived_lifecycle _________[0m
+[1m[31mintegration/test_breaking_news_lifecycle.py[0m:263: in test_verified_to_archived_lifecycle
+    story = StoryCluster(
+[1m[31mE   pydantic_core._pydantic_core.ValidationError: 3 validation errors for StoryCluster[0m
+[1m[31mE   source_articles.0[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art1', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.1[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art2', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.2[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art3', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:511 Request URL: 'https://newsreel-db-1759951135.documents.azure.com:443/'
+Request method: 'GET'
+Request headers:
+    'Cache-Control': 'no-cache'
+    'x-ms-version': 'REDACTED'
+    'x-ms-documentdb-query-iscontinuationexpected': 'REDACTED'
+    'x-ms-date': 'REDACTED'
+    'authorization': 'REDACTED'
+    'Accept': 'application/json'
+    'Content-Length': '0'
+    'User-Agent': 'azsdk-python-cosmos/4.5.1 Python/3.9.6 (macOS-26.0.1-arm64-arm-64bit)'
+No body was attached to the request
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:554 Response status: 200
+Response headers:
+    'Content-Length': '1820'
+    'Date': 'Mon, 27 Oct 2025 01:28:06 GMT'
+    'Content-Type': 'application/json'
+    'Server': 'Microsoft-HTTPAPI/2.0'
+    'x-ms-gatewayversion': 'REDACTED'
+    'Cache-Control': 'no-store, no-cache'
+    'Pragma': 'no-cache'
+    'x-ms-max-media-storage-usage-mb': 'REDACTED'
+    'x-ms-media-storage-usage-mb': 'REDACTED'
+    'x-ms-databaseaccount-consumed-mb': 'REDACTED'
+    'x-ms-databaseaccount-reserved-mb': 'REDACTED'
+    'x-ms-databaseaccount-provisioned-mb': 'REDACTED'
+    'Strict-Transport-Security': 'REDACTED'
+    'Content-Location': 'REDACTED'
+[32mINFO    [0m functions.shared.cosmos_client:cosmos_client.py:32 Connected to Cosmos DB: newsreel-db
+[31m[1m_________ TestBreakingNewsLifecycle.test_complete_story_lifecycle_flow _________[0m
+[1m[31mintegration/test_breaking_news_lifecycle.py[0m:303: in test_complete_story_lifecycle_flow
+    story = StoryCluster(
+[1m[31mE   pydantic_core._pydantic_core.ValidationError: 1 validation error for StoryCluster[0m
+[1m[31mE   source_articles.0[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art1', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:511 Request URL: 'https://newsreel-db-1759951135.documents.azure.com:443/'
+Request method: 'GET'
+Request headers:
+    'Cache-Control': 'no-cache'
+    'x-ms-version': 'REDACTED'
+    'x-ms-documentdb-query-iscontinuationexpected': 'REDACTED'
+    'x-ms-date': 'REDACTED'
+    'authorization': 'REDACTED'
+    'Accept': 'application/json'
+    'Content-Length': '0'
+    'User-Agent': 'azsdk-python-cosmos/4.5.1 Python/3.9.6 (macOS-26.0.1-arm64-arm-64bit)'
+No body was attached to the request
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:554 Response status: 200
+Response headers:
+    'Content-Length': '1820'
+    'Date': 'Mon, 27 Oct 2025 01:28:06 GMT'
+    'Content-Type': 'application/json'
+    'Server': 'Microsoft-HTTPAPI/2.0'
+    'x-ms-gatewayversion': 'REDACTED'
+    'Cache-Control': 'no-store, no-cache'
+    'Pragma': 'no-cache'
+    'x-ms-max-media-storage-usage-mb': 'REDACTED'
+    'x-ms-media-storage-usage-mb': 'REDACTED'
+    'x-ms-databaseaccount-consumed-mb': 'REDACTED'
+    'x-ms-databaseaccount-reserved-mb': 'REDACTED'
+    'x-ms-databaseaccount-provisioned-mb': 'REDACTED'
+    'Strict-Transport-Security': 'REDACTED'
+    'Content-Location': 'REDACTED'
+[32mINFO    [0m functions.shared.cosmos_client:cosmos_client.py:32 Connected to Cosmos DB: newsreel-db
+[31m[1m________ TestBreakingNewsLifecycle.test_breaking_news_detection_latency ________[0m
+[1m[31mintegration/test_breaking_news_lifecycle.py[0m:337: in test_breaking_news_detection_latency
+    story = StoryCluster(
+[1m[31mE   pydantic_core._pydantic_core.ValidationError: 4 validation errors for StoryCluster[0m
+[1m[31mE   source_articles.0[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art1', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.1[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art2', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.2[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art3', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.3[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art4', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:511 Request URL: 'https://newsreel-db-1759951135.documents.azure.com:443/'
+Request method: 'GET'
+Request headers:
+    'Cache-Control': 'no-cache'
+    'x-ms-version': 'REDACTED'
+    'x-ms-documentdb-query-iscontinuationexpected': 'REDACTED'
+    'x-ms-date': 'REDACTED'
+    'authorization': 'REDACTED'
+    'Accept': 'application/json'
+    'Content-Length': '0'
+    'User-Agent': 'azsdk-python-cosmos/4.5.1 Python/3.9.6 (macOS-26.0.1-arm64-arm-64bit)'
+No body was attached to the request
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:554 Response status: 200
+Response headers:
+    'Content-Length': '1820'
+    'Date': 'Mon, 27 Oct 2025 01:28:07 GMT'
+    'Content-Type': 'application/json'
+    'Server': 'Microsoft-HTTPAPI/2.0'
+    'x-ms-gatewayversion': 'REDACTED'
+    'Cache-Control': 'no-store, no-cache'
+    'Pragma': 'no-cache'
+    'x-ms-max-media-storage-usage-mb': 'REDACTED'
+    'x-ms-media-storage-usage-mb': 'REDACTED'
+    'x-ms-databaseaccount-consumed-mb': 'REDACTED'
+    'x-ms-databaseaccount-reserved-mb': 'REDACTED'
+    'x-ms-databaseaccount-provisioned-mb': 'REDACTED'
+    'Strict-Transport-Security': 'REDACTED'
+    'Content-Location': 'REDACTED'
+[32mINFO    [0m functions.shared.cosmos_client:cosmos_client.py:32 Connected to Cosmos DB: newsreel-db
+[31m[1m_ TestClusteringToSummarizationFlow.test_verified_story_triggers_summarization _[0m
+[1m[31mintegration/test_clustering_to_summarization.py[0m:28: in test_verified_story_triggers_summarization
+    story = StoryCluster(
+[1m[31mE   pydantic_core._pydantic_core.ValidationError: 3 validation errors for StoryCluster[0m
+[1m[31mE   source_articles.0[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='reuters_1', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.1[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='bbc_1', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.2[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='cnn_1', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:511 Request URL: 'https://newsreel-db-1759951135.documents.azure.com:443/'
+Request method: 'GET'
+Request headers:
+    'Cache-Control': 'no-cache'
+    'x-ms-version': 'REDACTED'
+    'x-ms-documentdb-query-iscontinuationexpected': 'REDACTED'
+    'x-ms-date': 'REDACTED'
+    'authorization': 'REDACTED'
+    'Accept': 'application/json'
+    'Content-Length': '0'
+    'User-Agent': 'azsdk-python-cosmos/4.5.1 Python/3.9.6 (macOS-26.0.1-arm64-arm-64bit)'
+No body was attached to the request
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:554 Response status: 200
+Response headers:
+    'Content-Length': '1820'
+    'Date': 'Mon, 27 Oct 2025 01:28:07 GMT'
+    'Content-Type': 'application/json'
+    'Server': 'Microsoft-HTTPAPI/2.0'
+    'x-ms-gatewayversion': 'REDACTED'
+    'Cache-Control': 'no-store, no-cache'
+    'Pragma': 'no-cache'
+    'x-ms-max-media-storage-usage-mb': 'REDACTED'
+    'x-ms-media-storage-usage-mb': 'REDACTED'
+    'x-ms-databaseaccount-consumed-mb': 'REDACTED'
+    'x-ms-databaseaccount-reserved-mb': 'REDACTED'
+    'x-ms-databaseaccount-provisioned-mb': 'REDACTED'
+    'Strict-Transport-Security': 'REDACTED'
+    'Content-Location': 'REDACTED'
+[32mINFO    [0m functions.shared.cosmos_client:cosmos_client.py:32 Connected to Cosmos DB: newsreel-db
+[31m[1m___ TestClusteringToSummarizationFlow.test_developing_story_no_summarization ___[0m
+[1m[31mintegration/test_clustering_to_summarization.py[0m:66: in test_developing_story_no_summarization
+    story = StoryCluster(
+[1m[31mE   pydantic_core._pydantic_core.ValidationError: 2 validation errors for StoryCluster[0m
+[1m[31mE   source_articles.0[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='reuters_2', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.1[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='bbc_2', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:511 Request URL: 'https://newsreel-db-1759951135.documents.azure.com:443/'
+Request method: 'GET'
+Request headers:
+    'Cache-Control': 'no-cache'
+    'x-ms-version': 'REDACTED'
+    'x-ms-documentdb-query-iscontinuationexpected': 'REDACTED'
+    'x-ms-date': 'REDACTED'
+    'authorization': 'REDACTED'
+    'Accept': 'application/json'
+    'Content-Length': '0'
+    'User-Agent': 'azsdk-python-cosmos/4.5.1 Python/3.9.6 (macOS-26.0.1-arm64-arm-64bit)'
+No body was attached to the request
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:554 Response status: 200
+Response headers:
+    'Content-Length': '1820'
+    'Date': 'Mon, 27 Oct 2025 01:28:07 GMT'
+    'Content-Type': 'application/json'
+    'Server': 'Microsoft-HTTPAPI/2.0'
+    'x-ms-gatewayversion': 'REDACTED'
+    'Cache-Control': 'no-store, no-cache'
+    'Pragma': 'no-cache'
+    'x-ms-max-media-storage-usage-mb': 'REDACTED'
+    'x-ms-media-storage-usage-mb': 'REDACTED'
+    'x-ms-databaseaccount-consumed-mb': 'REDACTED'
+    'x-ms-databaseaccount-reserved-mb': 'REDACTED'
+    'x-ms-databaseaccount-provisioned-mb': 'REDACTED'
+    'Strict-Transport-Security': 'REDACTED'
+    'Content-Location': 'REDACTED'
+[32mINFO    [0m functions.shared.cosmos_client:cosmos_client.py:32 Connected to Cosmos DB: newsreel-db
+[31m[1m_______ TestClusteringToSummarizationFlow.test_summary_stored_in_cluster _______[0m
+[1m[31mintegration/test_clustering_to_summarization.py[0m:134: in test_summary_stored_in_cluster
+    story = StoryCluster(
+[1m[31mE   pydantic_core._pydantic_core.ValidationError: 4 validation errors for StoryCluster[0m
+[1m[31mE   source_articles.0[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art1', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.1[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art2', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.2[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art3', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   summary[0m
+[1m[31mE     Input should be a valid dictionary or instance of SummaryVersion [type=model_type, input_value='This is a summary senten...nce ends with a period.', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/model_type[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:511 Request URL: 'https://newsreel-db-1759951135.documents.azure.com:443/'
+Request method: 'GET'
+Request headers:
+    'Cache-Control': 'no-cache'
+    'x-ms-version': 'REDACTED'
+    'x-ms-documentdb-query-iscontinuationexpected': 'REDACTED'
+    'x-ms-date': 'REDACTED'
+    'authorization': 'REDACTED'
+    'Accept': 'application/json'
+    'Content-Length': '0'
+    'User-Agent': 'azsdk-python-cosmos/4.5.1 Python/3.9.6 (macOS-26.0.1-arm64-arm-64bit)'
+No body was attached to the request
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:554 Response status: 200
+Response headers:
+    'Content-Length': '1820'
+    'Date': 'Mon, 27 Oct 2025 01:28:07 GMT'
+    'Content-Type': 'application/json'
+    'Server': 'Microsoft-HTTPAPI/2.0'
+    'x-ms-gatewayversion': 'REDACTED'
+    'Cache-Control': 'no-store, no-cache'
+    'Pragma': 'no-cache'
+    'x-ms-max-media-storage-usage-mb': 'REDACTED'
+    'x-ms-media-storage-usage-mb': 'REDACTED'
+    'x-ms-databaseaccount-consumed-mb': 'REDACTED'
+    'x-ms-databaseaccount-reserved-mb': 'REDACTED'
+    'x-ms-databaseaccount-provisioned-mb': 'REDACTED'
+    'Strict-Transport-Security': 'REDACTED'
+    'Content-Location': 'REDACTED'
+[32mINFO    [0m functions.shared.cosmos_client:cosmos_client.py:32 Connected to Cosmos DB: newsreel-db
+[31m[1m_ TestClusteringToSummarizationFlow.test_headline_regeneration_on_source_addition _[0m
+[1m[31mintegration/test_clustering_to_summarization.py[0m:172: in test_headline_regeneration_on_source_addition
+    story = StoryCluster(
+[1m[31mE   pydantic_core._pydantic_core.ValidationError: 2 validation errors for StoryCluster[0m
+[1m[31mE   source_articles.0[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art1', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.1[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art2', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:511 Request URL: 'https://newsreel-db-1759951135.documents.azure.com:443/'
+Request method: 'GET'
+Request headers:
+    'Cache-Control': 'no-cache'
+    'x-ms-version': 'REDACTED'
+    'x-ms-documentdb-query-iscontinuationexpected': 'REDACTED'
+    'x-ms-date': 'REDACTED'
+    'authorization': 'REDACTED'
+    'Accept': 'application/json'
+    'Content-Length': '0'
+    'User-Agent': 'azsdk-python-cosmos/4.5.1 Python/3.9.6 (macOS-26.0.1-arm64-arm-64bit)'
+No body was attached to the request
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:554 Response status: 200
+Response headers:
+    'Content-Length': '1820'
+    'Date': 'Mon, 27 Oct 2025 01:28:08 GMT'
+    'Content-Type': 'application/json'
+    'Server': 'Microsoft-HTTPAPI/2.0'
+    'x-ms-gatewayversion': 'REDACTED'
+    'Cache-Control': 'no-store, no-cache'
+    'Pragma': 'no-cache'
+    'x-ms-max-media-storage-usage-mb': 'REDACTED'
+    'x-ms-media-storage-usage-mb': 'REDACTED'
+    'x-ms-databaseaccount-consumed-mb': 'REDACTED'
+    'x-ms-databaseaccount-reserved-mb': 'REDACTED'
+    'x-ms-databaseaccount-provisioned-mb': 'REDACTED'
+    'Strict-Transport-Security': 'REDACTED'
+    'Content-Location': 'REDACTED'
+[32mINFO    [0m functions.shared.cosmos_client:cosmos_client.py:32 Connected to Cosmos DB: newsreel-db
+[31m[1m_________ TestSummarizationWorkflow.test_real_time_summarization_flow __________[0m
+[1m[31mintegration/test_clustering_to_summarization.py[0m:233: in test_real_time_summarization_flow
+    story = StoryCluster(
+[1m[31mE   pydantic_core._pydantic_core.ValidationError: 3 validation errors for StoryCluster[0m
+[1m[31mE   source_articles.0[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art1', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.1[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art2', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.2[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art3', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:511 Request URL: 'https://newsreel-db-1759951135.documents.azure.com:443/'
+Request method: 'GET'
+Request headers:
+    'Cache-Control': 'no-cache'
+    'x-ms-version': 'REDACTED'
+    'x-ms-documentdb-query-iscontinuationexpected': 'REDACTED'
+    'x-ms-date': 'REDACTED'
+    'authorization': 'REDACTED'
+    'Accept': 'application/json'
+    'Content-Length': '0'
+    'User-Agent': 'azsdk-python-cosmos/4.5.1 Python/3.9.6 (macOS-26.0.1-arm64-arm-64bit)'
+No body was attached to the request
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:554 Response status: 200
+Response headers:
+    'Content-Length': '1820'
+    'Date': 'Mon, 27 Oct 2025 01:28:08 GMT'
+    'Content-Type': 'application/json'
+    'Server': 'Microsoft-HTTPAPI/2.0'
+    'x-ms-gatewayversion': 'REDACTED'
+    'Cache-Control': 'no-store, no-cache'
+    'Pragma': 'no-cache'
+    'x-ms-max-media-storage-usage-mb': 'REDACTED'
+    'x-ms-media-storage-usage-mb': 'REDACTED'
+    'x-ms-databaseaccount-consumed-mb': 'REDACTED'
+    'x-ms-databaseaccount-reserved-mb': 'REDACTED'
+    'x-ms-databaseaccount-provisioned-mb': 'REDACTED'
+    'Strict-Transport-Security': 'REDACTED'
+    'Content-Location': 'REDACTED'
+[32mINFO    [0m functions.shared.cosmos_client:cosmos_client.py:32 Connected to Cosmos DB: newsreel-db
+[31m[1m________ TestSummarizationWorkflow.test_summary_fallback_on_ai_refusal _________[0m
+[1m[31mintegration/test_clustering_to_summarization.py[0m:301: in test_summary_fallback_on_ai_refusal
+    story = StoryCluster(
+[1m[31mE   pydantic_core._pydantic_core.ValidationError: 3 validation errors for StoryCluster[0m
+[1m[31mE   source_articles.0[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art1', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.1[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art2', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+[1m[31mE   source_articles.2[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art3', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:511 Request URL: 'https://newsreel-db-1759951135.documents.azure.com:443/'
+Request method: 'GET'
+Request headers:
+    'Cache-Control': 'no-cache'
+    'x-ms-version': 'REDACTED'
+    'x-ms-documentdb-query-iscontinuationexpected': 'REDACTED'
+    'x-ms-date': 'REDACTED'
+    'authorization': 'REDACTED'
+    'Accept': 'application/json'
+    'Content-Length': '0'
+    'User-Agent': 'azsdk-python-cosmos/4.5.1 Python/3.9.6 (macOS-26.0.1-arm64-arm-64bit)'
+No body was attached to the request
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:554 Response status: 200
+Response headers:
+    'Content-Length': '1820'
+    'Date': 'Mon, 27 Oct 2025 01:28:08 GMT'
+    'Content-Type': 'application/json'
+    'Server': 'Microsoft-HTTPAPI/2.0'
+    'x-ms-gatewayversion': 'REDACTED'
+    'Cache-Control': 'no-store, no-cache'
+    'Pragma': 'no-cache'
+    'x-ms-max-media-storage-usage-mb': 'REDACTED'
+    'x-ms-media-storage-usage-mb': 'REDACTED'
+    'x-ms-databaseaccount-consumed-mb': 'REDACTED'
+    'x-ms-databaseaccount-reserved-mb': 'REDACTED'
+    'x-ms-databaseaccount-provisioned-mb': 'REDACTED'
+    'Strict-Transport-Security': 'REDACTED'
+    'Content-Location': 'REDACTED'
+[32mINFO    [0m functions.shared.cosmos_client:cosmos_client.py:32 Connected to Cosmos DB: newsreel-db
+[31m[1m___________ TestRSSToClusteringFlow.test_duplicate_source_prevented ____________[0m
+[1m[31mintegration/test_rss_to_clustering.py[0m:192: in test_duplicate_source_prevented
+    story = StoryCluster(
+[1m[31mE   pydantic_core._pydantic_core.ValidationError: 1 validation error for StoryCluster[0m
+[1m[31mE   source_articles.0[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art1', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:511 Request URL: 'https://newsreel-db-1759951135.documents.azure.com:443/'
+Request method: 'GET'
+Request headers:
+    'Cache-Control': 'no-cache'
+    'x-ms-version': 'REDACTED'
+    'x-ms-documentdb-query-iscontinuationexpected': 'REDACTED'
+    'x-ms-date': 'REDACTED'
+    'authorization': 'REDACTED'
+    'Accept': 'application/json'
+    'Content-Length': '0'
+    'User-Agent': 'azsdk-python-cosmos/4.5.1 Python/3.9.6 (macOS-26.0.1-arm64-arm-64bit)'
+No body was attached to the request
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:554 Response status: 200
+Response headers:
+    'Content-Length': '1820'
+    'Date': 'Mon, 27 Oct 2025 01:28:08 GMT'
+    'Content-Type': 'application/json'
+    'Server': 'Microsoft-HTTPAPI/2.0'
+    'x-ms-gatewayversion': 'REDACTED'
+    'Cache-Control': 'no-store, no-cache'
+    'Pragma': 'no-cache'
+    'x-ms-max-media-storage-usage-mb': 'REDACTED'
+    'x-ms-media-storage-usage-mb': 'REDACTED'
+    'x-ms-databaseaccount-consumed-mb': 'REDACTED'
+    'x-ms-databaseaccount-reserved-mb': 'REDACTED'
+    'x-ms-databaseaccount-provisioned-mb': 'REDACTED'
+    'Strict-Transport-Security': 'REDACTED'
+    'Content-Location': 'REDACTED'
+[32mINFO    [0m functions.shared.cosmos_client:cosmos_client.py:32 Connected to Cosmos DB: newsreel-db
+[31m[1m___________ TestRSSProcessingPipeline.test_story_status_progression ____________[0m
+[1m[31mintegration/test_rss_to_clustering.py[0m:362: in test_story_status_progression
+    story = StoryCluster(
+[1m[31mE   pydantic_core._pydantic_core.ValidationError: 1 validation error for StoryCluster[0m
+[1m[31mE   source_articles.0[0m
+[1m[31mE     Input should be a valid dictionary [type=dict_type, input_value='art1', input_type=str][0m
+[1m[31mE       For further information visit https://errors.pydantic.dev/2.5/v/dict_type[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:511 Request URL: 'https://newsreel-db-1759951135.documents.azure.com:443/'
+Request method: 'GET'
+Request headers:
+    'Cache-Control': 'no-cache'
+    'x-ms-version': 'REDACTED'
+    'x-ms-documentdb-query-iscontinuationexpected': 'REDACTED'
+    'x-ms-date': 'REDACTED'
+    'authorization': 'REDACTED'
+    'Accept': 'application/json'
+    'Content-Length': '0'
+    'User-Agent': 'azsdk-python-cosmos/4.5.1 Python/3.9.6 (macOS-26.0.1-arm64-arm-64bit)'
+No body was attached to the request
+[32mINFO    [0m azure.core.pipeline.policies.http_logging_policy:_universal.py:554 Response status: 200
+Response headers:
+    'Content-Length': '1820'
+    'Date': 'Mon, 27 Oct 2025 01:28:09 GMT'
+    'Content-Type': 'application/json'
+    'Server': 'Microsoft-HTTPAPI/2.0'
+    'x-ms-gatewayversion': 'REDACTED'
+    'Cache-Control': 'no-store, no-cache'
+    'Pragma': 'no-cache'
+    'x-ms-max-media-storage-usage-mb': 'REDACTED'
+    'x-ms-media-storage-usage-mb': 'REDACTED'
+    'x-ms-databaseaccount-consumed-mb': 'REDACTED'
+    'x-ms-databaseaccount-reserved-mb': 'REDACTED'
+    'x-ms-databaseaccount-provisioned-mb': 'REDACTED'
+    'Strict-Transport-Security': 'REDACTED'
+    'Content-Location': 'REDACTED'
+[32mINFO    [0m functions.shared.cosmos_client:cosmos_client.py:32 Connected to Cosmos DB: newsreel-db
+[33m=============================== warnings summary ===============================[0m
+../../../../../../Python/3.9/lib/python/site-packages/pydantic/_internal/_config.py:271: 10 warnings
+  /Users/davemac/Library/Python/3.9/lib/python/site-packages/pydantic/_internal/_config.py:271: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.5/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+../../../../../../Python/3.9/lib/python/site-packages/pydantic/_internal/_generate_schema.py:252: 19 warnings
+  /Users/davemac/Library/Python/3.9/lib/python/site-packages/pydantic/_internal/_generate_schema.py:252: PydanticDeprecatedSince20: `json_encoders` is deprecated. See https://docs.pydantic.dev/2.5/concepts/serialization/#custom-serializers for alternatives. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.5/migration/
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+[36m[1m=========================== short test summary info ============================[0m
+[31mFAILED[0m integration/test_batch_processing.py::[1mTestBatchSubmission::test_batch_creation_from_unsummarized_stories[0m - pydantic_core._pydantic_core.ValidationError: 3 validation errors for Story...
+[31mFAILED[0m integration/test_batch_processing.py::[1mTestBatchSubmission::test_batch_size_limits[0m - pydantic_core._pydantic_core.ValidationError: 3 validation errors for Story...
+[31mFAILED[0m integration/test_batch_processing.py::[1mTestBatchProcessing::test_batch_result_storage[0m - pydantic_core._pydantic_core.ValidationError: 3 validation errors for Story...
+[31mFAILED[0m integration/test_batch_processing.py::[1mTestBatchWorkflowEnd2End::test_complete_batch_workflow[0m - pydantic_core._pydantic_core.ValidationError: 3 validation errors for Story...
+[31mFAILED[0m integration/test_breaking_news_lifecycle.py::[1mTestBreakingNewsDetection::test_verified_to_breaking_transition[0m - pydantic_core._pydantic_core.ValidationError: 4 validation errors for Story...
+[31mFAILED[0m integration/test_breaking_news_lifecycle.py::[1mTestBreakingNewsDetection::test_monitoring_to_breaking_skip_developing[0m - pydantic_core._pydantic_core.ValidationError: 4 validation errors for Story...
+[31mFAILED[0m integration/test_breaking_news_lifecycle.py::[1mTestBreakingNewsDetection::test_breaking_news_not_triggered_for_slow_stories[0m - pydantic_core._pydantic_core.ValidationError: 4 validation errors for Story...
+[31mFAILED[0m integration/test_breaking_news_lifecycle.py::[1mTestBreakingNewsNotifications::test_notification_triggered_on_breaking_status[0m - pydantic_core._pydantic_core.ValidationError: 4 validation errors for Story...
+[31mFAILED[0m integration/test_breaking_news_lifecycle.py::[1mTestBreakingNewsNotifications::test_notification_deduplication[0m - pydantic_core._pydantic_core.ValidationError: 4 validation errors for Story...
+[31mFAILED[0m integration/test_breaking_news_lifecycle.py::[1mTestBreakingNewsNotifications::test_breaking_to_verified_demotion[0m - pydantic_core._pydantic_core.ValidationError: 4 validation errors for Story...
+[31mFAILED[0m integration/test_breaking_news_lifecycle.py::[1mTestBreakingNewsLifecycle::test_verified_to_archived_lifecycle[0m - pydantic_core._pydantic_core.ValidationError: 3 validation errors for Story...
+[31mFAILED[0m integration/test_breaking_news_lifecycle.py::[1mTestBreakingNewsLifecycle::test_complete_story_lifecycle_flow[0m - pydantic_core._pydantic_core.ValidationError: 1 validation error for StoryC...
+[31mFAILED[0m integration/test_breaking_news_lifecycle.py::[1mTestBreakingNewsLifecycle::test_breaking_news_detection_latency[0m - pydantic_core._pydantic_core.ValidationError: 4 validation errors for Story...
+[31mFAILED[0m integration/test_clustering_to_summarization.py::[1mTestClusteringToSummarizationFlow::test_verified_story_triggers_summarization[0m - pydantic_core._pydantic_core.ValidationError: 3 validation errors for Story...
+[31mFAILED[0m integration/test_clustering_to_summarization.py::[1mTestClusteringToSummarizationFlow::test_developing_story_no_summarization[0m - pydantic_core._pydantic_core.ValidationError: 2 validation errors for Story...
+[31mFAILED[0m integration/test_clustering_to_summarization.py::[1mTestClusteringToSummarizationFlow::test_summary_stored_in_cluster[0m - pydantic_core._pydantic_core.ValidationError: 4 validation errors for Story...
+[31mFAILED[0m integration/test_clustering_to_summarization.py::[1mTestClusteringToSummarizationFlow::test_headline_regeneration_on_source_addition[0m - pydantic_core._pydantic_core.ValidationError: 2 validation errors for Story...
+[31mFAILED[0m integration/test_clustering_to_summarization.py::[1mTestSummarizationWorkflow::test_real_time_summarization_flow[0m - pydantic_core._pydantic_core.ValidationError: 3 validation errors for Story...
+[31mFAILED[0m integration/test_clustering_to_summarization.py::[1mTestSummarizationWorkflow::test_summary_fallback_on_ai_refusal[0m - pydantic_core._pydantic_core.ValidationError: 3 validation errors for Story...
+[31mFAILED[0m integration/test_rss_to_clustering.py::[1mTestRSSToClusteringFlow::test_duplicate_source_prevented[0m - pydantic_core._pydantic_core.ValidationError: 1 validation error for StoryC...
+[31mFAILED[0m integration/test_rss_to_clustering.py::[1mTestRSSProcessingPipeline::test_story_status_progression[0m - pydantic_core._pydantic_core.ValidationError: 1 validation error for StoryC...
+[31m============ [31m[1m21 failed[0m, [32m22 passed[0m, [33m5 skipped[0m, [33m29 warnings[0m[31m in 6.49s[0m[31m =============[0m

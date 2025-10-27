@@ -25,6 +25,7 @@ class TestBreakingNewsDetection:
         now = datetime.now(timezone.utc)
         
         # Arrange: Create VERIFIED story with 3 sources
+        from conftest import create_test_source_articles
         story = StoryCluster(
             id=f"story_breaking_{now.strftime('%Y%m%d_%H%M%S')}",
             event_fingerprint="test_breaking_fingerprint",
@@ -35,7 +36,7 @@ class TestBreakingNewsDetection:
             verification_level=3,
             first_seen=now - timedelta(minutes=15),
             last_updated=now,
-            source_articles=["reuters_1", "bbc_1", "cnn_1", "ap_1"],  # 4 sources (breaking velocity)
+            source_articles=create_test_source_articles(4),  # Fixed: use helper
             importance_score=95,
             confidence_score=95,
             breaking_news=True,
@@ -61,6 +62,7 @@ class TestBreakingNewsDetection:
         now = datetime.now(timezone.utc)
         
         # Arrange: Create story that rapidly escalated
+        from conftest import create_test_source_articles
         story = StoryCluster(
             id=f"story_rapid_{now.strftime('%Y%m%d_%H%M%S')}",
             event_fingerprint="test_rapid_fingerprint",
@@ -71,7 +73,7 @@ class TestBreakingNewsDetection:
             verification_level=3,
             first_seen=now - timedelta(minutes=5),  # Only 5 minutes ago
             last_updated=now,
-            source_articles=["source1", "source2", "source3", "source4"],  # 4 sources in 5 min
+            source_articles=create_test_source_articles(4),  # Fixed: use helper
             importance_score=90,
             confidence_score=90,
             breaking_news=True,
@@ -100,6 +102,7 @@ class TestBreakingNewsDetection:
         now = datetime.now(timezone.utc)
         
         # Arrange: Create story added slowly over 3 hours
+        from conftest import create_test_source_articles
         story = StoryCluster(
             id=f"story_slow_{now.strftime('%Y%m%d_%H%M%S')}",
             event_fingerprint="test_slow_fingerprint",
@@ -110,7 +113,7 @@ class TestBreakingNewsDetection:
             verification_level=3,
             first_seen=now - timedelta(hours=3),  # 3 hours ago
             last_updated=now,
-            source_articles=["art1", "art2", "art3", "art4"],  # 4 sources but over 3 hours
+            source_articles=create_test_source_articles(4),  # Fixed: use helper
             importance_score=60,
             confidence_score=65,
             breaking_news=False  # Not breaking (too slow)
@@ -138,6 +141,7 @@ class TestBreakingNewsNotifications:
         now = datetime.now(timezone.utc)
         
         # Arrange: Create BREAKING story
+        from conftest import create_test_source_articles
         story = StoryCluster(
             id=f"story_notify_{now.strftime('%Y%m%d_%H%M%S')}",
             event_fingerprint="test_notify_fingerprint",
@@ -148,7 +152,7 @@ class TestBreakingNewsNotifications:
             verification_level=3,
             first_seen=now,
             last_updated=now,
-            source_articles=["art1", "art2", "art3", "art4"],
+            source_articles=create_test_source_articles(4),  # Fixed: use helper
             importance_score=95,
             confidence_score=95,
             breaking_news=True,
@@ -177,6 +181,7 @@ class TestBreakingNewsNotifications:
         now = datetime.now(timezone.utc)
         
         # Arrange: Create BREAKING story with notification already sent
+        from conftest import create_test_source_articles
         story = StoryCluster(
             id=f"story_dedup_{now.strftime('%Y%m%d_%H%M%S')}",
             event_fingerprint="test_dedup_fingerprint",
@@ -187,7 +192,7 @@ class TestBreakingNewsNotifications:
             verification_level=3,
             first_seen=now - timedelta(minutes=10),
             last_updated=now,
-            source_articles=["art1", "art2", "art3", "art4"],
+            source_articles=create_test_source_articles(4),  # Fixed: use helper
             importance_score=90,
             confidence_score=90,
             breaking_news=True,
@@ -214,6 +219,7 @@ class TestBreakingNewsNotifications:
         now = datetime.now(timezone.utc)
         
         # Arrange: Create BREAKING story that's now slowing down
+        from conftest import create_test_source_articles
         story = StoryCluster(
             id=f"story_demote_{now.strftime('%Y%m%d_%H%M%S')}",
             event_fingerprint="test_demote_fingerprint",
@@ -224,7 +230,7 @@ class TestBreakingNewsNotifications:
             verification_level=3,
             first_seen=now - timedelta(hours=2),
             last_updated=now,
-            source_articles=["art1", "art2", "art3", "art4"],
+            source_articles=create_test_source_articles(4),  # Fixed: use helper
             importance_score=70,  # Lower than fresh breaking news
             confidence_score=75,
             breaking_news=True
@@ -260,6 +266,7 @@ class TestBreakingNewsLifecycle:
         now = datetime.now(timezone.utc)
         
         # Arrange: Create story that's been around for a week
+        from conftest import create_test_source_articles
         story = StoryCluster(
             id=f"story_archive_{now.strftime('%Y%m%d_%H%M%S')}",
             event_fingerprint="test_archive_fingerprint",
@@ -270,7 +277,7 @@ class TestBreakingNewsLifecycle:
             verification_level=3,
             first_seen=now - timedelta(days=7),
             last_updated=now - timedelta(days=1),
-            source_articles=["art1", "art2", "art3"],
+            source_articles=create_test_source_articles(3),  # Fixed: use helper
             importance_score=30,  # Low importance over time
             confidence_score=50,
             breaking_news=False,
@@ -300,6 +307,7 @@ class TestBreakingNewsLifecycle:
         story_id = f"story_lifecycle_{now.strftime('%Y%m%d_%H%M%S')}"
         
         # Stage 1: MONITORING (1 source)
+        from conftest import create_test_source_articles
         story = StoryCluster(
             id=story_id,
             event_fingerprint="test_lifecycle_fingerprint",
@@ -310,7 +318,7 @@ class TestBreakingNewsLifecycle:
             verification_level=1,
             first_seen=now,
             last_updated=now,
-            source_articles=["art1"],
+            source_articles=create_test_source_articles(1),  # Fixed: use helper with 1 article
             importance_score=10,
             confidence_score=30,
             breaking_news=False
@@ -334,6 +342,7 @@ class TestBreakingNewsLifecycle:
         now = datetime.now(timezone.utc)
         
         # Arrange: Create rapid story
+        from conftest import create_test_source_articles
         story = StoryCluster(
             id=f"story_latency_{now.strftime('%Y%m%d_%H%M%S')}",
             event_fingerprint="test_latency_fingerprint",
@@ -344,7 +353,7 @@ class TestBreakingNewsLifecycle:
             verification_level=3,
             first_seen=now - timedelta(seconds=30),  # 30 seconds ago
             last_updated=now,
-            source_articles=["art1", "art2", "art3", "art4"],
+            source_articles=create_test_source_articles(4),  # Fixed: use helper
             importance_score=95,
             confidence_score=95,
             breaking_news=True

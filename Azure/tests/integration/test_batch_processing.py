@@ -27,6 +27,7 @@ class TestBatchSubmission:
         # Arrange: Create stories needing summaries
         story_ids = []
         for i in range(5):
+            from conftest import create_test_source_articles
             story = StoryCluster(
                 id=f"story_batch_{i}_{now.strftime('%Y%m%d_%H%M%S')}",
                 event_fingerprint=f"batch_fp_{i}",
@@ -37,7 +38,7 @@ class TestBatchSubmission:
                 verification_level=3,
                 first_seen=now,
                 last_updated=now,
-                source_articles=["art1", "art2", "art3"],
+                source_articles=create_test_source_articles(3),  # Fixed: use helper function
                 importance_score=70,
                 confidence_score=75,
                 breaking_news=False,
@@ -73,6 +74,7 @@ class TestBatchSubmission:
         # Arrange: Create many stories
         stories = []
         for i in range(15):  # Smaller number for test
+            from conftest import create_test_source_articles
             story = StoryCluster(
                 id=f"story_limit_{i}_{now.strftime('%Y%m%d_%H%M%S')}",
                 event_fingerprint=f"limit_fp_{i}",
@@ -83,7 +85,7 @@ class TestBatchSubmission:
                 verification_level=3,
                 first_seen=now,
                 last_updated=now,
-                source_articles=["art1", "art2", "art3"],
+                source_articles=create_test_source_articles(3),  # Fixed: use helper function
                 importance_score=60,
                 confidence_score=65,
                 breaking_news=False,
@@ -199,6 +201,7 @@ class TestBatchProcessing:
         batch = sample_completed_batch
         
         # Arrange: Create a story to update with summary
+        from conftest import create_test_source_articles
         story = StoryCluster(
             id=f"story_result_{now.strftime('%Y%m%d_%H%M%S')}",
             event_fingerprint="result_fp",
@@ -209,7 +212,7 @@ class TestBatchProcessing:
             verification_level=3,
             first_seen=now,
             last_updated=now,
-            source_articles=["art1", "art2", "art3"],
+            source_articles=create_test_source_articles(3),  # Fixed: use helper function
             importance_score=70,
             confidence_score=75,
             breaking_news=False,
@@ -303,6 +306,7 @@ class TestBatchWorkflowEnd2End:
         # Stage 1: Create stories needing summaries
         stories_data = []
         for i in range(2):
+            from conftest import create_test_source_articles
             story = StoryCluster(
                 id=f"story_e2e_{i}_{now.strftime('%Y%m%d_%H%M%S')}",
                 event_fingerprint=f"e2e_fp_{i}",
@@ -313,7 +317,7 @@ class TestBatchWorkflowEnd2End:
                 verification_level=3,
                 first_seen=now,
                 last_updated=now,
-                source_articles=["art1", "art2", "art3"],
+                source_articles=create_test_source_articles(3),  # Fixed: use helper function
                 importance_score=70,
                 confidence_score=75,
                 breaking_news=False,

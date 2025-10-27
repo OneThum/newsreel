@@ -51,6 +51,36 @@ from functions.shared.config import config
 from functions.shared.cosmos_client import CosmosDBClient
 from functions.shared.models import RawArticle, StoryCluster
 
+# ============================================================================
+# TEST DATA HELPERS - Create objects with correct schemas
+# ============================================================================
+
+def create_test_article_dict(article_id: str, source: str = "test_source") -> Dict[str, Any]:
+    """Create a properly formatted article dictionary for source_articles list"""
+    now = datetime.now(timezone.utc)
+    return {
+        "id": article_id,
+        "source": source,
+        "title": f"Article from {source}",
+        "url": f"https://{source}.com/article/{article_id}",
+        "source_tier": 1,
+        "description": "Test article description",
+        "published_at": now.isoformat(),
+        "fetched_at": now.isoformat(),
+        "category": "world",
+        "language": "en"
+    }
+
+
+def create_test_source_articles(count: int = 3) -> List[Dict[str, Any]]:
+    """Create a list of properly formatted source article dictionaries"""
+    sources = ["reuters", "bbc", "cnn", "ap", "nyt"]
+    articles = []
+    for i in range(min(count, len(sources))):
+        source = sources[i]
+        articles.append(create_test_article_dict(f"{source}_article_{i}", source))
+    return articles
+
 
 # ============================================================================
 # SESSION FIXTURES (Setup once per test session)
