@@ -131,9 +131,25 @@ Provide a balanced, factual summary combining information from all sources."""
         now = datetime.now(timezone.utc)
         
         # Arrange: Create story and get AI summary
-        ai_summary = mock_anthropic_response['content'][0]['text']
+        ai_summary_text = mock_anthropic_response['content'][0]['text']
         
         from conftest import create_test_source_articles
+        from functions.shared.models import SummaryVersion
+        
+        # Create proper SummaryVersion object
+        summary_version = SummaryVersion(
+            version=1,
+            text=ai_summary_text,
+            generated_at=now,
+            model="claude-3-5-haiku-20241022",
+            word_count=len(ai_summary_text.split()),
+            generation_time_ms=500,
+            prompt_tokens=500,
+            completion_tokens=50,
+            cached_tokens=0,
+            cost_usd=0.0006
+        )
+        
         story = StoryCluster(
             id=f"story_summary_{now.strftime('%Y%m%d_%H%M%S')}",
             event_fingerprint="test_summary_fingerprint",
@@ -148,8 +164,7 @@ Provide a balanced, factual summary combining information from all sources."""
             importance_score=75,
             confidence_score=80,
             breaking_news=False,
-            summary=ai_summary,
-            summary_generated_at=now.isoformat()
+            summary=summary_version  # Fixed: use SummaryVersion object
         )
         
         # Act: Store story with summary
@@ -162,9 +177,17 @@ Provide a balanced, factual summary combining information from all sources."""
         # Assert: Verify summary stored
         stored_story = await cosmos_client_for_tests.get_story(story.id)
         if stored_story:
-            assert stored_story.get('summary') == ai_summary
-            assert stored_story.get('summary_generated_at') is not None
-            assert len(stored_story.get('summary', '')) > 0
+            # Summary is now a SummaryVersion object (dict when serialized)
+            summary = stored_story.get('summary')
+            assert summary is not None, "Summary should be stored"
+            # Check if it's a dict (serialized SummaryVersion)
+            if isinstance(summary, dict):
+                assert summary.get('text') == ai_summary_text
+                assert summary.get('generated_at') is not None
+                assert len(summary.get('text', '')) > 0
+            else:
+                # Or if it's a SummaryVersion object
+                assert summary.text == ai_summary_text
         
     @pytest.mark.asyncio
     async def test_headline_regeneration_on_source_addition(self, cosmos_client_for_tests, clean_test_data):
