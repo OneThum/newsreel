@@ -512,16 +512,35 @@ class CosmosDBClient:
         """Convenience wrapper for getting articles - extracts partition key from ID"""
         try:
             # Article ID format: source_YYYYMMDD_HH...
+            # Try to extract date from ID
             parts = article_id.split('_')
+            partition_key = None
+            
             if len(parts) >= 2:
                 date_str = parts[1]
-                partition_key = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
-            else:
-                # Fallback to current date
-                from datetime import datetime, timezone
-                partition_key = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+                # Check if this looks like a date (8 digits: YYYYMMDD)
+                if len(date_str) >= 8 and date_str[:8].isdigit():
+                    partition_key = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
             
-            return await self.get_raw_article(article_id, partition_key)
+            # If we extracted a partition key, try it first
+            if partition_key:
+                try:
+                    result = await self.get_raw_article(article_id, partition_key)
+                    if result:
+                        return result
+                except:
+                    pass  # Fall through to cross-partition query
+            
+            # Fallback: Try cross-partition query
+            container = self._get_container(config.CONTAINER_RAW_ARTICLES)
+            query = f"SELECT * FROM c WHERE c.id = '{article_id}'"
+            items = list(container.query_items(
+                query=query,
+                enable_cross_partition_query=True
+            ))
+            
+            return items[0] if items else None
+            
         except Exception as e:
             logger.error(f"Failed to get article {article_id}: {e}")
             return None
