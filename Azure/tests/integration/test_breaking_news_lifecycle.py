@@ -157,7 +157,7 @@ class TestBreakingNewsNotifications:
             confidence_score=95,
             breaking_news=True,
             breaking_triggered_at=now.isoformat(),
-            notification_sent=False  # Will be set to true after notification
+            push_notification_sent=False  # Will be set to true after notification
         )
         
         try:
@@ -197,8 +197,8 @@ class TestBreakingNewsNotifications:
             confidence_score=90,
             breaking_news=True,
             breaking_triggered_at=(now - timedelta(minutes=5)).isoformat(),
-            notification_sent=True,  # Already sent
-            notification_sent_at=(now - timedelta(minutes=5)).isoformat()
+            push_notification_sent=True,  # Already sent
+            push_notification_sent_at=(now - timedelta(minutes=5))
         )
         
         try:
@@ -210,7 +210,7 @@ class TestBreakingNewsNotifications:
         # Act & Assert: Verify notification not duplicated
         stored_story = await cosmos_client_for_tests.get_story(story.id)
         if stored_story:
-            already_notified = stored_story.get('notification_sent') == True
+            already_notified = stored_story.get('push_notification_sent') == True
             assert already_notified, "Should prevent duplicate notifications"
         
     @pytest.mark.asyncio

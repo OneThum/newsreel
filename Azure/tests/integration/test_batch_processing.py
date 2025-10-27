@@ -231,7 +231,6 @@ class TestBatchProcessing:
             if result['result']['type'] == 'succeeded':
                 summary_text = result['result']['message']['content'][0]['text']
                 story.summary = summary_text
-                story.summary_generated_at = now.isoformat()
                 
                 try:
                     await cosmos_client_for_tests.upsert_story(story.dict())
@@ -357,7 +356,6 @@ class TestBatchWorkflowEnd2End:
             story_to_update = next((s for s in stories_data if s.id == story_id), None)
             if story_to_update:
                 story_to_update.summary = summary
-                story_to_update.summary_generated_at = now.isoformat()
                 
                 try:
                     await cosmos_client_for_tests.upsert_story(story_to_update.dict())
