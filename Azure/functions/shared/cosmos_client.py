@@ -499,6 +499,52 @@ class CosmosDBClient:
             logger.error(f"Failed to query pending batches: {e}")
             return []
 
+    # ========================================================================
+    # TEST CONVENIENCE METHODS - Wrapper methods for easier testing
+    # ========================================================================
+    
+    async def upsert_article(self, article_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Convenience wrapper for upserting articles (used by integration tests)"""
+        article = RawArticle(**article_data) if isinstance(article_data, dict) else article_data
+        return await self.upsert_raw_article(article)
+    
+    async def get_article(self, article_id: str) -> Optional[Dict[str, Any]]:
+        """Convenience wrapper for getting articles - extracts partition key from ID"""
+        try:
+            # Article ID format: source_YYYYMMDD_HH...
+            parts = article_id.split('_')
+            if len(parts) >= 2:
+                date_str = parts[1]
+                partition_key = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
+            else:
+                # Fallback to current date
+                from datetime import datetime, timezone
+                partition_key = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+            
+            return await self.get_raw_article(article_id, partition_key)
+        except Exception as e:
+            logger.error(f"Failed to get article {article_id}: {e}")
+            return None
+    
+    async def upsert_story(self, story_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Convenience wrapper for upserting stories (used by integration tests)"""
+        story = StoryCluster(**story_data) if isinstance(story_data, dict) else story_data
+        return await self.create_story_cluster(story)
+    
+    async def get_story(self, story_id: str) -> Optional[Dict[str, Any]]:
+        """Convenience wrapper for getting stories - uses category from story data"""
+        try:
+            # Try default categories
+            for category in ['world', 'tech', 'business', 'science', 'health', 'test', 'general']:
+                try:
+                    return await self.get_story_cluster(story_id, category)
+                except:
+                    continue
+            return None
+        except Exception as e:
+            logger.error(f"Failed to get story {story_id}: {e}")
+            return None
+
 
 # Global instance
 cosmos_client = CosmosDBClient()
