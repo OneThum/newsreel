@@ -240,15 +240,11 @@ struct FeedView: View {
         }
         .onAppear {
             // Reload images preference from UserDefaults (in case it was changed elsewhere)
-            let savedValue = UserDefaults.standard.bool(forKey: "showImages")
-            let hasValue = UserDefaults.standard.object(forKey: "showImages") != nil
-            // showImages = hasValue ? savedValue : true // This line is removed
+            // Note: showImages preference no longer exists as images are not displayed
         }
         .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { _ in
             // Reload images preference when settings are changed
-            let savedValue = UserDefaults.standard.bool(forKey: "showImages")
-            let hasValue = UserDefaults.standard.object(forKey: "showImages") != nil
-            // showImages = hasValue ? savedValue : true // This line is removed
+            // Note: showImages preference no longer exists as images are not displayed
         }
         .onDisappear {
             // Stop polling when view disappears
@@ -1071,8 +1067,7 @@ struct SavedStoriesView: View {
                                         },
                                         onShare: {
                                             viewModel.shareStory(story)
-                                        },
-                                        showImages: showImages // Pass preference
+                                        }
                                     )
                                 }
                             }
@@ -1544,8 +1539,7 @@ struct SearchView: View {
                                         },
                                         onShare: {
                                             // Share logic
-                                        },
-                                        showImages: localShowImages // Pass preference
+                                        }
                                     )
                                 }
                             }
