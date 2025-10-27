@@ -101,7 +101,17 @@ class CosmosService:
             
             # 🔍 DIAGNOSTIC: Log query results
             logger.info(f"✅ Query returned {len(items)} stories")
-            return items
+            
+            # ✅ SORT IN PYTHON - Sort by last_updated DESC (newest first)
+            # This is required because Cosmos DB queries don't support ORDER BY without indexes
+            sorted_items = sorted(
+                items,
+                key=lambda s: s.get('last_updated', ''),
+                reverse=True  # Newest first
+            )
+            
+            logger.info(f"📊 After sorting: {len(sorted_items)} stories by last_updated DESC")
+            return sorted_items
         except exceptions.CosmosResourceNotFoundError as e:
             # Session token error - reset connection and retry
             logger.warning(f"Session token error, resetting connection: {e}")
