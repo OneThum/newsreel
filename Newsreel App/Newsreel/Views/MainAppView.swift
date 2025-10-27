@@ -169,16 +169,11 @@ struct FeedView: View {
     @StateObject private var viewModel: FeedViewModel
     @State private var selectedStory: Story?
     @State private var showingSearch = false
-    @State private var showImages: Bool
     @Binding var notificationStoryId: String?
     
     init(notificationStoryId: Binding<String?> = .constant(nil)) {
         _viewModel = StateObject(wrappedValue: FeedViewModel())
         _notificationStoryId = notificationStoryId
-        // Initialize showImages from UserDefaults
-        let savedValue = UserDefaults.standard.bool(forKey: "showImages")
-        let hasValue = UserDefaults.standard.object(forKey: "showImages") != nil
-        _showImages = State(initialValue: hasValue ? savedValue : true)
     }
     
     var body: some View {
@@ -228,11 +223,11 @@ struct FeedView: View {
                 }
             }
             .sheet(item: $selectedStory) { story in
-                StoryDetailView(story: story, apiService: apiService, showImages: showImages)
+                StoryDetailView(story: story, apiService: apiService)
                     .environmentObject(authService)
             }
             .sheet(isPresented: $showingSearch) {
-                SearchView(apiService: apiService, showImages: showImages)
+                SearchView(apiService: apiService)
                     .environmentObject(authService)
             }
         }
@@ -247,13 +242,13 @@ struct FeedView: View {
             // Reload images preference from UserDefaults (in case it was changed elsewhere)
             let savedValue = UserDefaults.standard.bool(forKey: "showImages")
             let hasValue = UserDefaults.standard.object(forKey: "showImages") != nil
-            showImages = hasValue ? savedValue : true
+            // showImages = hasValue ? savedValue : true // This line is removed
         }
         .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { _ in
             // Reload images preference when settings are changed
             let savedValue = UserDefaults.standard.bool(forKey: "showImages")
             let hasValue = UserDefaults.standard.object(forKey: "showImages") != nil
-            showImages = hasValue ? savedValue : true
+            // showImages = hasValue ? savedValue : true // This line is removed
         }
         .onDisappear {
             // Stop polling when view disappears
@@ -389,8 +384,7 @@ struct FeedView: View {
                                         },
                                         onShare: {
                                             viewModel.shareStory(story)
-                                        },
-                                        showImages: showImages  // Pass preference
+                                        }
                                     )
                                     .id(story.id) // Important for animation
                                 }
@@ -1443,7 +1437,6 @@ struct SearchView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var authService: AuthService
     let apiService: APIService
-    let showImages: Bool  // Add preference parameter
     
     @State private var searchText = ""
     @State private var results: [Story] = []
@@ -1453,9 +1446,8 @@ struct SearchView: View {
     @FocusState private var isSearchFieldFocused: Bool
     @State private var localShowImages: Bool
     
-    init(apiService: APIService, showImages: Bool) {
+    init(apiService: APIService) {
         self.apiService = apiService
-        self.showImages = showImages
         // Initialize localShowImages from UserDefaults
         let savedValue = UserDefaults.standard.bool(forKey: "showImages")
         let hasValue = UserDefaults.standard.object(forKey: "showImages") != nil
@@ -1572,7 +1564,7 @@ struct SearchView: View {
                 }
             }
             .sheet(item: $selectedStory) { story in
-                StoryDetailView(story: story, apiService: apiService, showImages: localShowImages)
+                StoryDetailView(story: story, apiService: apiService)
                     .environmentObject(authService)
             }
             .onAppear {

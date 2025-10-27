@@ -2,7 +2,7 @@
 //  StoryCard.swift
 //  Newsreel
 //
-//  Rich story card component with image, metadata, and interactions
+//  Story card component with metadata and interactions
 //
 
 import SwiftUI
@@ -14,19 +14,9 @@ struct StoryCard: View {
     let onSave: () -> Void
     let onLike: () -> Void
     let onShare: () -> Void
-    let showImages: Bool  // Add preference parameter
-    
-    @State private var showFullImage = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Show image placeholder only if images are enabled in preferences
-            if showImages {
-                Rectangle()
-                    .fill(Color.gray.opacity(0.15))
-                    .frame(height: 200)
-            }
-
             // Story Content
             VStack(alignment: .leading, spacing: 12) {
                 // Category Badge, Status, and Metadata
@@ -62,8 +52,6 @@ struct StoryCard: View {
                 HStack(spacing: 12) {
                     // Source logo and name
                     HStack(spacing: 6) {
-                        // REMOVED: AsyncImage for source logo - was causing layout thrashing
-                        // Use simple icon instead for consistent 60fps scrolling
                         Image(systemName: "newspaper")
                             .font(.system(size: 12))
                             .foregroundStyle(.secondary)
@@ -107,45 +95,10 @@ struct StoryCard: View {
             .padding(16)
         }
         .glassCard(cornerRadius: 16)
-        // REMOVED: scaleEffect + animation were causing re-layouts on every scroll frame
-        // This was the main cause of jerkiness - animations trigger re-measurement of all children
         .onTapGesture {
             HapticManager.selection()
             onTap()
         }
-        // REMOVED: Long press gesture - was contributing to gesture recognizer overhead
-        // Can be re-added later with proper debouncing if needed
-        // REMOVED: .onAppear logging was causing excessive log spam
-        // especially during re-renders, contributing to performance issues
-        // Badge logging can be re-enabled for debugging if needed
-    }
-    
-    // MARK: - Image Placeholders
-    
-    private var imageLoadingPlaceholder: some View {
-        ZStack {
-            Rectangle()
-                .fill(.quaternary)
-            ProgressView()
-                .tint(.primary)
-        }
-        .frame(height: 200)
-    }
-    
-    private var imageErrorPlaceholder: some View {
-        ZStack {
-            Rectangle()
-                .fill(.quaternary)
-            VStack(spacing: 8) {
-                Image(systemName: "photo")
-                    .font(.system(size: 40))
-                    .foregroundStyle(.secondary)
-                Text("Image unavailable")
-                    .font(.outfit(size: 12, weight: .regular))
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .frame(height: 200)
     }
 }
 
@@ -178,8 +131,7 @@ struct HapticManager {
                 onTap: { print("Tapped") },
                 onSave: { print("Saved") },
                 onLike: { print("Liked") },
-                onShare: { print("Shared") },
-                showImages: true // Pass true for preview
+                onShare: { print("Shared") }
             )
             .padding()
             
@@ -188,8 +140,7 @@ struct HapticManager {
                 onTap: { print("Tapped") },
                 onSave: { print("Saved") },
                 onLike: { print("Liked") },
-                onShare: { print("Shared") },
-                showImages: true // Pass true for preview
+                onShare: { print("Shared") }
             )
             .padding()
         }
