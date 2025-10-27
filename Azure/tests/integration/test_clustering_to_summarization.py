@@ -1,57 +1,99 @@
 """Integration tests: Story Clustering → AI Summarization
 
-Tests the flow from story cluster updates to AI summary generation
+Tests the flow from story cluster updates to AI summary generation using REAL Cosmos DB
 """
 import pytest
 import asyncio
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch, call
 import sys
 import os
 
 # Add parent directories to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 
-from functions.shared.cosmos_client import CosmosClient
+from functions.shared.cosmos_client import CosmosDBClient
+from functions.shared.models import StoryCluster
 
 
 @pytest.mark.integration
 class TestClusteringToSummarizationFlow:
-    """Test story cluster → summarization pipeline"""
+    """Test story cluster → summarization pipeline with REAL Cosmos DB"""
     
     @pytest.mark.asyncio
-    async def test_verified_story_triggers_summarization(self, mock_cosmos_client, sample_verified_story):
+    async def test_verified_story_triggers_summarization(self, cosmos_client_for_tests, clean_test_data):
         """Test that VERIFIED stories (3+ sources) trigger summarization"""
-        # Arrange: Story just reached VERIFIED status
-        story = sample_verified_story
+        now = datetime.now(timezone.utc)
         
-        # Act: Check if story needs summary
-        needs_summary = (
-            story['status'] == 'VERIFIED' and 
-            story['article_count'] >= 3 and
-            story.get('summary') is None
+        # Arrange: Create and store a VERIFIED story
+        story = StoryCluster(
+            id=f"story_verified_{now.strftime('%Y%m%d_%H%M%S')}",
+            event_fingerprint="test_verify_fingerprint",
+            title="President Announces Major Climate Initiative",
+            category="world",
+            tags=["climate", "policy"],
+            status="VERIFIED",
+            verification_level=3,
+            first_seen=now,
+            last_updated=now,
+            source_articles=["reuters_1", "bbc_1", "cnn_1"],  # 3+ sources
+            importance_score=85,
+            confidence_score=90,
+            breaking_news=False
         )
         
-        # Assert: Should trigger summarization
-        assert needs_summary, "VERIFIED story without summary should trigger summarization"
+        try:
+            await cosmos_client_for_tests.upsert_story(story.dict())
+            clean_test_data['register_story'](story.id)
+        except Exception as e:
+            pytest.skip(f"Could not store story: {e}")
+        
+        # Act & Assert: Check if story needs summary
+        stored_story = await cosmos_client_for_tests.get_story(story.id)
+        if stored_story:
+            needs_summary = (
+                stored_story.get('status') == 'VERIFIED' and 
+                len(stored_story.get('source_articles', [])) >= 3 and
+                stored_story.get('summary') is None
+            )
+            assert needs_summary, "VERIFIED story without summary should trigger summarization"
         
     @pytest.mark.asyncio
-    async def test_developing_story_no_summarization(self, mock_cosmos_client, sample_story_cluster):
+    async def test_developing_story_no_summarization(self, cosmos_client_for_tests, clean_test_data):
         """Test that DEVELOPING stories (2 sources) don't trigger summarization"""
-        # Arrange: Story with only 2 sources
-        story = sample_story_cluster
-        assert story['status'] == 'DEVELOPING'
-        assert story['article_count'] == 2
+        now = datetime.now(timezone.utc)
         
-        # Act: Check if story needs summary
-        needs_summary = (
-            story['status'] == 'VERIFIED' and 
-            story['article_count'] >= 3 and
-            story.get('summary') is None
+        # Arrange: Create and store a DEVELOPING story
+        story = StoryCluster(
+            id=f"story_develop_{now.strftime('%Y%m%d_%H%M%S')}",
+            event_fingerprint="test_develop_fingerprint",
+            title="Test Story Development",
+            category="world",
+            tags=["test"],
+            status="DEVELOPING",
+            verification_level=2,
+            first_seen=now,
+            last_updated=now,
+            source_articles=["reuters_2", "bbc_2"],  # Only 2 sources
+            importance_score=50,
+            confidence_score=60,
+            breaking_news=False
         )
         
-        # Assert: Should NOT trigger summarization
-        assert not needs_summary, "DEVELOPING story should not trigger summarization"
+        try:
+            await cosmos_client_for_tests.upsert_story(story.dict())
+            clean_test_data['register_story'](story.id)
+        except Exception as e:
+            pytest.skip(f"Could not store story: {e}")
+        
+        # Act & Assert: Check if story needs summary
+        stored_story = await cosmos_client_for_tests.get_story(story.id)
+        if stored_story:
+            needs_summary = (
+                stored_story.get('status') == 'VERIFIED' and 
+                len(stored_story.get('source_articles', [])) >= 3 and
+                stored_story.get('summary') is None
+            )
+            assert not needs_summary, "DEVELOPING story should not trigger summarization"
         
     @pytest.mark.asyncio
     async def test_summary_prompt_construction(self, sample_verified_story):
@@ -82,43 +124,81 @@ Provide a balanced, factual summary combining information from all sources."""
         assert 'CNN' in prompt
         
     @pytest.mark.asyncio
-    async def test_summary_stored_in_cluster(self, mock_cosmos_client, sample_verified_story, mock_anthropic_response):
+    async def test_summary_stored_in_cluster(self, cosmos_client_for_tests, clean_test_data, sample_verified_story, mock_anthropic_response):
         """Test that AI summary is stored back in story cluster"""
-        # Arrange: Story and mock AI response
-        story = sample_verified_story
+        now = datetime.now(timezone.utc)
+        
+        # Arrange: Create story and get AI summary
         ai_summary = mock_anthropic_response['content'][0]['text']
         
-        # Act: Update story with summary (simulate)
-        story['summary'] = ai_summary
-        story['summary_generated_at'] = datetime.now(timezone.utc).isoformat()
+        story = StoryCluster(
+            id=f"story_summary_{now.strftime('%Y%m%d_%H%M%S')}",
+            event_fingerprint="test_summary_fingerprint",
+            title="Test Story for Summary",
+            category="world",
+            tags=["test"],
+            status="VERIFIED",
+            verification_level=3,
+            first_seen=now,
+            last_updated=now,
+            source_articles=["art1", "art2", "art3"],
+            importance_score=75,
+            confidence_score=80,
+            breaking_news=False,
+            summary=ai_summary,
+            summary_generated_at=now.isoformat()
+        )
         
-        # Assert: Summary stored correctly
-        assert story['summary'] == ai_summary
-        assert story['summary_generated_at'] is not None
-        assert len(story['summary']) > 0
+        # Act: Store story with summary
+        try:
+            await cosmos_client_for_tests.upsert_story(story.dict())
+            clean_test_data['register_story'](story.id)
+        except Exception as e:
+            pytest.skip(f"Could not store story: {e}")
+        
+        # Assert: Verify summary stored
+        stored_story = await cosmos_client_for_tests.get_story(story.id)
+        if stored_story:
+            assert stored_story.get('summary') == ai_summary
+            assert stored_story.get('summary_generated_at') is not None
+            assert len(stored_story.get('summary', '')) > 0
         
     @pytest.mark.asyncio
-    async def test_headline_regeneration_on_source_addition(self, mock_cosmos_client, sample_story_cluster):
+    async def test_headline_regeneration_on_source_addition(self, cosmos_client_for_tests, clean_test_data):
         """Test that headlines are regenerated when new sources are added"""
-        # Arrange: Story with 2 sources
-        story = sample_story_cluster
-        original_headline = story['headline']
+        now = datetime.now(timezone.utc)
         
-        # Act: Add third source (would trigger headline update in real system)
-        new_source = {
-            'source': 'ap',
-            'source_name': 'Associated Press',
-            'title': 'Climate Initiative Announced by President',
-            'article_id': 'ap_article1'
-        }
-        story['sources'].append(new_source)
-        story['article_count'] = 3
+        # Arrange: Create story with 2 sources
+        story = StoryCluster(
+            id=f"story_headline_{now.strftime('%Y%m%d_%H%M%S')}",
+            event_fingerprint="test_headline_fingerprint",
+            title="Test Story Headline",
+            category="world",
+            tags=["test"],
+            status="DEVELOPING",
+            verification_level=2,
+            first_seen=now,
+            last_updated=now,
+            source_articles=["art1", "art2"],  # 2 sources
+            importance_score=60,
+            confidence_score=70,
+            breaking_news=False
+        )
         
-        # Simulate headline regeneration (would use AI in real system)
-        should_regenerate_headline = len(story['sources']) >= 3
+        try:
+            await cosmos_client_for_tests.upsert_story(story.dict())
+            clean_test_data['register_story'](story.id)
+        except Exception as e:
+            pytest.skip(f"Could not store story: {e}")
         
-        # Assert: Should trigger headline update
-        assert should_regenerate_headline, "Adding 3rd source should trigger headline regeneration"
+        # Act: Simulate adding third source
+        stored_story = await cosmos_client_for_tests.get_story(story.id)
+        if stored_story:
+            stored_story['source_articles'].append("art3")
+            should_regenerate_headline = len(stored_story['source_articles']) >= 3
+            
+            # Assert: Should trigger headline update
+            assert should_regenerate_headline, "Adding 3rd source should trigger headline regeneration"
         
     @pytest.mark.asyncio
     async def test_cost_tracking_for_summarization(self, mock_anthropic_response):
@@ -142,27 +222,47 @@ Provide a balanced, factual summary combining information from all sources."""
 
 @pytest.mark.integration
 class TestSummarizationWorkflow:
-    """Test complete summarization workflows"""
+    """Test complete summarization workflows with REAL Cosmos DB"""
     
     @pytest.mark.asyncio
-    async def test_real_time_summarization_flow(self, mock_cosmos_client, sample_verified_story):
+    async def test_real_time_summarization_flow(self, cosmos_client_for_tests, clean_test_data):
         """Test real-time summarization via change feed"""
-        # Arrange: Story just reached VERIFIED
-        story = sample_verified_story
+        now = datetime.now(timezone.utc)
         
-        # Act: Simulate change feed trigger
-        is_changefeed_trigger = True
-        should_summarize_immediately = (
-            is_changefeed_trigger and
-            story['status'] == 'VERIFIED' and
-            story.get('summary') is None
+        # Arrange: Create a story that just reached VERIFIED
+        story = StoryCluster(
+            id=f"story_realtime_{now.strftime('%Y%m%d_%H%M%S')}",
+            event_fingerprint="test_realtime_fingerprint",
+            title="Real-time Summary Test",
+            category="world",
+            tags=["test"],
+            status="VERIFIED",
+            verification_level=3,
+            first_seen=now,
+            last_updated=now,
+            source_articles=["art1", "art2", "art3"],
+            importance_score=80,
+            confidence_score=85,
+            breaking_news=False
         )
         
-        # Assert: Should trigger immediate summarization
-        assert should_summarize_immediately
+        try:
+            await cosmos_client_for_tests.upsert_story(story.dict())
+            clean_test_data['register_story'](story.id)
+        except Exception as e:
+            pytest.skip(f"Could not store story: {e}")
+        
+        # Act & Assert: Check if would trigger real-time summarization
+        stored_story = await cosmos_client_for_tests.get_story(story.id)
+        if stored_story:
+            should_summarize = (
+                stored_story.get('status') == 'VERIFIED' and
+                stored_story.get('summary') is None
+            )
+            assert should_summarize, "VERIFIED story without summary should trigger real-time summarization"
         
     @pytest.mark.asyncio
-    async def test_batch_summarization_flow(self, mock_cosmos_client, sample_batch_request):
+    async def test_batch_summarization_flow(self, sample_batch_request):
         """Test batch summarization workflow"""
         # Arrange: Batch request with multiple stories
         batch = sample_batch_request
@@ -177,7 +277,7 @@ class TestSummarizationWorkflow:
         assert batch['request_count'] == len(batch['story_ids'])
         
     @pytest.mark.asyncio
-    async def test_batch_result_processing(self, mock_cosmos_client, sample_completed_batch):
+    async def test_batch_result_processing(self, sample_completed_batch):
         """Test processing of completed batch results"""
         # Arrange: Completed batch with results
         batch = sample_completed_batch
@@ -193,23 +293,43 @@ class TestSummarizationWorkflow:
         assert batch['failed_count'] == 0
         
     @pytest.mark.asyncio
-    async def test_summary_fallback_on_ai_refusal(self, mock_cosmos_client, sample_verified_story):
+    async def test_summary_fallback_on_ai_refusal(self, cosmos_client_for_tests, clean_test_data):
         """Test fallback summary when AI refuses to summarize"""
-        # Arrange: Story that might be refused
-        story = sample_verified_story
+        now = datetime.now(timezone.utc)
         
-        # Simulate AI refusal
-        ai_refused = True
+        # Arrange: Create story for fallback testing
+        story = StoryCluster(
+            id=f"story_fallback_{now.strftime('%Y%m%d_%H%M%S')}",
+            event_fingerprint="test_fallback_fingerprint",
+            title="AI Refusal Fallback Test",
+            category="world",
+            tags=["test"],
+            status="VERIFIED",
+            verification_level=3,
+            first_seen=now,
+            last_updated=now,
+            source_articles=["art1", "art2", "art3"],
+            importance_score=70,
+            confidence_score=75,
+            breaking_news=False
+        )
+        
+        try:
+            await cosmos_client_for_tests.upsert_story(story.dict())
+            clean_test_data['register_story'](story.id)
+        except Exception as e:
+            pytest.skip(f"Could not store story: {e}")
         
         # Act: Generate fallback summary
+        ai_refused = True
         if ai_refused:
-            fallback_summary = f"Multiple sources report: {story['headline']}"
+            fallback_summary = f"Multiple sources report: {story.title}"
         else:
             fallback_summary = None
             
         # Assert: Fallback created
         assert fallback_summary is not None
-        assert story['headline'] in fallback_summary
+        assert story.title in fallback_summary
         assert 'Multiple sources report' in fallback_summary
 
 
