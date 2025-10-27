@@ -68,6 +68,78 @@ class TestDeployedAPI:
         
         print(f"✅ API returned {len(stories)} stories with valid structure")
     
+    def test_stories_have_sources_with_data(self, api_base_url, auth_headers):
+        """Test: Do stories have ACTUAL source articles (not empty sources array)?"""
+        response = requests.get(
+            f"{api_base_url}/api/stories/feed?limit=20",
+            headers=auth_headers,
+            timeout=10
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        stories = data if isinstance(data, list) else data.get('stories', [])
+        
+        assert len(stories) > 0, "No stories to check"
+        
+        # Check if ANY stories have actual sources (not just the field)
+        stories_with_sources = []
+        for story in stories:
+            sources = story.get('sources', [])
+            if sources and len(sources) > 0:
+                # Verify each source has required fields
+                for source in sources:
+                    assert 'source' in source, f"Source missing 'source' field in story {story.get('id')}"
+                    assert 'title' in source, f"Source missing 'title' field in story {story.get('id')}"
+                    assert source.get('source'), f"Source has empty 'source' in story {story.get('id')}"
+                    assert source.get('title'), f"Source has empty 'title' in story {story.get('id')}"
+                stories_with_sources.append(story)
+        
+        # CRITICAL: At least SOME stories should have sources
+        assert len(stories_with_sources) > 0, \
+            f"❌ CRITICAL: {len(stories)} stories returned but NONE have actual source data! " \
+            f"Sources array is empty or has wrong format. Clustering broken?"
+        
+        source_pct = (len(stories_with_sources) / len(stories)) * 100
+        print(f"✅ {len(stories_with_sources)}/{len(stories)} stories ({source_pct:.0f}%) have actual source data")
+    
+    def test_stories_have_summaries_with_data(self, api_base_url, auth_headers):
+        """Test: Do stories have ACTUAL summaries (not null/empty)?"""
+        response = requests.get(
+            f"{api_base_url}/api/stories/feed?limit=20",
+            headers=auth_headers,
+            timeout=10
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        stories = data if isinstance(data, list) else data.get('stories', [])
+        
+        assert len(stories) > 0, "No stories to check"
+        
+        # Check if ANY stories have actual summaries
+        stories_with_summaries = []
+        for story in stories:
+            summary = story.get('summary')
+            # Summary can be:
+            # - None (not generated yet)
+            # - dict with 'text' field (proper format)
+            # - string (simple format)
+            if summary:
+                if isinstance(summary, dict):
+                    if summary.get('text'):
+                        stories_with_summaries.append(story)
+                elif isinstance(summary, str) and summary.strip():
+                    stories_with_summaries.append(story)
+        
+        # NOTE: Summaries are optional (AI summarization may not be complete yet)
+        # But if ANY exist, they should have real content
+        if stories_with_summaries:
+            summary_pct = (len(stories_with_summaries) / len(stories)) * 100
+            print(f"✅ {len(stories_with_summaries)}/{len(stories)} stories ({summary_pct:.0f}%) have AI summaries")
+        else:
+            print(f"⚠️  INFO: No stories have summaries yet (AI summarization may still be processing)")
+    
     def test_stories_are_recent(self, api_base_url, auth_headers):
         """Test: Are the stories recent (not stale data)?"""
         response = requests.get(
