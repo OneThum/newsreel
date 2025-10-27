@@ -233,7 +233,7 @@ class TestStoryFingerprinting:
         # Fingerprint is a hash, not readable text
         assert isinstance(fingerprint, str)
         assert len(fingerprint) > 0
-        assert len(fingerprint) == 6  # MD5 hash truncated to 6 chars
+        assert len(fingerprint) == 8  # MD5 hash truncated to 8 chars (improved for better precision)
     
     def test_fingerprint_consistency(self):
         """Test fingerprints are consistent for same inputs"""
