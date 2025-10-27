@@ -162,63 +162,81 @@ def generate_article_id(source: str, url: str, published_at: datetime) -> str:
 
 def generate_story_fingerprint(title: str, entities: List[Entity]) -> str:
     """
-    Generate story fingerprint for clustering - IMPROVED for better matching
+    Generate story fingerprint for clustering - IMPROVED for BETTER matching
     
-    Strategy: Create fingerprints that capture the CORE story, not specific wording
-    Example: "Trump announces policy" and "President Trump unveils approach" 
-    should match on "trump policy"
+    Strategy: Create fingerprints that capture the CORE story semantically
+    
+    CRITICAL FIX: Previous logic was TOO AGGRESSIVE
+    - Only took 3 key words (reduced false positives but missed true matches)
+    - Only took 1 entity (too restrictive)
+    - Result: Articles about same event got DIFFERENT fingerprints
+    
+    New approach: Balance between specificity and breadth
+    - Take more words (5-6) to capture full context while avoiding generic phrases
+    - Take 2-3 entities (persons, orgs, locations)
+    - Use full MD5 hash (not truncated) for precision
     """
     # Normalize title
     title_normalized = title.lower().strip()
     title_normalized = re.sub(r'[^\w\s]', '', title_normalized)
     
-    # Expanded stop words (more aggressive filtering)
+    # Essential stop words (only ultra-common ones)
     stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 
                   'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'been', 'be',
                   'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'should',
                   'could', 'may', 'might', 'must', 'can', 'this', 'that', 'these', 'those',
                   'says', 'after', 'over', 'about', 'into', 'through', 'during', 'before',
-                  'under', 'between', 'out', 'against', 'among', 'throughout'}
+                  'under', 'between', 'out', 'against', 'among', 'throughout', 'up', 'down'}
     
     # Action words to remove (verbs that don't help identify stories)
-    action_verbs = {'announces', 'unveils', 'reveals', 'confirms', 'denies', 'says', 
-                    'reports', 'claims', 'stated', 'told', 'speaks', 'discusses'}
+    # Reduced set - only remove the most generic action verbs
+    action_verbs = {'announces', 'unveils', 'reveals', 'confirms', 'denies', 
+                    'reports', 'claims', 'stated', 'tells', 'speaks', 'discusses',
+                    'says', 'told'}
     
-    # Get meaningful words - AGGRESSIVE reduction for broader matching
+    # Get meaningful words - BALANCED approach
     words = title_normalized.split()
     
-    # Focus on ONLY the most essential words (3+ chars, no stop/action words)
+    # Keep 5-6 core words (was 3) to capture full context while avoiding generic phrases
     key_words = [w for w in words 
-                 if len(w) > 3  # Keep at 3 characters
+                 if len(w) > 3  # 3+ characters  
                  and w not in stop_words 
-                 and w not in action_verbs][:3]  # REDUCED from 5 to 3 - even fewer = much broader match
+                 and w not in action_verbs][:6]  # INCREASED from 3 to 6
     
-    # Extract ONLY the top entity (single most important concept)
+    # Extract named entities (PERSONS, ORGS, LOCATIONS) - up to 3
+    # These are CRUCIAL for story identification
     entity_texts = []
+    entity_priority = []  # Track type for sorting (person/org > location)
+    
     for e in entities:
         # Handle both Entity objects and dict format for compatibility
         entity_type = e.get('type') if isinstance(e, dict) else (e.type if hasattr(e, 'type') else None)
         entity_text = e.get('text') if isinstance(e, dict) else (e.text if hasattr(e, 'text') else None)
         
-        if entity_type in ['PERSON', 'LOCATION'] and entity_text:
+        if entity_text and entity_type in ['PERSON', 'ORGANIZATION', 'LOCATION']:
             entity_texts.append(entity_text.lower())
-            break  # Take just the FIRST person/location
-        elif entity_type == 'ORGANIZATION' and not entity_texts and entity_text:
-            entity_texts.append(entity_text.lower())
-    entity_texts = entity_texts[:1]  # REDUCED from 2 to 1 - single entity = broadest match
+            # Prioritize persons and orgs over locations
+            if entity_type in ['PERSON', 'ORGANIZATION']:
+                entity_priority.insert(0, entity_text.lower())
+            else:
+                entity_priority.append(entity_text.lower())
     
-    # Combine - focus on MINIMAL essential concepts only
+    # Take top 2-3 entities (was 1) for better specificity
+    entity_texts = (entity_priority + entity_texts)[:3]  # INCREASED from 1 to 3
+    
+    # Combine keywords and entities
     all_terms = set(key_words + entity_texts)
     
-    # If we have very few terms, use just 2-3 words as fallback (not 4)
-    if len(all_terms) < 2:
-        all_terms = set([w for w in words if len(w) > 3 and w not in stop_words][:3])
+    # If we have very few terms, add more words as fallback
+    if len(all_terms) < 3:
+        fallback_words = [w for w in words if len(w) > 3 and w not in stop_words][:5]
+        all_terms = set(fallback_words + entity_texts)
     
     combined = '_'.join(sorted(all_terms))
     
-    # Use VERY SHORT hash for extremely broad matching (6 chars instead of 8)
-    # This means stories with similar core concepts will fingerprint together
-    fingerprint_hash = hashlib.md5(combined.encode()).hexdigest()[:6]
+    # Use FULL MD5 hash (was truncated to 6 chars) for precision
+    # Full hash ensures even slightly different combinations produce different fingerprints
+    fingerprint_hash = hashlib.md5(combined.encode()).hexdigest()[:8]  # Use 8 chars for good balance
     
     return fingerprint_hash
 
