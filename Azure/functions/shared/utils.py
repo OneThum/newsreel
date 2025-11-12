@@ -248,26 +248,66 @@ def generate_event_fingerprint(articles_fingerprints: List[str]) -> str:
 
 
 def extract_simple_entities(text: str) -> List[Entity]:
-    """Simple entity extraction (placeholder for more sophisticated NER)"""
+    """Enhanced entity extraction with basic string matching linking (Phase 1)"""
     entities = []
-    
+
     # Simple capitalized word extraction as named entities
     words = text.split()
     capitalized = [w.strip('.,!?;:') for w in words if w and w[0].isupper() and len(w) > 2]
-    
-    # Common country names
-    countries = {'US', 'USA', 'UK', 'China', 'Japan', 'Russia', 'France', 'Germany', 'India', 
-                 'Canada', 'Australia', 'Brazil', 'Mexico', 'Italy', 'Spain'}
-    
+
+    # Known entity databases for basic linking
+    countries = {
+        'US': 'United States', 'USA': 'United States', 'UK': 'United Kingdom',
+        'China': 'China', 'Japan': 'Japan', 'Russia': 'Russia', 'France': 'France',
+        'Germany': 'Germany', 'India': 'India', 'Canada': 'Canada', 'Australia': 'Australia',
+        'Brazil': 'Brazil', 'Mexico': 'Mexico', 'Italy': 'Italy', 'Spain': 'Spain'
+    }
+
+    organizations = {
+        'CNN': 'Cable News Network', 'BBC': 'British Broadcasting Corporation',
+        'Reuters': 'Reuters News Agency', 'AP': 'Associated Press',
+        'NYT': 'The New York Times', 'WSJ': 'The Wall Street Journal',
+        'Fox': 'Fox News', 'NBC': 'National Broadcasting Company',
+        'CBS': 'CBS Broadcasting', 'ABC': 'American Broadcasting Company',
+        'NATO': 'North Atlantic Treaty Organization', 'UN': 'United Nations',
+        'WHO': 'World Health Organization', 'NASA': 'National Aeronautics and Space Administration',
+        'FBI': 'Federal Bureau of Investigation', 'CIA': 'Central Intelligence Agency'
+    }
+
+    people_indicators = {'President', 'Prime', 'Minister', 'CEO', 'Director', 'Chairman',
+                        'Senator', 'Governor', 'Mayor', 'Chief', 'Dr.', 'Professor'}
+
     for word in capitalized:
+        # Phase 1: Basic string matching for entity linking
         if word in countries:
-            entities.append(Entity(text=word, type='LOCATION'))
+            entities.append(Entity(text=word, type='LOCATION', linked_name=countries[word]))
+        elif word in organizations:
+            entities.append(Entity(text=word, type='ORGANIZATION', linked_name=organizations[word]))
         elif word.endswith('land') or word.endswith('stan'):
             entities.append(Entity(text=word, type='LOCATION'))
+        elif any(indicator in word for indicator in people_indicators):
+            entities.append(Entity(text=word, type='PERSON'))
         else:
-            # Default to organization
+            # Default to organization for other capitalized words
             entities.append(Entity(text=word, type='ORGANIZATION'))
-    
+
+    # Phase 1: Enhanced entity linking - check for multi-word entities
+    text_lower = text.lower()
+
+    # Check for known multi-word organizations
+    multi_word_orgs = {
+        'white house': ('White House', 'United States Government'),
+        'supreme court': ('Supreme Court', 'United States Judiciary'),
+        'federal reserve': ('Federal Reserve', 'United States Central Bank'),
+        'world health organization': ('World Health Organization', 'WHO'),
+        'united nations': ('United Nations', 'UN'),
+        'north atlantic treaty organization': ('NATO', 'North Atlantic Treaty Organization')
+    }
+
+    for phrase, (entity_text, linked_name) in multi_word_orgs.items():
+        if phrase in text_lower:
+            entities.append(Entity(text=entity_text, type='ORGANIZATION', linked_name=linked_name))
+
     # Remove duplicates
     seen = set()
     unique_entities = []
@@ -276,7 +316,7 @@ def extract_simple_entities(text: str) -> List[Entity]:
         if key not in seen:
             seen.add(key)
             unique_entities.append(e)
-    
+
     return unique_entities[:20]  # Limit to 20 entities
 
 
@@ -590,10 +630,10 @@ def generate_fallback_summary(story_data: Dict[str, Any], articles: List[Dict[st
 
 def is_ai_refusal(summary_text: str) -> bool:
     """Check if AI response is a refusal to summarize
-    
+
     Args:
         summary_text: The generated summary text
-        
+
     Returns:
         bool: True if text appears to be a refusal
     """
@@ -602,6 +642,189 @@ def is_ai_refusal(summary_text: str) -> bool:
         "would need", "please provide", "unable to", "not possible",
         "requires additional", "incomplete information", "lacks essential"
     ]
-    
+
     return any(indicator in summary_text.lower() for indicator in refusal_indicators)
+
+
+# ============================================================================
+# SIMHASH DEDUPLICATION FUNCTIONS (Phase 1 Clustering Overhaul)
+# ============================================================================
+
+def detect_duplicates(article: Dict[str, Any], recent_hashes: Set[str] = None) -> Tuple[bool, Optional[str]]:
+    """
+    Two-stage deduplication for news articles
+
+    Stage 1: Exact match via SHA1 hash
+    Stage 2: Near-duplicate via SimHash (Hamming distance <= 3)
+
+    Args:
+        article: RawArticle dict with title, description, source_domain
+        recent_hashes: Set of recent exact hashes (SHA1) for fast lookup
+
+    Returns:
+        (is_duplicate, duplicate_type)
+        duplicate_type: 'exact_duplicate' | 'syndication_duplicate' | None
+    """
+    from .config import config
+
+    # Stage 1: Exact match via SHA1 hash
+    exact_hash = hashlib.sha1(
+        normalize_text(article.get('title', '')).encode() +
+        article.get('source_domain', '').encode()
+    ).hexdigest()
+
+    if recent_hashes and exact_hash in recent_hashes:
+        return True, 'exact_duplicate'
+
+    # Stage 2: SimHash for near-duplicates
+    combined_text = f"{article.get('title', '')} {article.get('description', '')}"
+    simhash = compute_simhash(combined_text, config.SIMHASH_SHINGLE_SIZE, config.SIMHASH_BITS)
+
+    # In a real implementation, we'd check against a database/cache of recent simhashes
+    # For now, return False (this will be implemented when we add the hash storage)
+    # TODO: Implement hash storage and lookup
+
+    return False, None
+
+
+def create_shingles(text: str, n: int = 3) -> List[str]:
+    """Create n-grams (shingles) from text for SimHash computation
+
+    Args:
+        text: Input text
+        n: Number of words per shingle (default: 3)
+
+    Returns:
+        List of shingle strings
+    """
+    # Normalize text: lowercase, remove punctuation, split into words
+    normalized = normalize_text(text)
+    words = normalized.split()
+
+    # Create shingles (n-grams)
+    shingles = []
+    for i in range(len(words) - n + 1):
+        shingle = ' '.join(words[i:i+n])
+        shingles.append(shingle)
+
+    return shingles
+
+
+def compute_simhash(text: str, shingle_size: int = 3, bits: int = 64) -> int:
+    """Compute SimHash fingerprint from text
+
+    Args:
+        text: Input text
+        shingle_size: Number of words per shingle
+        bits: Fingerprint size in bits (default: 64)
+
+    Returns:
+        64-bit integer SimHash fingerprint
+    """
+    # Create shingles
+    shingles = create_shingles(text, shingle_size)
+
+    if not shingles:
+        # Fallback for very short texts
+        shingles = [text.lower().strip()]
+
+    # Initialize vector for each bit
+    v = [0] * bits
+
+    # Process each shingle
+    for shingle in shingles:
+        # Hash the shingle to get a 64-bit number
+        h = int(hashlib.md5(shingle.encode()).hexdigest(), 16)
+
+        # For each bit, increment/decrement based on bit value
+        for i in range(bits):
+            if h & (1 << i):
+                v[i] += 1
+            else:
+                v[i] -= 1
+
+    # Create fingerprint: 1 if v[i] > 0, else 0
+    fingerprint = 0
+    for i in range(bits):
+        if v[i] > 0:
+            fingerprint |= (1 << i)
+
+    return fingerprint
+
+
+def hamming_distance(hash1: int, hash2: int) -> int:
+    """Calculate Hamming distance between two SimHash fingerprints
+
+    Args:
+        hash1: First SimHash fingerprint
+        hash2: Second SimHash fingerprint
+
+    Returns:
+        Number of differing bits
+    """
+    x = hash1 ^ hash2  # XOR to find differing bits
+    return bin(x).count('1')  # Count the 1s in binary representation
+
+
+def normalize_text(text: str) -> str:
+    """Normalize text for duplicate detection
+
+    Args:
+        text: Input text
+
+    Returns:
+        Normalized text (lowercase, punctuation removed)
+    """
+    if not text:
+        return ""
+
+    # Convert to lowercase
+    normalized = text.lower()
+
+    # Remove punctuation and extra whitespace
+    import re
+    normalized = re.sub(r'[^\w\s]', '', normalized)
+    normalized = re.sub(r'\s+', ' ', normalized)
+
+    return normalized.strip()
+
+
+# ============================================================================
+# ADAPTIVE THRESHOLD FUNCTIONS (Phase 1 Clustering Overhaul)
+# ============================================================================
+
+def calculate_adaptive_threshold(article_age_hours: float, base_threshold: float = 0.50) -> float:
+    """
+    Calculate adaptive similarity threshold based on article age
+
+    Strategy: Breaking news gets stricter threshold (higher), older stories get more lenient (lower)
+
+    Args:
+        article_age_hours: How many hours old the article is
+        base_threshold: The default threshold to adapt from
+
+    Returns:
+        Adaptive threshold between 0.3 and 0.7
+    """
+    from .config import config
+
+    if not config.CLUSTERING_USE_ADAPTIVE_THRESHOLD:
+        return base_threshold
+
+    # Adaptive threshold logic:
+    # - Breaking news (< 12 hours): Stricter threshold (+0.1 to base)
+    # - Recent news (12-72 hours): Standard threshold (base)
+    # - Older news (> 72 hours): More lenient threshold (-0.1 to base)
+
+    if article_age_hours < 12:
+        # Breaking news - higher threshold (stricter)
+        adaptive_threshold = min(base_threshold + 0.1, 0.7)
+    elif article_age_hours < 72:
+        # Recent news - standard threshold
+        adaptive_threshold = base_threshold
+    else:
+        # Older news - lower threshold (more lenient)
+        adaptive_threshold = max(base_threshold - 0.1, 0.3)
+
+    return adaptive_threshold
 

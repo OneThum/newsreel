@@ -44,7 +44,7 @@ class TestBreakingNewsDetection:
         )
         
         try:
-            await cosmos_client_for_tests.upsert_story(story.dict())
+            await cosmos_client_for_tests.upsert_story(story.model_dump())
             clean_test_data['register_story'](story.id)
         except Exception as e:
             pytest.skip(f"Could not store story: {e}")
@@ -81,7 +81,7 @@ class TestBreakingNewsDetection:
         )
         
         try:
-            await cosmos_client_for_tests.upsert_story(story.dict())
+            await cosmos_client_for_tests.upsert_story(story.model_dump())
             clean_test_data['register_story'](story.id)
         except Exception as e:
             pytest.skip(f"Could not store story: {e}")
@@ -120,7 +120,7 @@ class TestBreakingNewsDetection:
         )
         
         try:
-            await cosmos_client_for_tests.upsert_story(story.dict())
+            await cosmos_client_for_tests.upsert_story(story.model_dump())
             clean_test_data['register_story'](story.id)
         except Exception as e:
             pytest.skip(f"Could not store story: {e}")
@@ -161,7 +161,7 @@ class TestBreakingNewsNotifications:
         )
         
         try:
-            await cosmos_client_for_tests.upsert_story(story.dict())
+            await cosmos_client_for_tests.upsert_story(story.model_dump())
             clean_test_data['register_story'](story.id)
         except Exception as e:
             pytest.skip(f"Could not store story: {e}")
@@ -202,7 +202,7 @@ class TestBreakingNewsNotifications:
         )
         
         try:
-            await cosmos_client_for_tests.upsert_story(story.dict())
+            await cosmos_client_for_tests.upsert_story(story.model_dump())
             clean_test_data['register_story'](story.id)
         except Exception as e:
             pytest.skip(f"Could not store story: {e}")
@@ -237,7 +237,7 @@ class TestBreakingNewsNotifications:
         )
         
         try:
-            await cosmos_client_for_tests.upsert_story(story.dict())
+            await cosmos_client_for_tests.upsert_story(story.model_dump())
             clean_test_data['register_story'](story.id)
         except Exception as e:
             pytest.skip(f"Could not store story: {e}")
@@ -285,7 +285,7 @@ class TestBreakingNewsLifecycle:
         )
         
         try:
-            await cosmos_client_for_tests.upsert_story(story.dict())
+            await cosmos_client_for_tests.upsert_story(story.model_dump())
             clean_test_data['register_story'](story.id)
         except Exception as e:
             pytest.skip(f"Could not store story: {e}")
@@ -325,7 +325,7 @@ class TestBreakingNewsLifecycle:
         )
         
         try:
-            await cosmos_client_for_tests.upsert_story(story.dict())
+            await cosmos_client_for_tests.upsert_story(story.model_dump())
             clean_test_data['register_story'](story.id)
         except Exception as e:
             pytest.skip(f"Could not store story: {e}")
@@ -360,7 +360,7 @@ class TestBreakingNewsLifecycle:
         )
         
         try:
-            await cosmos_client_for_tests.upsert_story(story.dict())
+            await cosmos_client_for_tests.upsert_story(story.model_dump())
             clean_test_data['register_story'](story.id)
         except Exception as e:
             pytest.skip(f"Could not store story: {e}")

@@ -28,6 +28,8 @@ SOURCE_DISPLAY_NAMES = {
     "cnn": "CNN",
     "fox": "Fox News",
     "msnbc": "MSNBC",
+    "nbc": "NBC News",
+    "cbs": "CBS News",
     "npr": "NPR",
     "ap": "Associated Press",
     "reuters": "Reuters",

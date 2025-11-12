@@ -45,7 +45,31 @@ class Config:
     MIN_SOURCES_FOR_DEVELOPING: int = 2
     MIN_SOURCES_FOR_BREAKING: int = 3
     BREAKING_NEWS_WINDOW_MINUTES: int = 30
-    STORY_FINGERPRINT_SIMILARITY_THRESHOLD: float = 0.70
+    STORY_FINGERPRINT_SIMILARITY_THRESHOLD: float = 0.50  # 50% similarity required for clustering (reduced from 0.60 to allow more new stories)
+
+    # Clustering Overhaul Feature Flags
+    CLUSTERING_USE_SIMHASH: bool = os.getenv('CLUSTERING_USE_SIMHASH', 'false') == 'true'
+    CLUSTERING_USE_TIME_WINDOW: bool = os.getenv('CLUSTERING_USE_TIME_WINDOW', 'false') == 'true'
+    CLUSTERING_USE_ADAPTIVE_THRESHOLD: bool = os.getenv('CLUSTERING_USE_ADAPTIVE', 'false') == 'true'
+    CLUSTERING_USE_EMBEDDINGS: bool = os.getenv('CLUSTERING_USE_EMBEDDINGS', 'false') == 'true'
+
+    # SimHash Configuration
+    SIMHASH_SHINGLE_SIZE: int = 3  # Number of words per shingle
+    SIMHASH_BITS: int = 64  # Fingerprint size
+    SIMHASH_HAMMING_THRESHOLD: int = 3  # Max hamming distance for near-duplicate detection
+    SIMHASH_HASH_TTL_DAYS: int = 7  # How long to keep hashes for comparison
+
+# Phase 2: Semantic Embeddings Configuration
+EMBEDDINGS_MODEL: str = os.getenv('EMBEDDINGS_MODEL', 'intfloat/multilingual-e5-large')
+EMBEDDINGS_DIMENSION: int = 1024  # Dimension for multilingual-e5-large
+EMBEDDINGS_BATCH_SIZE: int = 32  # Batch size for processing
+EMBEDDINGS_SERVICE_URL: str = os.getenv('EMBEDDINGS_SERVICE_URL', '')  # ACI endpoint
+EMBEDDINGS_TIMEOUT_SECONDS: int = 30  # API timeout
+
+# FAISS Vector Index Configuration
+VECTOR_INDEX_TYPE: str = os.getenv('VECTOR_INDEX_TYPE', 'auto')  # 'flat', 'ivf', 'hnsw', 'auto'
+VECTOR_INDEX_PATH: str = os.getenv('VECTOR_INDEX_PATH', '/tmp/vector_index')  # Storage path
+VECTOR_INDEX_REBUILD_THRESHOLD: int = 10000  # Rebuild index when it grows too large
     
     # Summarization
     MIN_SOURCES_FOR_SUMMARY: int = 1  # Generate summaries for ALL stories (changed from 2)

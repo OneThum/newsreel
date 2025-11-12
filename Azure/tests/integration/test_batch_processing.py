@@ -46,7 +46,7 @@ class TestBatchSubmission:
             )
             
             try:
-                await cosmos_client_for_tests.upsert_story(story.dict())
+                await cosmos_client_for_tests.upsert_story(story.model_dump())
                 story_ids.append(story.id)
                 clean_test_data['register_story'](story.id)
             except Exception as e:
@@ -93,7 +93,7 @@ class TestBatchSubmission:
             )
             
             try:
-                await cosmos_client_for_tests.upsert_story(story.dict())
+                await cosmos_client_for_tests.upsert_story(story.model_dump())
                 stories.append(story)
                 clean_test_data['register_story'](story.id)
             except Exception as e:
@@ -220,7 +220,7 @@ class TestBatchProcessing:
         )
         
         try:
-            await cosmos_client_for_tests.upsert_story(story.dict())
+            await cosmos_client_for_tests.upsert_story(story.model_dump())
             clean_test_data['register_story'](story.id)
         except Exception as e:
             pytest.skip(f"Could not store story: {e}")
@@ -233,7 +233,7 @@ class TestBatchProcessing:
                 story.summary = summary_text
                 
                 try:
-                    await cosmos_client_for_tests.upsert_story(story.dict())
+                    await cosmos_client_for_tests.upsert_story(story.model_dump())
                 except Exception as e:
                     pytest.skip(f"Could not update story: {e}")
         
@@ -324,7 +324,7 @@ class TestBatchWorkflowEnd2End:
             )
             
             try:
-                await cosmos_client_for_tests.upsert_story(story.dict())
+                await cosmos_client_for_tests.upsert_story(story.model_dump())
                 stories_data.append(story)
                 clean_test_data['register_story'](story.id)
             except Exception as e:
@@ -358,7 +358,7 @@ class TestBatchWorkflowEnd2End:
                 story_to_update.summary = summary
                 
                 try:
-                    await cosmos_client_for_tests.upsert_story(story_to_update.dict())
+                    await cosmos_client_for_tests.upsert_story(story_to_update.model_dump())
                 except Exception as e:
                     pytest.skip(f"Could not update story: {e}")
         

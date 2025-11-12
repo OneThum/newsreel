@@ -85,7 +85,7 @@ class TestRSSToClusteringFlow:
         
         # Store in real Cosmos DB
         try:
-            await cosmos_client_for_tests.upsert_article(raw_article.dict())
+            await cosmos_client_for_tests.upsert_article(raw_article.model_dump())
             clean_test_data['register_article'](article_id)
         except Exception as e:
             pytest.skip(f"Could not store article in Cosmos DB: {e}")
@@ -138,7 +138,7 @@ class TestRSSToClusteringFlow:
         )
         
         try:
-            await cosmos_client_for_tests.upsert_article(article1.dict())
+            await cosmos_client_for_tests.upsert_article(article1.model_dump())
             clean_test_data['register_article'](article1.id)
         except Exception as e:
             pytest.skip(f"Could not store article: {e}")
@@ -168,7 +168,7 @@ class TestRSSToClusteringFlow:
         )
         
         try:
-            await cosmos_client_for_tests.upsert_article(article2.dict())
+            await cosmos_client_for_tests.upsert_article(article2.model_dump())
             clean_test_data['register_article'](article2.id)
         except Exception as e:
             pytest.skip(f"Could not store second article: {e}")
@@ -207,7 +207,7 @@ class TestRSSToClusteringFlow:
         )
         
         try:
-            await cosmos_client_for_tests.upsert_story(story.dict())
+            await cosmos_client_for_tests.upsert_story(story.model_dump())
             clean_test_data['register_story'](story.id)
         except Exception as e:
             pytest.skip(f"Could not store story: {e}")
@@ -289,7 +289,7 @@ class TestRSSProcessingPipeline:
         )
         
         try:
-            await cosmos_client_for_tests.upsert_article(raw_article.dict())
+            await cosmos_client_for_tests.upsert_article(raw_article.model_dump())
             clean_test_data['register_article'](article_id)
         except Exception as e:
             pytest.skip(f"Could not store article: {e}")
@@ -342,7 +342,7 @@ class TestRSSProcessingPipeline:
             )
             
             try:
-                await cosmos_client_for_tests.upsert_article(article.dict())
+                await cosmos_client_for_tests.upsert_article(article.model_dump())
                 stored_ids.append(article.id)
                 clean_test_data['register_article'](article.id)
             except Exception as e:
@@ -378,7 +378,7 @@ class TestRSSProcessingPipeline:
         
         # Act: Store story
         try:
-            await cosmos_client_for_tests.upsert_story(story.dict())
+            await cosmos_client_for_tests.upsert_story(story.model_dump())
             clean_test_data['register_story'](story.id)
         except Exception as e:
             pytest.skip(f"Could not store story: {e}")
@@ -494,7 +494,7 @@ class TestRSSClusteringPerformance:
         start_time = time.time()
         try:
             for article in articles:
-                await cosmos_client_for_tests.upsert_article(article.dict())
+                await cosmos_client_for_tests.upsert_article(article.model_dump())
                 clean_test_data['register_article'](article.id)
         except Exception as e:
             pytest.skip(f"Could not store articles for performance test: {e}")

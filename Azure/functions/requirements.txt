@@ -13,7 +13,8 @@ aiohttp>=3.9.0
 
 # AI/ML
 anthropic>=0.34.0  # Batch API support requires >=0.34.0
-# sentence-transformers>=2.3.0  # Too large for Azure Functions, not needed for MVP
+faiss-cpu>=1.7.0  # Vector similarity search for Phase 2
+rank-bm25>=0.2.2  # Keyword-based search for hybrid retrieval
 
 # Data Processing
 python-dateutil>=2.8.2

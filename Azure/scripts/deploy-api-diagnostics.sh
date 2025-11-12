@@ -29,7 +29,7 @@ echo -e "${GREEN}✅ Logged in to: $SUBSCRIPTION${NC}\n"
 
 # Build Docker image
 echo -e "${YELLOW}🐳 Building Docker image...${NC}"
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../api"
 
 # Build image using Azure Container Registry
 ACR_NAME="newsreelacr"
@@ -37,7 +37,8 @@ IMAGE_TAG="latest"
 IMAGE_NAME="newsreel-api:$IMAGE_TAG"
 
 echo -e "   Registry: $ACR_NAME"
-echo -e "   Image: $IMAGE_NAME\n"
+echo -e "   Image: $IMAGE_NAME"
+echo -e "   Build context: $(pwd)\n"
 
 az acr build \
     --registry "$ACR_NAME" \
@@ -58,14 +59,19 @@ ACR_LOGIN_SERVER="${ACR_NAME}.azurecr.io"
 ACR_USERNAME=$(az acr credential show --name "$ACR_NAME" --query "username" -o tsv)
 ACR_PASSWORD=$(az acr credential show --name "$ACR_NAME" --query "passwords[0].value" -o tsv)
 
-# Update container app
+# Set registry credentials first
+az containerapp registry set \
+    --name "$CONTAINER_APP" \
+    --resource-group "$RESOURCE_GROUP" \
+    --server "$ACR_LOGIN_SERVER" \
+    --username "$ACR_USERNAME" \
+    --password "$ACR_PASSWORD"
+
+# Update container app with new image
 az containerapp update \
     --name "$CONTAINER_APP" \
     --resource-group "$RESOURCE_GROUP" \
-    --image "$ACR_LOGIN_SERVER/$IMAGE_NAME" \
-    --registry-login-server "$ACR_LOGIN_SERVER" \
-    --registry-username "$ACR_USERNAME" \
-    --registry-password "$ACR_PASSWORD"
+    --image "$ACR_LOGIN_SERVER/$IMAGE_NAME"
 
 echo -e "${GREEN}✅ Container App updated${NC}\n"
 

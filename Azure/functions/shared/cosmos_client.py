@@ -213,9 +213,10 @@ class CosmosDBClient:
             raise
     
     async def query_recent_stories(
-        self, 
+        self,
         category: Optional[str] = None,
-        limit: int = 20
+        limit: int = 20,
+        time_window_hours: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """Query recent stories, optionally filtered by category
         
@@ -241,9 +242,34 @@ class CosmosDBClient:
                     enable_cross_partition_query=True
                 ))
             
+            # Apply time window filtering if specified (Phase 1: Time-window filtering)
+            if time_window_hours:
+                from datetime import datetime, timedelta
+                now = datetime.now(datetime.timezone.utc)
+                cutoff_time = now - timedelta(hours=time_window_hours)
+
+                # Filter items within time window
+                filtered_items = []
+                for item in items:
+                    last_updated_str = item.get('last_updated')
+                    if last_updated_str:
+                        try:
+                            # Parse ISO format datetime string
+                            last_updated = datetime.fromisoformat(last_updated_str.replace('Z', '+00:00'))
+                            if last_updated >= cutoff_time:
+                                filtered_items.append(item)
+                        except (ValueError, AttributeError):
+                            # If we can't parse the date, include the item (fail-safe)
+                            filtered_items.append(item)
+                    else:
+                        # If no last_updated field, include the item (fail-safe)
+                        filtered_items.append(item)
+
+                items = filtered_items
+
             # Sort in Python by last_updated (descending)
             sorted_items = sorted(items, key=lambda x: x.get('last_updated', ''), reverse=True)
-            
+
             # Apply limit
             return sorted_items[:limit]
         except Exception as e:

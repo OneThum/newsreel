@@ -436,46 +436,90 @@ def parse_entry_date(entry) -> datetime:
         return datetime.now(timezone.utc)
 
 
+def normalize_category(category: str) -> str:
+    """Normalize category names to match iOS app expectations"""
+    category_mapping = {
+        'tech': 'technology',
+        'entertainment': 'entertainment',
+        'sports': 'sports',
+        'business': 'business',
+        'health': 'health',
+        'science': 'science',
+        'technology': 'technology',
+        'general': 'general',
+        'politics': 'politics',
+        'world': 'world'
+    }
+    return category_mapping.get(category.lower(), category)
+
+
 def process_feed_entry(entry, feed_result: Dict[str, Any]) -> Optional[RawArticle]:
     """Process a single feed entry into a RawArticle"""
     try:
         feed_config = feed_result['config']
         fetched_at = feed_result['fetched_at']
-        
+
         title = clean_html(entry.get('title', ''))
         if not title:
             return None
-        
+
         description = clean_html(entry.get('description', '') or entry.get('summary', ''))
         article_url = entry.get('link', '')
-        
+
         if not article_url:
             return None
-        
+
         # Filter out spam/promotional content
         if is_spam_or_promotional(title, description, article_url):
             logger.info(f"🚫 Filtered spam/promotional content: {title[:80]}...")
             return None
-        
+
+        # PHASE 1: SimHash near-duplicate detection (if enabled)
+        if config.CLUSTERING_USE_SIMHASH:
+            from urllib.parse import urlparse
+
+            # Extract domain for duplicate detection
+            try:
+                domain = urlparse(article_url).netloc
+            except:
+                domain = feed_config.source_id  # Fallback
+
+            article_dict = {
+                'title': title,
+                'description': description,
+                'source_domain': domain
+            }
+
+            # TODO: Implement hash storage and lookup for recent hashes
+            # For now, we only implement the SimHash computation
+            is_duplicate, duplicate_type = detect_duplicates(article_dict)
+
+            if is_duplicate:
+                logger.info(f"🔄 Filtered duplicate content ({duplicate_type}): {title[:80]}...")
+                return None
+
         published_at = parse_entry_date(entry)
         published_date = published_at.strftime('%Y-%m-%d')
-        
+
         content = None
         if hasattr(entry, 'content') and entry.content:
             content = clean_html(entry.content[0].value)
         elif description:
             content = description
-        
+
         if content:
             content = truncate_text(content, max_length=2000)
-        
+
         author = entry.get('author', None)
         text_for_entities = f"{title} {description}"
         entities = extract_simple_entities(text_for_entities)
         category = categorize_article(title, description, article_url)
-        
+
         if category == 'general':
             category = feed_config.category
+
+        # Normalize category to match iOS app expectations (tech -> technology)
+        category = normalize_category(category)
         
         article_id = generate_article_id(feed_config.source_id, article_url, published_at)
         story_fingerprint = generate_story_fingerprint(title, entities)
@@ -763,366 +807,342 @@ async def rss_ingestion_timer(timer: func.TimerRequest) -> None:
     create_lease_container_if_not_exists=True
 )
 async def story_clustering_changefeed(documents: func.DocumentList) -> None:
-    """Story Clustering - Triggered by new articles"""
+    """Story Clustering - Triggered by new articles
+
+    Supports both legacy fingerprinting and new embedding-based clustering.
+    Uses A/B testing framework for gradual rollout of Phase 2 features.
+    """
     if not documents:
         return
-    
+
     logger.info(f"Processing {len(documents)} documents for clustering")
     cosmos_client.connect()
-    
+
     for doc in documents:
         try:
             article_data = json.loads(doc.to_json())
             logger.info(f"Processing article from raw_articles, keys: {list(article_data.keys())[:10]}")
             article = RawArticle(**article_data)
-            
+
             if article.processed:
                 continue
-            
-            # Find or create story cluster
-            # Try fingerprint matching first (fast)
-            stories = await cosmos_client.query_stories_by_fingerprint(article.story_fingerprint)
-            
-            matched_story = bool(stories)
-            
-            # If no match by fingerprint, try IMPROVED fuzzy title matching (fallback)
-            if not stories:
-                # Query recent stories in same category for better relevance
-                recent_stories = await cosmos_client.query_recent_stories(category=article.category, limit=500)
-                
-                best_match = None
-                best_similarity = 0.0
-                similarity_scores = []
-                topic_conflicts = []
-                threshold_matches = []
-                
-                logger.info(f"🔍 Fuzzy matching for article '{article.title[:80]}...' against {len(recent_stories)} recent stories in category '{article.category}'")
-                
-                for existing_story in recent_stories:
-                    title_similarity = calculate_text_similarity(article.title, existing_story.get('title', ''))
-                    similarity_scores.append(title_similarity)
-                    
-                    # Track best match for logging
-                    if title_similarity > best_similarity:
-                        best_similarity = title_similarity
-                        best_match = existing_story
-                    
-                    # Log all similarity scores above 50% for analysis
-                    if title_similarity > 0.50:
-                        logger.info(f"📊 Similarity {title_similarity:.3f}: '{article.title[:60]}...' vs '{existing_story.get('title', '')[:60]}...'")
-                    
-                    # CRITICAL FIX: Use config threshold (75%) for better clustering
-                    # 75% ensures stories actually share core topic/event while allowing some variation
-                    if title_similarity > config.STORY_FINGERPRINT_SIMILARITY_THRESHOLD:
-                        threshold_matches.append({
-                            'similarity': title_similarity,
-                            'story_id': existing_story.get('id', 'unknown'),
-                            'story_title': existing_story.get('title', '')[:80]
-                        })
-                        
-                        # Additional validation: Check for topic conflicts
-                        if not has_topic_conflict(article.title, existing_story.get('title', '')):
-                            stories = [existing_story]
-                            matched_story = True
-                            logger.info(f"✅ CLUSTERING MATCH: {title_similarity:.3f} - '{article.title[:60]}...' → '{existing_story.get('title', '')[:60]}...' (threshold: {config.STORY_FINGERPRINT_SIMILARITY_THRESHOLD})")
-                            break
-                        else:
-                            topic_conflicts.append({
-                                'similarity': title_similarity,
-                                'story_id': existing_story.get('id', 'unknown'),
-                                'story_title': existing_story.get('title', '')[:80]
-                            })
-                            logger.info(f"❌ Topic conflict prevented match: {title_similarity:.3f} - '{article.title[:60]}...' vs '{existing_story.get('title', '')[:60]}...'")
-                
-                # Log comprehensive clustering analysis
-                if similarity_scores:
-                    avg_similarity = sum(similarity_scores) / len(similarity_scores)
-                    max_similarity = max(similarity_scores)
-                    logger.info(f"📈 Clustering analysis for '{article.title[:60]}...': avg={avg_similarity:.3f}, max={max_similarity:.3f}, threshold={config.STORY_FINGERPRINT_SIMILARITY_THRESHOLD}")
-                    logger.info(f"📊 Similarity distribution: {len([s for s in similarity_scores if s > 0.8])} above 80%, {len([s for s in similarity_scores if s > 0.7])} above 70%, {len([s for s in similarity_scores if s > 0.6])} above 60%")
-                
-                if threshold_matches:
-                    logger.info(f"🎯 Threshold matches ({len(threshold_matches)}): {[m['similarity'] for m in threshold_matches]}")
-                
-                if topic_conflicts:
-                    logger.info(f"⚠️ Topic conflicts ({len(topic_conflicts)}): {[c['similarity'] for c in topic_conflicts]}")
-                
-                # If still no match, try entity-based matching (MORE STRICT)
-                # Use higher threshold to prevent false clustering
-                if not stories and best_match and best_similarity > 0.70:
-                    # Extract key entities from both titles
-                    article_entities = set(word.lower() for word in article.title.split() 
-                                          if len(word) > 4 and word[0].isupper())
-                    story_entities = set(word.lower() for word in best_match.get('title', '').split() 
-                                        if len(word) > 4 and word[0].isupper())
-                    
-                    # Require 3+ entities match (not just location) AND no topic conflict
-                    entity_overlap = len(article_entities.intersection(story_entities))
-                    if entity_overlap >= 3 and not has_topic_conflict(article.title, best_match.get('title', '')):
-                        stories = [best_match]
-                        matched_story = True
-                        logger.info(f"✓ Entity match ({entity_overlap} shared): '{article.title[:60]}...' → '{best_match.get('title', '')[:60]}...'")
-                
-                # Log near-misses for future tuning and threshold analysis
-                if not stories:
-                    if best_match and best_similarity > 0.60:
-                        logger.info(f"📊 THRESHOLD ANALYSIS - Near miss: {best_similarity:.3f} (threshold: {config.STORY_FINGERPRINT_SIMILARITY_THRESHOLD})")
-                        logger.info(f"   Article: '{article.title[:60]}...'")
-                        logger.info(f"   Best match: '{best_match.get('title', '')[:60]}...'")
-                        logger.info(f"   Gap to threshold: {config.STORY_FINGERPRINT_SIMILARITY_THRESHOLD - best_similarity:.3f}")
-                    else:
-                        logger.info(f"📊 THRESHOLD ANALYSIS - No close matches: best={best_similarity:.3f}")
-                        logger.info(f"   Article: '{article.title[:60]}...'")
-                        logger.info(f"   All similarities below 60%")
-                    
-                    # Log clustering decision for analysis
-                    logger.info(f"🎯 CLUSTERING DECISION: Creating new story (no match found)")
-                    logger.info(f"   Article: [{article.source}] {article.title[:80]}...")
-                    logger.info(f"   Best similarity: {best_similarity:.3f}")
-                    logger.info(f"   Threshold used: {config.STORY_FINGERPRINT_SIMILARITY_THRESHOLD}")
-                    logger.info(f"   Stories compared: {len(recent_stories)}")
-            
-            # Log article processing
-            logger.log_article_processed(
-                article_id=article.id,
-                source=article.source,
-                category=article.category,
-                fingerprint=article.story_fingerprint,
-                matched_story=matched_story
-            )
-            
-            if stories:
-                # Update existing story
-                story = stories[0]
-                source_articles = story.get('source_articles', [])
-                
-                # CRITICAL: Calculate prev_source_count BEFORE modifying the list
-                # (source_articles is a reference to the list in story, not a copy)
-                prev_source_count = len(source_articles)
-                
-                # Check if THIS SPECIFIC ARTICLE is already in the cluster (by ID)
-                if article.id in source_articles:
-                    # This exact article is already in the cluster, skip
-                    logger.info(f"Article {article.id} already in story {story['id']} - skipping duplicate")
-                    await cosmos_client.update_article_processed(article.id, article.published_date, story['id'])
-                    continue  # Skip to next article - DON'T update last_updated!
-                
-                # Check if we already have an article from this source in the cluster
-                # This prevents duplicate sources from being added to the same story
-                existing_sources = set()
-                source_details = {}
-                for existing_art in source_articles:
-                    if isinstance(existing_art, dict):
-                        existing_source = existing_art.get('source', existing_art.get('id', '').split('_')[0])
-                    else:
-                        existing_source = existing_art.split('_')[0]  # Fallback for old format
-                    existing_sources.add(existing_source)
-                    source_details[existing_source] = source_details.get(existing_source, 0) + 1
-                
-                new_source = article.id.split('_')[0]
-                
-                # Log detailed source analysis
-                logger.info(f"🔍 Source analysis for story {story['id']}:")
-                logger.info(f"   Existing sources: {dict(source_details)}")
-                logger.info(f"   New article source: {new_source}")
-                logger.info(f"   Article ID: {article.id}")
-                
-                if new_source in existing_sources:
-                    # We already have an article from this source, skip to prevent duplicates
-                    logger.info(f"❌ DUPLICATE SOURCE PREVENTION: Source {new_source} already in story {story['id']} - skipping duplicate source")
-                    logger.info(f"   Existing sources: {list(existing_sources)}")
-                    logger.info(f"   Source counts: {dict(source_details)}")
-                    await cosmos_client.update_article_processed(article.id, article.published_date, story['id'])
-                    continue  # Skip to next article - DON'T update last_updated!
-                
-                # Article not in cluster yet and source is unique - ADD IT
-                # Store article ID instead of full object for API to fetch
-                source_articles.append(article.id)
-                
-                # 🔍 ENHANCED SOURCE TRACKING LOGGING
-                # Calculate source diversity BEFORE updating
-                from collections import Counter
-                existing_sources = []
-                for art in source_articles[:-1]:  # All except the one we just added
-                    if isinstance(art, dict):
-                        source_part = art.get('source', art.get('id', '').split('_')[0])
-                    else:
-                        source_part = art.split('_')[0]  # Fallback for old format
-                    existing_sources.append(source_part)
-                
-                source_counts = Counter(existing_sources)
-                unique_sources = len(source_counts)
-                duplicate_sources = {k: v for k, v in source_counts.items() if v > 1}
-                
-                logger.info(
-                    f"📰 Added [{article.source}] to story {story['id']}: "
-                    f"{prev_source_count}→{len(source_articles)} articles, "
-                    f"{unique_sources} unique sources"
-                )
-                
-                if duplicate_sources:
-                    logger.warning(
-                        f"⚠️  Story {story['id']} has DUPLICATE SOURCES: "
-                        f"{dict(duplicate_sources)}"
-                    )
-                    # Log the new article's source
-                    logger.warning(f"   Just added: {article.source} (ID: {article.id})")
-                    # Check if this new article is creating a duplicate
-                    if article.source.split('_')[0] in duplicate_sources:
-                        logger.warning(f"   ⚠️  This is a DUPLICATE of existing {article.source} articles!")
-                
-                # Log source diversity details
-                logger.log_story_cluster(
-                    story_id=story['id'],
-                    action="updated",
-                    source_count=len(source_articles),
-                    category=story.get('category', 'unknown'),
-                    fingerprint=article.story_fingerprint,
-                    title=story.get('title', 'unknown'),
-                    status=story.get('status', 'unknown')
-                )
-                
-                verification_level = len(source_articles)
-                now = datetime.now(timezone.utc)
-                first_seen = datetime.fromisoformat(story['first_seen'].replace('Z', '+00:00'))
-                time_since_first = now - first_seen
-                
-                # CRITICAL: For breaking news, check if story is ACTIVELY DEVELOPING
-                # A story that's getting new sources RIGHT NOW is breaking news, even if created days ago
-                # This handles ongoing stories (e.g., hostage releases, elections, disasters)
-                current_status = story.get('status', 'MONITORING')
-                is_gaining_sources = len(source_articles) > prev_source_count
-                
-                # Check if this story was recently updated (within last 30 min)
-                # This catches actively developing stories
-                last_updated_str = story.get('last_updated', story['first_seen'])
-                last_updated = datetime.fromisoformat(last_updated_str.replace('Z', '+00:00'))
-                time_since_update = now - last_updated
-                
-                # Determine status based on source count, recency, and momentum
-                if verification_level >= 3:
-                    # Story has 3+ sources
-                    update_mins = int(time_since_update.total_seconds() / 60)
-                    age_mins = int(time_since_first.total_seconds() / 60)
-                    
-                    # Log decision factors for debugging
-                    logger.info(
-                        f"📊 Status evaluation for {story['id']}: "
-                        f"sources={prev_source_count}→{verification_level}, "
-                        f"age={age_mins}m, last_update={update_mins}m ago, "
-                        f"current_status={current_status}, is_gaining={is_gaining_sources}"
-                    )
-                    
-                    if time_since_first < timedelta(minutes=30):
-                        # Story created recently → BREAKING
-                        status = StoryStatus.BREAKING.value
-                        logger.info(f"   → BREAKING (created {age_mins}m ago)")
-                    elif is_gaining_sources and time_since_update < timedelta(minutes=30):
-                        # Story actively developing (new source just added, last update was recent) → BREAKING
-                        # This ensures ongoing breaking news (like hostage releases) stays visible
-                        # Increased to 30 minutes to catch slower-developing stories
-                        status = StoryStatus.BREAKING.value
-                        logger.info(
-                            f"🔥 Story promoted to BREAKING (actively developing): {story['id']} - "
-                            f"{prev_source_count}→{verification_level} sources, last update {update_mins}m ago"
-                        )
-                    elif current_status == 'BREAKING' and time_since_first < timedelta(hours=2):
-                        # Keep BREAKING status for up to 2 hours if still actively updated
-                        # (BreakingNewsMonitor will transition to VERIFIED after 90 min of no updates)
-                        status = StoryStatus.BREAKING.value
-                        logger.info(f"   → Keeping BREAKING status (actively updated story)")
-                    else:
-                        # Story is old and stable → VERIFIED
-                        status = StoryStatus.VERIFIED.value
-                        logger.info(f"   → VERIFIED (stable story, age={age_mins}m, idle={update_mins}m)")
-                elif verification_level == 2:
-                    status = StoryStatus.DEVELOPING.value
-                else:
-                    status = StoryStatus.MONITORING.value
-                
-                updates = {
-                    'source_articles': source_articles,
-                    'verification_level': verification_level,
-                    'status': status,
-                    'last_updated': datetime.now(timezone.utc).isoformat(),
-                    'update_count': story.get('update_count', 0) + 1
-                }
-                
-                # RE-EVALUATE HEADLINE on EVERY source addition
-                # Headlines should evolve as breaking news develops and more details emerge
-                # AI will decide if new source warrants headline update (default: KEEP_CURRENT)
-                should_update_headline = False
-                
-                # ALWAYS re-evaluate when a new source is added (verification_level increased)
-                if verification_level > prev_source_count:
-                    should_update_headline = True
-                    logger.info(f"📰 Headline re-evaluation triggered for {story['id']} ({prev_source_count}→{verification_level} sources)")
-                
-                if should_update_headline:
-                    try:
-                        # Generate updated headline based on all sources
-                        updated_headline = await generate_updated_headline(story, source_articles, article)
-                        if updated_headline and updated_headline != story['title']:
-                            updates['title'] = updated_headline
-                            logger.info(f"✏️ Updated headline: '{story['title']}' → '{updated_headline}'")
-                    except Exception as e:
-                        logger.error(f"Failed to update headline for {story['id']}: {e}")
-                        # Continue without headline update if it fails
-                
-                await cosmos_client.update_story_cluster(story['id'], story['category'], updates)
-                story_id = story['id']
-                
-                # Log story cluster update with status for monitoring
-                logger.log_story_cluster(
-                    story_id=story_id,
-                    action="updated",
-                    source_count=verification_level,
-                    category=story['category'],
-                    fingerprint=article.story_fingerprint,
-                    title=story['title'],
-                    status=status  # Log the status for badge monitoring
-                )
+
+            # Phase 2: A/B Testing - Determine which clustering algorithm to use
+            from .shared.ab_testing import get_clustering_config, record_clustering_metric
+            clustering_config = get_clustering_config(article.id)
+
+            logger.info(f"🎯 Clustering config for {article.id}: {clustering_config}")
+
+            # Track clustering start time for metrics
+            clustering_start_time = time.time()
+
+            if clustering_config.get('use_embeddings', False):
+                # Phase 2: Use new embedding-based clustering
+                matched_story = await cluster_with_embeddings(article, clustering_config)
             else:
-                # Create new story
-                story_id = f"story_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{article.story_fingerprint}"
-                
-                story = StoryCluster(
-                    id=story_id,
-                    event_fingerprint=article.story_fingerprint,
-                    title=article.title,
-                    category=article.category,
-                    tags=article.tags,
-                    status=StoryStatus.MONITORING,
-                    verification_level=1,
-                    first_seen=article.published_at,
-                    last_updated=datetime.now(timezone.utc),
-                    source_articles=[article.id],
-                    importance_score=50 + (20 if article.source_tier == 1 else 0),
-                    confidence_score=40,
-                    breaking_news=False
-                )
-                
-                await cosmos_client.create_story_cluster(story)
-                
-                # Log story cluster creation with initial MONITORING status
-                logger.log_story_cluster(
-                    story_id=story_id,
-                    action="created",
-                    source_count=1,
-                    status=StoryStatus.MONITORING.value,
-                    category=article.category,
-                    fingerprint=article.story_fingerprint,
-                    title=article.title
-                )
-            
-            # Mark article as processed
-            await cosmos_client.update_article_processed(article.id, article.published_date, story_id)
-            
+                # Legacy: Use original fingerprinting clustering
+                matched_story = await cluster_with_fingerprints(article, clustering_config)
+
+            # Record clustering metrics
+            clustering_time_ms = int((time.time() - clustering_start_time) * 1000)
+            record_clustering_metric(article.id, 'clustering_time_ms', clustering_time_ms)
+            record_clustering_metric(article.id, 'matched_story', matched_story)
+            record_clustering_metric(article.id, 'algorithm', clustering_config.get('algorithm', 'unknown'))
+
+            # Process clustering result (create/update story)
+            await process_clustering_result(article, matched_story, clustering_config)
+
         except Exception as e:
             logger.error(f"Error clustering document: {e}", exc_info=True)
             logger.error(f"Traceback: {traceback.format_exc()}")
-    
+
     logger.info(f"Completed clustering {len(documents)} documents")
+
+
+# ============================================================================
+# CLUSTERING ALGORITHMS (Phase 2)
+# ============================================================================
+
+async def cluster_with_fingerprints(article: RawArticle, config: Dict[str, Any]) -> Optional[str]:
+    """
+    Legacy clustering using MD5 fingerprints + text similarity fallback
+
+    Args:
+        article: Article to cluster
+        config: Clustering configuration
+
+    Returns:
+        Story ID if matched, None if new story should be created
+    """
+    logger.info(f"🔍 Using legacy fingerprinting clustering for {article.id}")
+
+    # Try fingerprint matching first (fast)
+    stories = await cosmos_client.query_stories_by_fingerprint(article.story_fingerprint)
+
+    if stories:
+        logger.info(f"✅ Fingerprint match found for {article.id}")
+        return stories[0]['id']
+
+    # If no match by fingerprint, try IMPROVED fuzzy title matching (fallback)
+    # Query recent stories in same category for better relevance
+    # Phase 1: Apply time window filtering (72 hours) if enabled
+    time_window_hours = 72 if config.get('use_time_window', False) else None
+    recent_stories = await cosmos_client.query_recent_stories(
+        category=article.category,
+        limit=500,
+        time_window_hours=time_window_hours
+    )
+
+    best_match = None
+    best_similarity = 0.0
+    similarity_scores = []
+    topic_conflicts = []
+    threshold_matches = []
+
+    logger.info(f"🔍 Fuzzy matching for article '{article.title[:80]}...' against {len(recent_stories)} recent stories in category '{article.category}'")
+
+    # Phase 1: Calculate adaptive threshold based on article age
+    from datetime import datetime
+    article_age_hours = (datetime.now(timezone.utc) - article.published_at).total_seconds() / 3600
+    adaptive_threshold = calculate_adaptive_threshold(article_age_hours, config.get('threshold', 0.50))
+
+    logger.info(f"🎯 Using adaptive threshold: {adaptive_threshold:.3f} (article age: {article_age_hours:.1f}h)")
+
+    for existing_story in recent_stories:
+        title_similarity = calculate_text_similarity(article.title, existing_story.get('title', ''))
+        similarity_scores.append(title_similarity)
+
+        # Track best match for logging
+        if title_similarity > best_similarity:
+            best_similarity = title_similarity
+            best_match = existing_story
+
+        # Log all similarity scores above 50% for analysis
+        if title_similarity > 0.50:
+            logger.info(f"📊 Similarity {title_similarity:.3f}: '{article.title[:60]}...' vs '{existing_story.get('title', '')[:60]}...'")
+
+        # Phase 1: Use adaptive threshold based on article age
+        if title_similarity > adaptive_threshold:
+            threshold_matches.append({
+                'similarity': title_similarity,
+                'story_id': existing_story.get('id', 'unknown'),
+                'story_title': existing_story.get('title', '')[:80]
+            })
+
+            # Additional validation: Check for topic conflicts
+            if not has_topic_conflict(article.title, existing_story.get('title', '')):
+                stories = [existing_story]
+                matched_story = True
+                logger.info(f"✅ CLUSTERING MATCH: {title_similarity:.3f} - '{article.title[:60]}...' → '{existing_story.get('title', '')[:60]}...' (threshold: {adaptive_threshold:.3f})")
+                return existing_story['id']
+            else:
+                topic_conflicts.append({
+                    'similarity': title_similarity,
+                    'story_id': existing_story.get('id', 'unknown'),
+                    'story_title': existing_story.get('title', '')[:80]
+                })
+                logger.info(f"❌ Topic conflict prevented match: {title_similarity:.3f} - '{article.title[:60]}...' vs '{existing_story.get('title', '')[:60]}...'")
+
+        # If still no match, try entity-based matching for near-misses (0.50-adaptive_threshold range)
+        # This catches stories that are about same event but phrased differently
+        if not stories and best_match and 0.50 <= best_similarity < adaptive_threshold:
+            # Extract key entities from both titles
+            article_entities = set(word.lower() for word in article.title.split()
+                                  if len(word) > 4 and word[0].isupper())
+            story_entities = set(word.lower() for word in best_match.get('title', '').split()
+                                if len(word) > 4 and word[0].isupper())
+
+            # This allows "Senate", "government shutdown" to match across different phrasings
+            entity_overlap = len(article_entities.intersection(story_entities))
+            if entity_overlap >= 2 and not has_topic_conflict(article.title, best_match.get('title', '')):
+                logger.info(f"✓ Entity match (near-miss recovery: {entity_overlap} shared, {best_similarity:.3f} similarity): '{article.title[:60]}...' → '{best_match.get('title', '')[:60]}...'")
+                return best_match['id']
+
+    # Log comprehensive clustering analysis
+    if similarity_scores:
+        avg_similarity = sum(similarity_scores) / len(similarity_scores)
+        max_similarity = max(similarity_scores)
+        logger.info(f"📈 Clustering analysis for '{article.title[:60]}...': avg={avg_similarity:.3f}, max={max_similarity:.3f}, threshold={adaptive_threshold:.3f}")
+
+    if threshold_matches:
+        logger.info(f"🎯 Threshold matches ({len(threshold_matches)}): {[m['similarity'] for m in threshold_matches]}")
+
+    if topic_conflicts:
+        logger.info(f"⚠️ Topic conflicts ({len(topic_conflicts)}): {[c['similarity'] for c in topic_conflicts]}")
+
+    # Log clustering decision for analysis
+    logger.info(f"🎯 CLUSTERING DECISION: Creating new story (no match found)")
+    logger.info(f"   Article: [{article.source}] {article.title[:80]}...")
+    logger.info(f"   Best similarity: {best_similarity:.3f}")
+    logger.info(f"   Threshold used: {adaptive_threshold:.3f}")
+
+    return None  # No match found, create new story
+
+
+async def cluster_with_embeddings(article: RawArticle, config: Dict[str, Any]) -> Optional[str]:
+    """
+    Phase 2 clustering using semantic embeddings + FAISS + BM25 hybrid search
+
+    Args:
+        article: Article to cluster
+        config: Clustering configuration
+
+    Returns:
+        Story ID if matched, None if new story should be created
+    """
+    logger.info(f"🚀 Using embedding-based clustering for {article.id}")
+
+    try:
+        from .shared.embedding_pipeline import get_embedding_pipeline
+
+        # Get embedding pipeline
+        pipeline = await get_embedding_pipeline()
+
+        # Search for similar stories using embeddings
+        similar_stories = await pipeline.search_similar({
+            'id': article.id,
+            'title': article.title,
+            'description': article.description,
+            'published_at': article.published_at.isoformat() if article.published_at else None,
+            'category': article.category,
+            'entities': article.entities
+        }, top_k=5)
+
+        # Check if any similar stories meet the threshold
+        similarity_threshold = config.get('similarity_threshold', 0.75)
+
+        for result in similar_stories:
+            if result['similarity'] >= similarity_threshold:
+                logger.info(f"✅ Embedding match found: {result['similarity']:.3f} similarity with story {result['article']['id']}")
+                return result['article']['id']
+
+        logger.info(f"🎯 No embedding matches above threshold {similarity_threshold:.3f}, creating new story")
+        return None
+
+    except Exception as e:
+        logger.error(f"Embedding clustering failed, falling back to legacy: {e}")
+        # Fallback to legacy clustering
+        return await cluster_with_fingerprints(article, config)
+
+
+async def process_clustering_result(article: RawArticle, matched_story_id: Optional[str], config: Dict[str, Any]):
+    """
+    Process the result of clustering (create new story or update existing)
+
+    Args:
+        article: The article that was clustered
+        matched_story_id: ID of matched story, or None for new story
+        config: Clustering configuration
+    """
+    try:
+        if matched_story_id:
+            # Update existing story
+            story = await cosmos_client.get_story(matched_story_id)
+            if story:
+                # Update story with new article (reuse existing logic)
+                await update_story_with_article(story, article)
+            else:
+                logger.error(f"Matched story {matched_story_id} not found, creating new story")
+                matched_story_id = None
+
+        if not matched_story_id:
+            # Create new story
+            story_id = await create_new_story(article, config)
+            matched_story_id = story_id
+
+        # Mark article as processed
+        await cosmos_client.update_article_processed(article.id, article.published_date, matched_story_id)
+
+    except Exception as e:
+        logger.error(f"Error processing clustering result: {e}")
+        # Still mark as processed to avoid infinite retries
+        await cosmos_client.update_article_processed(article.id, article.published_date, None)
+
+
+async def update_story_with_article(story: Dict[str, Any], article: RawArticle):
+    """Update existing story with new article (extracted from original logic)"""
+    # Reuse existing story update logic from original function
+    source_articles = story.get('source_articles', [])
+
+    # Check if article already in story
+    if article.id in source_articles:
+        logger.info(f"Article {article.id} already in story {story['id']} - skipping duplicate")
+        return
+
+    # Check for duplicate sources
+    existing_sources = set()
+    for existing_art in source_articles:
+        if isinstance(existing_art, dict):
+            existing_source = existing_art.get('source', existing_art.get('id', '').split('_')[0])
+        else:
+            existing_source = existing_art.split('_')[0]
+        existing_sources.add(existing_source)
+
+    new_source = article.id.split('_')[0]
+    if new_source in existing_sources:
+        logger.info(f"Source {new_source} already in story {story['id']} - skipping duplicate source")
+        return
+
+    # Add article to story
+    source_articles.append({
+        "id": article.id,
+        "source": article.source,
+        "title": article.title,
+        "url": article.article_url,
+        "published_at": article.published_at.isoformat() if article.published_at else None,
+        "content": article.content or article.description
+    })
+
+    # Update story metadata
+    story['last_updated'] = datetime.now(timezone.utc).isoformat()
+    story['source_articles'] = source_articles
+
+    # Update in database
+    await cosmos_client.upsert_story_cluster(story)
+
+
+async def create_new_story(article: RawArticle, config: Dict[str, Any]) -> str:
+    """Create new story cluster (extracted from original logic)"""
+    from .shared.utils import categorize_article, generate_event_fingerprint
+
+    story_id = str(uuid.uuid4())
+
+    # Generate story title (use article title)
+    story_title = article.title
+
+    # Categorize
+    category = article.category or categorize_article(article.title, article.description or "", article.article_url)
+
+    # Create story object
+    now = datetime.now(timezone.utc)
+    story = {
+        'id': story_id,
+        'title': story_title,
+        'category': category,
+        'status': 'MONITORING',  # Start as monitoring, will upgrade based on sources
+        'first_seen': now.isoformat(),
+        'last_updated': now.isoformat(),
+        'source_articles': [{
+            "id": article.id,
+            "source": article.source,
+            "title": article.title,
+            "url": article.article_url,
+            "published_at": article.published_at.isoformat() if article.published_at else None,
+            "content": article.content or article.description
+        }],
+        'entity_histogram': {},  # Will be populated by summarization
+        'embedding': None,  # Will be computed later
+        'summary': None,
+        'breaking_news': False,
+        'event_signature': None
+    }
+
+    # Save to database
+    await cosmos_client.upsert_story_cluster(story)
+
+    logger.info(f"🆕 Created new story {story_id}: '{story_title[:80]}...'")
+
+    return story_id
 
 
 # ============================================================================
@@ -2025,7 +2045,7 @@ async def fetch_story_articles(story_id: str, story_data: Dict[str, Any]) -> Lis
     """Fetch source articles for a story (helper function)"""
     articles = []
     source_articles = story_data.get('source_articles', [])
-    
+
     for article_id in source_articles[:6]:  # Limit to 6 articles
         try:
             parts = article_id.split('_')
@@ -2037,6 +2057,97 @@ async def fetch_story_articles(story_id: str, story_data: Dict[str, Any]) -> Lis
                     articles.append(article)
         except Exception as e:
             logger.warning(f"Could not fetch article {article_id}: {e}")
-    
+
     return articles
+
+
+# ============================================================================
+# TEMPORARY CLEANUP FUNCTION - Remove test stories
+# ============================================================================
+
+@app.function_name(name="CleanupTestStories")
+@app.schedule(schedule="0 0 * * * *", arg_name="timer", run_on_startup=False)
+async def cleanup_test_stories_timer(timer: func.TimerRequest) -> None:
+    """TEMPORARY: Clean up test stories from database - Runs once per hour"""
+    logger.info("🧹 CLEANUP: Starting test story cleanup...")
+
+    try:
+        cosmos_client.connect()
+
+        # Query all stories
+        stories_container = cosmos_client._get_container('story_clusters')
+        query = 'SELECT * FROM c'
+        all_stories = list(stories_container.query_items(
+            query=query,
+            enable_cross_partition_query=True
+        ))
+
+        logger.info(f"📊 Found {len(all_stories)} total stories")
+
+        # Identify test stories
+        test_story_ids = []
+        for story in all_stories:
+            story_id = story.get('id', '')
+            title = story.get('title', '').lower()
+            source_articles = story.get('source_articles', [])
+
+            # Check for test patterns
+            is_test = False
+
+            # Title patterns
+            test_title_patterns = [
+                'breaking: major event',
+                'major policy announcement',
+                'test article',
+                'test article 0',
+                'major breakthrough in renewable energy',
+                'global markets rally',
+                'new climate agreement reached'
+            ]
+
+            if any(pattern in title for pattern in test_title_patterns):
+                is_test = True
+
+            # Check for test sources
+            test_source_count = 0
+            for article in source_articles:
+                if isinstance(article, dict):
+                    source = article.get('source', '').lower()
+                    if ('test' in source or
+                        source.startswith('source ') or
+                        source == 'test source' or
+                        source == 'test source 1'):
+                        test_source_count += 1
+
+            # If more than half the sources are test sources, it's a test story
+            if test_source_count > len(source_articles) // 2 and len(source_articles) > 0:
+                is_test = True
+
+            # Unrealistic number of sources (>100 is definitely test data)
+            if len(source_articles) > 100:
+                is_test = True
+
+            # Only test sources
+            if len(source_articles) > 0 and test_source_count == len(source_articles):
+                is_test = True
+
+            if is_test:
+                test_story_ids.append((story_id, story.get('category', 'general')))
+
+        logger.info(f"🗑️ Found {len(test_story_ids)} test stories to delete")
+
+        # Delete test stories
+        deleted_count = 0
+        for story_id, category in test_story_ids:
+            try:
+                stories_container.delete_item(item=story_id, partition_key=category)
+                deleted_count += 1
+                logger.info(f"✅ Deleted test story: {story_id}")
+            except Exception as e:
+                logger.error(f"❌ Failed to delete story {story_id}: {e}")
+
+        logger.info(f"🎉 CLEANUP COMPLETE: Deleted {deleted_count} test stories")
+
+    except Exception as e:
+        logger.error(f"❌ Cleanup failed: {e}", exc_info=True)
 

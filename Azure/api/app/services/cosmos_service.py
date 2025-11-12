@@ -49,6 +49,34 @@ class CosmosService:
             logger.error(f"Error getting story {story_id}: {e}")
             raise
     
+    async def get_latest_cluster_update(self) -> Optional[datetime]:
+        """Get the timestamp of the most recently updated story cluster for ETag generation"""
+        try:
+            container = self._get_container("story_clusters")
+
+            # Query for the most recently updated story
+            query = """
+                SELECT TOP 1 c.last_updated FROM c
+                WHERE c.last_updated != null
+                ORDER BY c.last_updated DESC
+            """
+            items = list(container.query_items(
+                query=query,
+                enable_cross_partition_query=True
+            ))
+
+            if items and items[0].get('last_updated'):
+                # Parse the ISO datetime string
+                last_updated_str = items[0]['last_updated']
+                return datetime.fromisoformat(last_updated_str.replace('Z', '+00:00'))
+            else:
+                # Fallback: return current time if no stories found
+                return datetime.now(timezone.utc)
+
+        except Exception as e:
+            logger.error(f"Failed to get latest cluster update: {e}")
+            return None
+
     async def query_recent_stories(
         self,
         category: Optional[str] = None,

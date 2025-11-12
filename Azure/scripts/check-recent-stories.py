@@ -56,8 +56,17 @@ try:
         print(f"   Created: {story.get('first_seen', 'N/A')}")
         print(f"   Articles: {len(source_articles)}")
         
-        # Extract sources
-        sources = [art_id.split('_')[0] for art_id in source_articles]
+        # Extract sources (handle both old string format and new dict format)
+        sources = []
+        for art in source_articles:
+            if isinstance(art, dict):
+                # New format: {"id": "article_id", "source": "cnn", ...}
+                source = art.get('source', art.get('id', '').split('_')[0])
+            else:
+                # Old format: "article_id_string"
+                source = art.split('_')[0]
+            sources.append(source)
+
         source_counts = Counter(sources)
         unique_count = len(source_counts)
         
@@ -68,8 +77,13 @@ try:
             duplicates = {k: v for k, v in source_counts.items() if v > 1}
             print(f"   ❌ DUPLICATES FOUND: {dict(duplicates)}")
             print(f"   Article IDs:")
-            for i, art_id in enumerate(source_articles[:5], 1):
-                print(f"      [{i}] {art_id}")
+            for i, art in enumerate(source_articles[:5], 1):
+                if isinstance(art, dict):
+                    art_id = art.get('id', 'unknown')
+                    source = art.get('source', 'unknown')
+                    print(f"      [{i}] {art_id} ({source})")
+                else:
+                    print(f"      [{i}] {art}")
             print()
     
     print(f"{'='*80}\n")
