@@ -1,0 +1,38 @@
+{
+  "timestamp": "2025-11-12T22:00:00Z",
+  "validation_results": {
+    "imports": {
+      "successful": [
+        "config",
+        "utils",
+        "wikidata_linking",
+        "event_signatures",
+        "geographic_features",
+        "cluster_maintenance",
+        "training_data"
+      ],
+      "errors": [
+        "vector_index: No module named 'faiss'"
+      ]
+    },
+    "functionality": {
+      "successful": [
+        "entity_extraction",
+        "event_signatures",
+        "geographic_features"
+      ],
+      "errors": [
+        "vector_index: No module named 'faiss'"
+      ]
+    },
+    "dataset": {
+      "valid": true,
+      "errors": []
+    }
+  },
+  "overall_status": "FAIL",
+  "recommendations": [
+    "Fix import errors for failed components",
+    "Debug functionality issues in failed components"
+  ]
+}

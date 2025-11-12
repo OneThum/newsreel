@@ -10,7 +10,7 @@ ACI_NAME="${ACI_NAME:-newsreel-embeddings}"
 LOCATION="${LOCATION:-eastus}"
 IMAGE_NAME="${IMAGE_NAME:-newsreel/embeddings:latest}"
 CPU_CORES="${CPU_CORES:-2}"
-MEMORY_GB="${MEMORY_GB:-4}"
+MEMORY_GB="${MEMORY_GB:-8}" # 8GB recommended for multilingual-e5-large (Phase 3.6)
 DNS_NAME_LABEL="${DNS_NAME_LABEL:-newsreel-embeddings}"
 
 echo "🚀 Deploying Newsreel Embedding Service to Azure Container Instances"

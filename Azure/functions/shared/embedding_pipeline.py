@@ -59,7 +59,7 @@ class EmbeddingPipeline:
 
     async def process_articles(self, articles: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
-        Process a batch of articles through the embedding pipeline
+        Process a batch of articles through the embedding pipeline.
 
         Args:
             articles: List of article dictionaries from Cosmos DB
@@ -74,36 +74,48 @@ class EmbeddingPipeline:
 
         logger.info(f"Processing {len(articles)} articles through embedding pipeline")
 
-        # Filter articles that need embedding
-        articles_to_embed = []
+        # Filter articles that need processing
+        articles_to_process = []
         for article in articles:
-            if self._needs_embedding(article):
-                articles_to_embed.append(article)
+            if self._needs_processing(article):
+                articles_to_process.append(article)
 
-        if not articles_to_embed:
-            logger.info("No articles need embedding")
+        if not articles_to_process:
+            logger.info("No articles need processing")
             return {"processed": 0, "errors": 0, "stats": {"skipped": len(articles)}}
 
+        # Phase 3: Extract enhanced entities with Wikidata linking if enabled
+        if config.WIKIDATA_LINKING_ENABLED:
+            await self._extract_enhanced_entities(articles_to_process)
+
+        # Phase 3: Extract event signatures if enabled
+        if config.EVENT_SIGNATURES_ENABLED:
+            await self._extract_event_signatures(articles_to_process)
+
+        # Phase 3: Extract geographic features if enabled
+        if config.GEOGRAPHIC_FEATURES_ENABLED:
+            await self._extract_geographic_features(articles_to_process)
+
         # Generate embeddings
-        embeddings = await self._generate_embeddings_batch(articles_to_embed)
+        embeddings = await self._generate_embeddings_batch(articles_to_process)
 
         if embeddings is None or len(embeddings) == 0:
             logger.error("Failed to generate embeddings for batch")
-            return {"processed": 0, "errors": len(articles_to_embed), "stats": {}}
+            return {"processed": 0, "errors": len(articles_to_process), "stats": {}}
 
         # Add to vector index
-        await self._add_to_vector_index(articles_to_embed, embeddings)
+        await self._add_to_vector_index(articles_to_process, embeddings)
 
         # Update BM25 index
-        await self._update_bm25_index(articles_to_embed)
+        await self._update_bm25_index(articles_to_process)
 
         # Store embedding metadata in Cosmos DB
-        await self._store_embedding_metadata(articles_to_embed, embeddings)
+        await self._store_embedding_metadata(articles_to_process, embeddings)
 
-        logger.info(f"Successfully processed {len(articles_to_embed)} articles")
+        logger.info(f"Successfully processed {len(articles_to_process)} articles")
 
         return {
-            "processed": len(articles_to_embed),
+            "processed": len(articles_to_process),
             "errors": 0,
             "stats": {
                 "embeddings_generated": len(embeddings),
@@ -112,25 +124,37 @@ class EmbeddingPipeline:
             }
         }
 
-    def _needs_embedding(self, article: Dict[str, Any]) -> bool:
+    def _needs_processing(self, article: Dict[str, Any]) -> bool:
         """
-        Check if article needs embedding generation
+        Check if article needs processing (embedding + event signatures)
 
         Args:
             article: Article dictionary
 
         Returns:
-            True if embedding is needed
+            True if processing is needed
         """
-        # Check if article is processed and doesn't have embedding
+        # Check if article is processed
         if not article.get('processed', False):
             return False
 
-        # Check if embedding already exists
-        if article.get('embedding') or article.get('embedding_generated'):
-            return False
+        # Check if embedding is needed
+        needs_embedding = not (article.get('embedding') or article.get('embedding_generated'))
 
-        # Only embed articles from recent time (avoid backfill for now)
+        # Phase 3: Check if enhanced entities with Wikidata linking are needed
+        needs_entities = (config.WIKIDATA_LINKING_ENABLED and
+                          not article.get('wikidata_linked', False))
+
+        # Phase 3: Check if event signature is needed
+        needs_signature = (config.EVENT_SIGNATURES_ENABLED and
+                          not article.get('event_signature') and
+                          article.get('confidence', 0) >= config.EVENT_SIGNATURE_CONFIDENCE_THRESHOLD)
+
+        # Phase 3: Check if geographic features are needed
+        needs_geographic = (config.GEOGRAPHIC_FEATURES_ENABLED and
+                           not article.get('geographic_features'))
+
+        # Only process articles from recent time (avoid backfill for now)
         published_at = article.get('published_at')
         if published_at:
             try:
@@ -142,10 +166,97 @@ class EmbeddingPipeline:
                 if age_days > 7:
                     return False
             except:
-                # If we can't parse date, assume it needs embedding
+                # If we can't parse date, assume it needs processing
                 pass
 
-        return True
+        return needs_embedding or needs_entities or needs_signature or needs_geographic
+
+    async def _extract_enhanced_entities(self, articles: List[Dict[str, Any]]):
+        """
+        Extract and enhance entities with Wikidata linking (Phase 3).
+        """
+        from .utils import extract_simple_entities_with_wikidata
+
+        for article in articles:
+            if not article.get('entities') or not article.get('wikidata_linked', False):
+                try:
+                    # Phase 3: Extract entities with Wikidata linking
+                    text = f"{article.get('title', '')}. {article.get('description', '')}"
+                    entities = await extract_simple_entities_with_wikidata(text)
+
+                    # Convert Entity objects to dictionaries for storage
+                    entity_dicts = []
+                    for entity in entities:
+                        entity_dict = {
+                            'text': entity.text,
+                            'type': entity.type,
+                            'linked_name': entity.linked_name
+                        }
+                        if entity.wikidata:
+                            entity_dict['wikidata'] = entity.wikidata
+                        entity_dicts.append(entity_dict)
+
+                    article['entities'] = entity_dicts
+                    article['wikidata_linked'] = True
+
+                    logger.debug(f"Enhanced entities for article {article.get('id')}: {len(entity_dicts)} entities")
+
+                except Exception as e:
+                    logger.warning(f"Failed to extract enhanced entities for article {article.get('id')}: {e}")
+
+    async def _extract_event_signatures(self, articles: List[Dict[str, Any]]):
+        """
+        Extract event signatures for articles that need them
+
+        Args:
+            articles: List of article dictionaries
+        """
+        from .event_signatures import extract_event_signature
+
+        for article in articles:
+            if not article.get('event_signature'):
+                try:
+                    signature = extract_event_signature(
+                        title=article.get('title', ''),
+                        description=article.get('description', ''),
+                        entities=article.get('entities', [])
+                    )
+
+                    if signature.get('confidence', 0) >= config.EVENT_SIGNATURE_CONFIDENCE_THRESHOLD:
+                        article['event_signature'] = signature
+                        logger.debug(f"Extracted event signature for article {article.get('id')}: {signature.get('signature_hash', 'unknown')}")
+                    else:
+                        logger.debug(f"Event signature confidence too low for article {article.get('id')}: {signature.get('confidence', 0)}")
+
+                except Exception as e:
+                    logger.warning(f"Failed to extract event signature for article {article.get('id')}: {e}")
+
+    async def _extract_geographic_features(self, articles: List[Dict[str, Any]]):
+        """
+        Extract geographic features for articles that need them
+
+        Args:
+            articles: List of article dictionaries
+        """
+        from .geographic_features import extract_geographic_features
+
+        for article in articles:
+            if not article.get('geographic_features'):
+                try:
+                    geo_features = extract_geographic_features(
+                        title=article.get('title', ''),
+                        description=article.get('description', ''),
+                        entities=article.get('entities', [])
+                    )
+
+                    if geo_features.get('locations'):
+                        article['geographic_features'] = geo_features
+                        logger.debug(f"Extracted geographic features for article {article.get('id')}: {len(geo_features.get('locations', []))} locations")
+                    else:
+                        logger.debug(f"No geographic features found for article {article.get('id')}")
+
+                except Exception as e:
+                    logger.warning(f"Failed to extract geographic features for article {article.get('id')}: {e}")
 
     async def _generate_embeddings_batch(self, articles: List[Dict[str, Any]]) -> Optional[np.ndarray]:
         """
@@ -219,7 +330,7 @@ class EmbeddingPipeline:
 
     async def _store_embedding_metadata(self, articles: List[Dict[str, Any]], embeddings: np.ndarray):
         """
-        Store embedding metadata in Cosmos DB
+        Store embedding and event signature metadata in Cosmos DB
 
         Args:
             articles: List of article dictionaries
@@ -241,13 +352,28 @@ class EmbeddingPipeline:
                 if config.get('STORE_EMBEDDINGS_IN_DB', False):
                     update_data['embedding'] = embeddings[i].tolist()
 
+                # Phase 3: Store enhanced entities with Wikidata linking if available
+                if article.get('entities'):
+                    update_data['entities'] = article['entities']
+                    update_data['wikidata_linked'] = article.get('wikidata_linked', False)
+
+                # Phase 3: Store event signature if available
+                if article.get('event_signature'):
+                    update_data['event_signature'] = article['event_signature']
+                    update_data['event_signature_extracted'] = True
+
+                # Phase 3: Store geographic features if available
+                if article.get('geographic_features'):
+                    update_data['geographic_features'] = article['geographic_features']
+                    update_data['geographic_features_extracted'] = True
+
                 # Update article in Cosmos DB
                 await self.cosmos_client.update_raw_article_embedding(article_id, update_data)
 
-            logger.debug(f"Stored embedding metadata for {len(articles)} articles")
+            logger.debug(f"Stored metadata for {len(articles)} articles")
 
         except Exception as e:
-            logger.error(f"Failed to store embedding metadata: {e}")
+            logger.error(f"Failed to store metadata: {e}")
 
     async def search_similar(self, query_article: Dict[str, Any], top_k: int = 10) -> List[Dict[str, Any]]:
         """

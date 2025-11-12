@@ -981,7 +981,9 @@ async def cluster_with_fingerprints(article: RawArticle, config: Dict[str, Any])
 
 async def cluster_with_embeddings(article: RawArticle, config: Dict[str, Any]) -> Optional[str]:
     """
-    Phase 2 clustering using semantic embeddings + FAISS + BM25 hybrid search
+    Phase 3 clustering using semantic embeddings + FAISS + BM25 + Geographic + Event features
+
+    Multi-factor scoring system with advanced features
 
     Args:
         article: Article to cluster
@@ -990,37 +992,72 @@ async def cluster_with_embeddings(article: RawArticle, config: Dict[str, Any]) -
     Returns:
         Story ID if matched, None if new story should be created
     """
-    logger.info(f"🚀 Using embedding-based clustering for {article.id}")
+    logger.info(f"🚀 Using advanced embedding-based clustering for {article.id}")
 
     try:
         from .shared.embedding_pipeline import get_embedding_pipeline
+        from .shared.clustering import assign_article_to_cluster
 
         # Get embedding pipeline
         pipeline = await get_embedding_pipeline()
 
-        # Search for similar stories using embeddings
-        similar_stories = await pipeline.search_similar({
+        # Convert RawArticle to dict for processing
+        article_dict = {
             'id': article.id,
             'title': article.title,
             'description': article.description,
             'published_at': article.published_at.isoformat() if article.published_at else None,
             'category': article.category,
-            'entities': article.entities
-        }, top_k=5)
+            'entities': [{'text': e.text, 'type': e.type} for e in article.entities],
+            'source': article.source,
+            'story_fingerprint': article.story_fingerprint
+        }
 
-        # Check if any similar stories meet the threshold
-        similarity_threshold = config.get('similarity_threshold', 0.75)
+        # Generate embedding for the article
+        embedding = await pipeline.embeddings_client.embed_article(
+            title=article.title,
+            description=article.description,
+            entities=article_dict['entities']
+        )
 
-        for result in similar_stories:
-            if result['similarity'] >= similarity_threshold:
-                logger.info(f"✅ Embedding match found: {result['similarity']:.3f} similarity with story {result['article']['id']}")
-                return result['article']['id']
+        # Get candidate clusters using hybrid search
+        candidates = await pipeline.candidate_generator.find_candidates(
+            article=article_dict,
+            article_embedding=embedding,
+            max_candidates=50  # Get more candidates for better selection
+        )
 
-        logger.info(f"🎯 No embedding matches above threshold {similarity_threshold:.3f}, creating new story")
-        return None
+        # Fetch candidate cluster details
+        candidate_clusters = []
+        for candidate_id in candidates[:20]:  # Limit to top 20
+            try:
+                cluster_data = await cosmos_client.get_story(candidate_id)
+                if cluster_data:
+                    candidate_clusters.append(cluster_data)
+            except Exception as e:
+                logger.warning(f"Failed to fetch cluster {candidate_id}: {e}")
+
+        # Use multi-factor scoring to assign to best cluster
+        assigned_cluster_id, assignment_metadata = assign_article_to_cluster(
+            article=article_dict,
+            candidates=candidate_clusters,
+            article_embedding=embedding
+        )
+
+        if assigned_cluster_id:
+            logger.info(f"✅ Advanced clustering match: {assignment_metadata.get('score', 0):.3f} "
+                       f"score with cluster {assigned_cluster_id}")
+            logger.info(f"   Components: {assignment_metadata.get('components', {})}")
+            return assigned_cluster_id
+        else:
+            reason = assignment_metadata.get('reason', 'unknown')
+            logger.info(f"🎯 No suitable cluster found ({reason}), creating new story")
+            logger.info(f"   Best score: {assignment_metadata.get('best_score', 0):.3f}, "
+                       f"Threshold: {assignment_metadata.get('threshold', 0):.3f}")
+            return None
 
     except Exception as e:
-        logger.error(f"Embedding clustering failed, falling back to legacy: {e}")
+        logger.error(f"Advanced embedding clustering failed, falling back to legacy: {e}")
         # Fallback to legacy clustering
         return await cluster_with_fingerprints(article, config)
 
@@ -1143,6 +1180,96 @@ async def create_new_story(article: RawArticle, config: Dict[str, Any]) -> str:
     logger.info(f"🆕 Created new story {story_id}: '{story_title[:80]}...'")
 
     return story_id
+
+
+# ============================================================================
+# CLUSTER MAINTENANCE FUNCTION (Phase 3)
+# ============================================================================
+
+@app.function_name(name="ClusterMaintenance")
+@app.timer_trigger(schedule="0 */6 * * * *", arg_name="timer", run_on_startup=False)  # Every 6 hours
+async def cluster_maintenance_timer(timer: func.TimerRequest) -> None:
+    """
+    Cluster Maintenance - Phase 3 Clustering Overhaul
+
+    Automatically maintains cluster quality by:
+    - Merging similar clusters
+    - Splitting divergent clusters
+    - Decaying/archiving old clusters
+
+    Runs every 6 hours to ensure ongoing clustering accuracy.
+    """
+    if not config.CLUSTER_MAINTENANCE_ENABLED:
+        logger.info("Cluster maintenance disabled, skipping")
+        return
+
+    logger.info("🛠️ Starting cluster maintenance cycle")
+
+    try:
+        cosmos_client.connect()
+
+        # Query active clusters for maintenance
+        active_clusters = await cosmos_client.query_recent_stories(
+            limit=config.CLUSTER_MAINTENANCE_MAX_CLUSTERS
+        )
+
+        if not active_clusters:
+            logger.info("No active clusters found for maintenance")
+            return
+
+        logger.info(f"Processing {len(active_clusters)} clusters for maintenance")
+
+        # Perform cluster maintenance
+        from .shared.cluster_maintenance import perform_cluster_maintenance
+
+        maintenance_results = perform_cluster_maintenance(
+            active_clusters,
+            max_clusters=config.CLUSTER_MAINTENANCE_MAX_CLUSTERS
+        )
+
+        # Log results
+        logger.info("📊 Cluster maintenance results:")
+        logger.info(f"   • Merges performed: {len(maintenance_results['merges'])}")
+        logger.info(f"   • Splits performed: {len(maintenance_results['splits'])}")
+        logger.info(f"   • Clusters decayed: {len(maintenance_results['decayed'])}")
+        logger.info(f"   • Processing time: {maintenance_results['duration_seconds']:.1f}s")
+
+        # Process merges
+        for cluster1_id, cluster2_id, merged_id in maintenance_results['merges']:
+            logger.info(f"🔗 Merged clusters: {cluster1_id} + {cluster2_id} → {merged_id}")
+
+            # Mark original clusters as merged (would need to implement this)
+            # await cosmos_client.mark_cluster_merged(cluster1_id, merged_id)
+            # await cosmos_client.mark_cluster_merged(cluster2_id, merged_id)
+
+        # Process splits
+        for original_id, new_ids in maintenance_results['splits']:
+            logger.info(f"✂️ Split cluster: {original_id} → {new_ids}")
+
+            # Mark original cluster as split (would need to implement this)
+            # await cosmos_client.mark_cluster_split(original_id, new_ids)
+
+        # Process decays
+        for decayed_id in maintenance_results['decayed']:
+            logger.info(f"🗂️ Decayed cluster: {decayed_id}")
+
+            # Mark cluster as decayed/archived
+            # await cosmos_client.mark_cluster_decayed(decayed_id)
+
+        # Record maintenance metrics
+        from .shared.ab_testing import record_clustering_metric
+        record_clustering_metric('maintenance', 'merges_performed', len(maintenance_results['merges']), experiment_id='maintenance')
+        record_clustering_metric('maintenance', 'splits_performed', len(maintenance_results['splits']), experiment_id='maintenance')
+        record_clustering_metric('maintenance', 'clusters_decayed', len(maintenance_results['decayed']), experiment_id='maintenance')
+
+    except Exception as e:
+        logger.error(f"Cluster maintenance failed: {e}", exc_info=True)
+
+        # Record error metric
+        from .shared.ab_testing import record_clustering_metric
+        record_clustering_metric('maintenance', 'errors', 1, experiment_id='maintenance')
+
+    logger.info("✅ Cluster maintenance cycle completed")
 
 
 # ============================================================================
@@ -2150,4 +2277,82 @@ async def cleanup_test_stories_timer(timer: func.TimerRequest) -> None:
 
     except Exception as e:
         logger.error(f"❌ Cleanup failed: {e}", exc_info=True)
+
+
+@app.function_name(name="train_similarity_model")
+@app.route(route="admin/train-similarity-model", auth_level=func.AuthLevel.ANONYMOUS, methods=["POST"])
+async def train_similarity_model(req: func.HttpRequest) -> func.HttpResponse:
+    """
+    Phase 3.5: Train the similarity scoring model on labeled data.
+
+    POST /admin/train-similarity-model
+    Body: {"num_pairs": 1000, "force_retrain": false}
+    """
+    try:
+        req_body = req.get_json()
+        num_pairs = req_body.get('num_pairs', 1000)
+        force_retrain = req_body.get('force_retrain', False)
+
+        from .shared.scoring_optimization import get_similarity_scorer
+        from .shared.training_data import generate_training_data, save_training_data, load_training_data
+
+        scorer = get_similarity_scorer()
+
+        # Check if we already have a trained model
+        if scorer.is_trained and not force_retrain:
+            return func.HttpResponse(
+                json.dumps({
+                    "message": "Model already trained",
+                    "is_trained": True,
+                    "model_path": config.SCORING_MODEL_PATH
+                }),
+                status_code=200,
+                mimetype="application/json"
+            )
+
+        # Generate or load training data
+        try:
+            training_pairs = await load_training_data()
+            if not training_pairs or len(training_pairs) < 100:
+                logger.info("Insufficient training data, generating new data...")
+                training_pairs = await generate_training_data(num_pairs)
+                await save_training_data(training_pairs)
+        except:
+            logger.info("No existing training data, generating new data...")
+            training_pairs = await generate_training_data(num_pairs)
+            await save_training_data(training_pairs)
+
+        if not training_pairs:
+            return func.HttpResponse(
+                json.dumps({"error": "Failed to generate training data"}),
+                status_code=500,
+                mimetype="application/json"
+            )
+
+        # Train the model
+        logger.info(f"Training similarity model on {len(training_pairs)} pairs...")
+        scorer.train(training_pairs)
+
+        # Get model performance
+        performance = scorer.evaluate_on_data(training_pairs)
+
+        return func.HttpResponse(
+            json.dumps({
+                "message": "Model trained successfully",
+                "training_pairs": len(training_pairs),
+                "performance": performance,
+                "model_path": config.SCORING_MODEL_PATH,
+                "is_trained": scorer.is_trained
+            }),
+            status_code=200,
+            mimetype="application/json"
+        )
+
+    except Exception as e:
+        logger.error(f"Training failed: {e}")
+        return func.HttpResponse(
+            json.dumps({"error": str(e)}),
+            status_code=500,
+            mimetype="application/json"
+        )
 

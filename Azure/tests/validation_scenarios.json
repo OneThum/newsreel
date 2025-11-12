@@ -1,0 +1,42 @@
+{
+  "entity_disambiguation": [
+    {
+      "articles": [
+        "edge_paris_1",
+        "edge_paris_2"
+      ],
+      "expected_cluster": false,
+      "reason": "Paris city vs Paris Hilton - different entities"
+    },
+    {
+      "articles": [
+        "edge_sydney_1",
+        "edge_sydney_2"
+      ],
+      "expected_cluster": false,
+      "reason": "Sydney dentist vs Sydney stabbing - different events"
+    }
+  ],
+  "temporal_clustering": [
+    {
+      "articles": [
+        "apple_iphone_1",
+        "apple_iphone_2",
+        "apple_iphone_3"
+      ],
+      "expected_cluster": true,
+      "reason": "Same story about iPhone launch over time"
+    }
+  ],
+  "source_diversity": [
+    {
+      "articles": [
+        "election_1",
+        "election_2",
+        "election_3"
+      ],
+      "expected_cluster": true,
+      "reason": "Same story from different reputable sources"
+    }
+  ]
+}

@@ -2,7 +2,7 @@
 import hashlib
 import re
 from datetime import datetime
-from typing import List, Set, Tuple, Dict, Any
+from typing import List, Set, Tuple, Dict, Any, Optional
 from .models import Entity
 
 
@@ -245,6 +245,52 @@ def generate_event_fingerprint(articles_fingerprints: List[str]) -> str:
     """Generate event fingerprint from article fingerprints"""
     combined = '_'.join(sorted(articles_fingerprints))
     return hashlib.md5(combined.encode()).hexdigest()[:16]
+
+
+async def extract_simple_entities_with_wikidata(text: str) -> List[Entity]:
+    """
+    Extract entities with Wikidata linking for disambiguation (Phase 3).
+
+    Enhanced entity extraction with Wikidata knowledge base for better disambiguation.
+    Links ambiguous entities to specific Wikidata entities.
+    """
+    entities = extract_simple_entities(text)
+
+    if not config.WIKIDATA_LINKING_ENABLED or not entities:
+        return entities
+
+    try:
+        from .wikidata_linking import get_wikidata_linker
+
+        linker = await get_wikidata_linker()
+
+        # Prepare entities for batch linking
+        entity_dicts = [{'text': e.text, 'type': e.type} for e in entities]
+
+        # Link entities to Wikidata
+        linked_entities = await linker.batch_link_entities(entity_dicts, text)
+
+        # Update entities with Wikidata information
+        for entity in entities:
+            wikidata_entity = linked_entities.get(entity.text)
+            if wikidata_entity:
+                entity.wikidata = {
+                    'qid': wikidata_entity.qid,
+                    'label': wikidata_entity.label,
+                    'description': wikidata_entity.description,
+                    'type': wikidata_entity.entity_type,
+                    'url': f'https://www.wikidata.org/wiki/{wikidata_entity.qid}',
+                    'popularity_score': wikidata_entity.sitelinks,
+                    'confidence': wikidata_entity.score
+                }
+                entity.linked_name = wikidata_entity.label  # Override with canonical name
+
+        logger.debug(f"Linked {sum(1 for e in entities if e.wikidata)} entities to Wikidata")
+
+    except Exception as e:
+        logger.warning(f"Wikidata linking failed: {e}")
+
+    return entities
 
 
 def extract_simple_entities(text: str) -> List[Entity]:

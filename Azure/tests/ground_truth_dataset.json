@@ -1,0 +1,3471 @@
+{
+  "dataset": [
+    {
+      "article1": {
+        "id": "nfl_2",
+        "title": "Mahomes MVP Performance Seals Chiefs Victory",
+        "description": "Kansas City quarterback Patrick Mahomes was named Super Bowl MVP after his record-breaking performance.",
+        "source": "nfl",
+        "category": "sports",
+        "published_at": "2024-02-12T01:00:00Z"
+      },
+      "article2": {
+        "id": "nfl_3",
+        "title": "Super Bowl Halftime Show Controversy",
+        "description": "Usher's performance drew mixed reactions from viewers and social media users.",
+        "source": "variety",
+        "category": "sports",
+        "published_at": "2024-02-12T02:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "nfl_3",
+        "title": "Super Bowl Halftime Show Controversy",
+        "description": "Usher's performance drew mixed reactions from viewers and social media users.",
+        "source": "variety",
+        "category": "sports",
+        "published_at": "2024-02-12T02:00:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_1",
+        "title": "Sydney Dentist Charged with Murder",
+        "description": "A Sydney dentist faces murder charges in connection with a patient's death.",
+        "source": "abc_au",
+        "category": "crime",
+        "published_at": "2024-01-18T20:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_3",
+        "title": "Congress Reacts to Biden's Climate Plan",
+        "description": "Lawmakers from both parties commented on the president's new environmental initiative.",
+        "source": "politico",
+        "category": "politics",
+        "published_at": "2024-01-10T12:00:00Z"
+      },
+      "article2": {
+        "id": "election_4",
+        "title": "Trump Campaign Criticizes Biden Climate Policy",
+        "description": "Former President Trump called the new environmental regulations 'job-killing' in a campaign speech.",
+        "source": "foxnews",
+        "category": "politics",
+        "published_at": "2024-01-10T15:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "middle_east_1",
+        "title": "Ceasefire Agreement Reached in Gaza",
+        "description": "Israel and Hamas agreed to a temporary ceasefire after weeks of negotiations.",
+        "source": "bbc",
+        "category": "world",
+        "published_at": "2024-01-25T06:00:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_2",
+        "title": "Sydney Stabbing Leaves One Dead",
+        "description": "Police are investigating a fatal stabbing incident in Sydney's CBD.",
+        "source": "sydney_morning_herald",
+        "category": "crime",
+        "published_at": "2024-01-18T22:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_2",
+        "title": "Apple Launches iPhone 15 Series Globally",
+        "description": "The new iPhone 15 lineup is now available in stores worldwide, featuring improved battery life.",
+        "source": "cnet",
+        "category": "technology",
+        "published_at": "2024-01-15T10:30:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_2",
+        "title": "Sydney Stabbing Leaves One Dead",
+        "description": "Police are investigating a fatal stabbing incident in Sydney's CBD.",
+        "source": "sydney_morning_herald",
+        "category": "crime",
+        "published_at": "2024-01-18T22:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "nfl_1",
+        "title": "Chiefs Win Super Bowl LVIII in Overtime Thriller",
+        "description": "Patrick Mahomes led the Kansas City Chiefs to victory over the San Francisco 49ers in overtime.",
+        "source": "espn",
+        "category": "sports",
+        "published_at": "2024-02-11T22:30:00Z"
+      },
+      "article2": {
+        "id": "tesla_2",
+        "title": "Tesla Stock Surges on Earnings Beat",
+        "description": "Tesla shares jumped 8% after the company reported stronger-than-expected revenue growth.",
+        "source": "cnbc",
+        "category": "business",
+        "published_at": "2024-01-20T16:30:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "middle_east_2",
+        "title": "Gaza Ceasefire Takes Effect",
+        "description": "Fighting paused in Gaza as both sides begin implementing the ceasefire agreement.",
+        "source": "aljazeera",
+        "category": "world",
+        "published_at": "2024-01-25T08:00:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_1",
+        "title": "Sydney Dentist Charged with Murder",
+        "description": "A Sydney dentist faces murder charges in connection with a patient's death.",
+        "source": "abc_au",
+        "category": "crime",
+        "published_at": "2024-01-18T20:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_2",
+        "title": "White House Climate Initiative Details Released",
+        "description": "The Biden administration provided specifics on the new environmental policy framework.",
+        "source": "washingtonpost",
+        "category": "politics",
+        "published_at": "2024-01-10T09:15:00Z"
+      },
+      "article2": {
+        "id": "middle_east_1",
+        "title": "Ceasefire Agreement Reached in Gaza",
+        "description": "Israel and Hamas agreed to a temporary ceasefire after weeks of negotiations.",
+        "source": "bbc",
+        "category": "world",
+        "published_at": "2024-01-25T06:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_2",
+        "title": "White House Climate Initiative Details Released",
+        "description": "The Biden administration provided specifics on the new environmental policy framework.",
+        "source": "washingtonpost",
+        "category": "politics",
+        "published_at": "2024-01-10T09:15:00Z"
+      },
+      "article2": {
+        "id": "nfl_1",
+        "title": "Chiefs Win Super Bowl LVIII in Overtime Thriller",
+        "description": "Patrick Mahomes led the Kansas City Chiefs to victory over the San Francisco 49ers in overtime.",
+        "source": "espn",
+        "category": "sports",
+        "published_at": "2024-02-11T22:30:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_2",
+        "title": "Apple Launches iPhone 15 Series Globally",
+        "description": "The new iPhone 15 lineup is now available in stores worldwide, featuring improved battery life.",
+        "source": "cnet",
+        "category": "technology",
+        "published_at": "2024-01-15T10:30:00Z"
+      },
+      "article2": {
+        "id": "nfl_1",
+        "title": "Chiefs Win Super Bowl LVIII in Overtime Thriller",
+        "description": "Patrick Mahomes led the Kansas City Chiefs to victory over the San Francisco 49ers in overtime.",
+        "source": "espn",
+        "category": "sports",
+        "published_at": "2024-02-11T22:30:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "nfl_2",
+        "title": "Mahomes MVP Performance Seals Chiefs Victory",
+        "description": "Kansas City quarterback Patrick Mahomes was named Super Bowl MVP after his record-breaking performance.",
+        "source": "nfl",
+        "category": "sports",
+        "published_at": "2024-02-12T01:00:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_1",
+        "title": "Sydney Dentist Charged with Murder",
+        "description": "A Sydney dentist faces murder charges in connection with a patient's death.",
+        "source": "abc_au",
+        "category": "crime",
+        "published_at": "2024-01-18T20:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "edge_paris_1",
+        "title": "Paris Climate Agreement Anniversary",
+        "description": "World leaders marked the 5th anniversary of the Paris climate accord.",
+        "source": "guardian",
+        "category": "environment",
+        "published_at": "2024-01-12T12:00:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_1",
+        "title": "Sydney Dentist Charged with Murder",
+        "description": "A Sydney dentist faces murder charges in connection with a patient's death.",
+        "source": "abc_au",
+        "category": "crime",
+        "published_at": "2024-01-18T20:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_3",
+        "title": "iPhone 15 Pro Max Review: Camera Innovation Shines",
+        "description": "Our hands-on review of Apple's latest smartphone reveals impressive camera capabilities.",
+        "source": "theverge",
+        "category": "technology",
+        "published_at": "2024-01-16T14:00:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_2",
+        "title": "Paris Hilton Releases New Music",
+        "description": "Celebrity Paris Hilton announced her return to music with a new single.",
+        "source": "billboard",
+        "category": "entertainment",
+        "published_at": "2024-01-12T14:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "edge_paris_2",
+        "title": "Paris Hilton Releases New Music",
+        "description": "Celebrity Paris Hilton announced her return to music with a new single.",
+        "source": "billboard",
+        "category": "entertainment",
+        "published_at": "2024-01-12T14:00:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_1",
+        "title": "Sydney Dentist Charged with Murder",
+        "description": "A Sydney dentist faces murder charges in connection with a patient's death.",
+        "source": "abc_au",
+        "category": "crime",
+        "published_at": "2024-01-18T20:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_3",
+        "title": "Congress Reacts to Biden's Climate Plan",
+        "description": "Lawmakers from both parties commented on the president's new environmental initiative.",
+        "source": "politico",
+        "category": "politics",
+        "published_at": "2024-01-10T12:00:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_1",
+        "title": "Paris Climate Agreement Anniversary",
+        "description": "World leaders marked the 5th anniversary of the Paris climate accord.",
+        "source": "guardian",
+        "category": "environment",
+        "published_at": "2024-01-12T12:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_1",
+        "title": "Apple Announces New iPhone 15 Pro Max",
+        "description": "Apple Inc. unveiled its latest flagship smartphone with advanced camera features and A17 chip.",
+        "source": "techcrunch",
+        "category": "technology",
+        "published_at": "2024-01-15T09:00:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_1",
+        "title": "Sydney Dentist Charged with Murder",
+        "description": "A Sydney dentist faces murder charges in connection with a patient's death.",
+        "source": "abc_au",
+        "category": "crime",
+        "published_at": "2024-01-18T20:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_2",
+        "title": "White House Climate Initiative Details Released",
+        "description": "The Biden administration provided specifics on the new environmental policy framework.",
+        "source": "washingtonpost",
+        "category": "politics",
+        "published_at": "2024-01-10T09:15:00Z"
+      },
+      "article2": {
+        "id": "tesla_1",
+        "title": "Tesla Reports Record Q4 Earnings",
+        "description": "Electric vehicle maker Tesla posted better-than-expected financial results for Q4 2024.",
+        "source": "bloomberg",
+        "category": "business",
+        "published_at": "2024-01-20T16:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_1",
+        "title": "Biden Administration Announces New Climate Policy",
+        "description": "President Biden unveiled ambitious new environmental regulations targeting carbon emissions.",
+        "source": "nytimes",
+        "category": "politics",
+        "published_at": "2024-01-10T08:00:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_1",
+        "title": "Paris Climate Agreement Anniversary",
+        "description": "World leaders marked the 5th anniversary of the Paris climate accord.",
+        "source": "guardian",
+        "category": "environment",
+        "published_at": "2024-01-12T12:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_1",
+        "title": "Apple Announces New iPhone 15 Pro Max",
+        "description": "Apple Inc. unveiled its latest flagship smartphone with advanced camera features and A17 chip.",
+        "source": "techcrunch",
+        "category": "technology",
+        "published_at": "2024-01-15T09:00:00Z"
+      },
+      "article2": {
+        "id": "middle_east_2",
+        "title": "Gaza Ceasefire Takes Effect",
+        "description": "Fighting paused in Gaza as both sides begin implementing the ceasefire agreement.",
+        "source": "aljazeera",
+        "category": "world",
+        "published_at": "2024-01-25T08:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_3",
+        "title": "Congress Reacts to Biden's Climate Plan",
+        "description": "Lawmakers from both parties commented on the president's new environmental initiative.",
+        "source": "politico",
+        "category": "politics",
+        "published_at": "2024-01-10T12:00:00Z"
+      },
+      "article2": {
+        "id": "middle_east_2",
+        "title": "Gaza Ceasefire Takes Effect",
+        "description": "Fighting paused in Gaza as both sides begin implementing the ceasefire agreement.",
+        "source": "aljazeera",
+        "category": "world",
+        "published_at": "2024-01-25T08:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_2",
+        "title": "Apple Launches iPhone 15 Series Globally",
+        "description": "The new iPhone 15 lineup is now available in stores worldwide, featuring improved battery life.",
+        "source": "cnet",
+        "category": "technology",
+        "published_at": "2024-01-15T10:30:00Z"
+      },
+      "article2": {
+        "id": "middle_east_3",
+        "title": "US Welcomes Gaza Ceasefire Deal",
+        "description": "Secretary of State Antony Blinken praised the ceasefire agreement as a step toward peace.",
+        "source": "ap",
+        "category": "world",
+        "published_at": "2024-01-25T10:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_1",
+        "title": "Apple Announces New iPhone 15 Pro Max",
+        "description": "Apple Inc. unveiled its latest flagship smartphone with advanced camera features and A17 chip.",
+        "source": "techcrunch",
+        "category": "technology",
+        "published_at": "2024-01-15T09:00:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_2",
+        "title": "Paris Hilton Releases New Music",
+        "description": "Celebrity Paris Hilton announced her return to music with a new single.",
+        "source": "billboard",
+        "category": "entertainment",
+        "published_at": "2024-01-12T14:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "nfl_2",
+        "title": "Mahomes MVP Performance Seals Chiefs Victory",
+        "description": "Kansas City quarterback Patrick Mahomes was named Super Bowl MVP after his record-breaking performance.",
+        "source": "nfl",
+        "category": "sports",
+        "published_at": "2024-02-12T01:00:00Z"
+      },
+      "article2": {
+        "id": "tesla_1",
+        "title": "Tesla Reports Record Q4 Earnings",
+        "description": "Electric vehicle maker Tesla posted better-than-expected financial results for Q4 2024.",
+        "source": "bloomberg",
+        "category": "business",
+        "published_at": "2024-01-20T16:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "edge_paris_1",
+        "title": "Paris Climate Agreement Anniversary",
+        "description": "World leaders marked the 5th anniversary of the Paris climate accord.",
+        "source": "guardian",
+        "category": "environment",
+        "published_at": "2024-01-12T12:00:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_2",
+        "title": "Paris Hilton Releases New Music",
+        "description": "Celebrity Paris Hilton announced her return to music with a new single.",
+        "source": "billboard",
+        "category": "entertainment",
+        "published_at": "2024-01-12T14:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_1",
+        "title": "Biden Administration Announces New Climate Policy",
+        "description": "President Biden unveiled ambitious new environmental regulations targeting carbon emissions.",
+        "source": "nytimes",
+        "category": "politics",
+        "published_at": "2024-01-10T08:00:00Z"
+      },
+      "article2": {
+        "id": "election_3",
+        "title": "Congress Reacts to Biden's Climate Plan",
+        "description": "Lawmakers from both parties commented on the president's new environmental initiative.",
+        "source": "politico",
+        "category": "politics",
+        "published_at": "2024-01-10T12:00:00Z"
+      },
+      "label": 1,
+      "pair_type": "positive"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_1",
+        "title": "Apple Announces New iPhone 15 Pro Max",
+        "description": "Apple Inc. unveiled its latest flagship smartphone with advanced camera features and A17 chip.",
+        "source": "techcrunch",
+        "category": "technology",
+        "published_at": "2024-01-15T09:00:00Z"
+      },
+      "article2": {
+        "id": "election_3",
+        "title": "Congress Reacts to Biden's Climate Plan",
+        "description": "Lawmakers from both parties commented on the president's new environmental initiative.",
+        "source": "politico",
+        "category": "politics",
+        "published_at": "2024-01-10T12:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_3",
+        "title": "iPhone 15 Pro Max Review: Camera Innovation Shines",
+        "description": "Our hands-on review of Apple's latest smartphone reveals impressive camera capabilities.",
+        "source": "theverge",
+        "category": "technology",
+        "published_at": "2024-01-16T14:00:00Z"
+      },
+      "article2": {
+        "id": "nfl_2",
+        "title": "Mahomes MVP Performance Seals Chiefs Victory",
+        "description": "Kansas City quarterback Patrick Mahomes was named Super Bowl MVP after his record-breaking performance.",
+        "source": "nfl",
+        "category": "sports",
+        "published_at": "2024-02-12T01:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "nfl_1",
+        "title": "Chiefs Win Super Bowl LVIII in Overtime Thriller",
+        "description": "Patrick Mahomes led the Kansas City Chiefs to victory over the San Francisco 49ers in overtime.",
+        "source": "espn",
+        "category": "sports",
+        "published_at": "2024-02-11T22:30:00Z"
+      },
+      "article2": {
+        "id": "middle_east_3",
+        "title": "US Welcomes Gaza Ceasefire Deal",
+        "description": "Secretary of State Antony Blinken praised the ceasefire agreement as a step toward peace.",
+        "source": "ap",
+        "category": "world",
+        "published_at": "2024-01-25T10:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "middle_east_3",
+        "title": "US Welcomes Gaza Ceasefire Deal",
+        "description": "Secretary of State Antony Blinken praised the ceasefire agreement as a step toward peace.",
+        "source": "ap",
+        "category": "world",
+        "published_at": "2024-01-25T10:00:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_2",
+        "title": "Paris Hilton Releases New Music",
+        "description": "Celebrity Paris Hilton announced her return to music with a new single.",
+        "source": "billboard",
+        "category": "entertainment",
+        "published_at": "2024-01-12T14:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "nfl_2",
+        "title": "Mahomes MVP Performance Seals Chiefs Victory",
+        "description": "Kansas City quarterback Patrick Mahomes was named Super Bowl MVP after his record-breaking performance.",
+        "source": "nfl",
+        "category": "sports",
+        "published_at": "2024-02-12T01:00:00Z"
+      },
+      "article2": {
+        "id": "middle_east_3",
+        "title": "US Welcomes Gaza Ceasefire Deal",
+        "description": "Secretary of State Antony Blinken praised the ceasefire agreement as a step toward peace.",
+        "source": "ap",
+        "category": "world",
+        "published_at": "2024-01-25T10:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "tesla_2",
+        "title": "Tesla Stock Surges on Earnings Beat",
+        "description": "Tesla shares jumped 8% after the company reported stronger-than-expected revenue growth.",
+        "source": "cnbc",
+        "category": "business",
+        "published_at": "2024-01-20T16:30:00Z"
+      },
+      "article2": {
+        "id": "middle_east_3",
+        "title": "US Welcomes Gaza Ceasefire Deal",
+        "description": "Secretary of State Antony Blinken praised the ceasefire agreement as a step toward peace.",
+        "source": "ap",
+        "category": "world",
+        "published_at": "2024-01-25T10:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_1",
+        "title": "Apple Announces New iPhone 15 Pro Max",
+        "description": "Apple Inc. unveiled its latest flagship smartphone with advanced camera features and A17 chip.",
+        "source": "techcrunch",
+        "category": "technology",
+        "published_at": "2024-01-15T09:00:00Z"
+      },
+      "article2": {
+        "id": "nfl_1",
+        "title": "Chiefs Win Super Bowl LVIII in Overtime Thriller",
+        "description": "Patrick Mahomes led the Kansas City Chiefs to victory over the San Francisco 49ers in overtime.",
+        "source": "espn",
+        "category": "sports",
+        "published_at": "2024-02-11T22:30:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "middle_east_1",
+        "title": "Ceasefire Agreement Reached in Gaza",
+        "description": "Israel and Hamas agreed to a temporary ceasefire after weeks of negotiations.",
+        "source": "bbc",
+        "category": "world",
+        "published_at": "2024-01-25T06:00:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_1",
+        "title": "Sydney Dentist Charged with Murder",
+        "description": "A Sydney dentist faces murder charges in connection with a patient's death.",
+        "source": "abc_au",
+        "category": "crime",
+        "published_at": "2024-01-18T20:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "middle_east_2",
+        "title": "Gaza Ceasefire Takes Effect",
+        "description": "Fighting paused in Gaza as both sides begin implementing the ceasefire agreement.",
+        "source": "aljazeera",
+        "category": "world",
+        "published_at": "2024-01-25T08:00:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_1",
+        "title": "Paris Climate Agreement Anniversary",
+        "description": "World leaders marked the 5th anniversary of the Paris climate accord.",
+        "source": "guardian",
+        "category": "environment",
+        "published_at": "2024-01-12T12:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "nfl_3",
+        "title": "Super Bowl Halftime Show Controversy",
+        "description": "Usher's performance drew mixed reactions from viewers and social media users.",
+        "source": "variety",
+        "category": "sports",
+        "published_at": "2024-02-12T02:00:00Z"
+      },
+      "article2": {
+        "id": "tesla_2",
+        "title": "Tesla Stock Surges on Earnings Beat",
+        "description": "Tesla shares jumped 8% after the company reported stronger-than-expected revenue growth.",
+        "source": "cnbc",
+        "category": "business",
+        "published_at": "2024-01-20T16:30:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "nfl_2",
+        "title": "Mahomes MVP Performance Seals Chiefs Victory",
+        "description": "Kansas City quarterback Patrick Mahomes was named Super Bowl MVP after his record-breaking performance.",
+        "source": "nfl",
+        "category": "sports",
+        "published_at": "2024-02-12T01:00:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_1",
+        "title": "Paris Climate Agreement Anniversary",
+        "description": "World leaders marked the 5th anniversary of the Paris climate accord.",
+        "source": "guardian",
+        "category": "environment",
+        "published_at": "2024-01-12T12:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_1",
+        "title": "Biden Administration Announces New Climate Policy",
+        "description": "President Biden unveiled ambitious new environmental regulations targeting carbon emissions.",
+        "source": "nytimes",
+        "category": "politics",
+        "published_at": "2024-01-10T08:00:00Z"
+      },
+      "article2": {
+        "id": "middle_east_1",
+        "title": "Ceasefire Agreement Reached in Gaza",
+        "description": "Israel and Hamas agreed to a temporary ceasefire after weeks of negotiations.",
+        "source": "bbc",
+        "category": "world",
+        "published_at": "2024-01-25T06:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_1",
+        "title": "Biden Administration Announces New Climate Policy",
+        "description": "President Biden unveiled ambitious new environmental regulations targeting carbon emissions.",
+        "source": "nytimes",
+        "category": "politics",
+        "published_at": "2024-01-10T08:00:00Z"
+      },
+      "article2": {
+        "id": "middle_east_3",
+        "title": "US Welcomes Gaza Ceasefire Deal",
+        "description": "Secretary of State Antony Blinken praised the ceasefire agreement as a step toward peace.",
+        "source": "ap",
+        "category": "world",
+        "published_at": "2024-01-25T10:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_1",
+        "title": "Apple Announces New iPhone 15 Pro Max",
+        "description": "Apple Inc. unveiled its latest flagship smartphone with advanced camera features and A17 chip.",
+        "source": "techcrunch",
+        "category": "technology",
+        "published_at": "2024-01-15T09:00:00Z"
+      },
+      "article2": {
+        "id": "middle_east_1",
+        "title": "Ceasefire Agreement Reached in Gaza",
+        "description": "Israel and Hamas agreed to a temporary ceasefire after weeks of negotiations.",
+        "source": "bbc",
+        "category": "world",
+        "published_at": "2024-01-25T06:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "tesla_2",
+        "title": "Tesla Stock Surges on Earnings Beat",
+        "description": "Tesla shares jumped 8% after the company reported stronger-than-expected revenue growth.",
+        "source": "cnbc",
+        "category": "business",
+        "published_at": "2024-01-20T16:30:00Z"
+      },
+      "article2": {
+        "id": "tesla_3",
+        "title": "Musk Comments on Tesla's Future Plans",
+        "description": "CEO Elon Musk discussed autonomous driving technology and new vehicle models during earnings call.",
+        "source": "reuters",
+        "category": "business",
+        "published_at": "2024-01-20T17:00:00Z"
+      },
+      "label": 1,
+      "pair_type": "positive"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_1",
+        "title": "Apple Announces New iPhone 15 Pro Max",
+        "description": "Apple Inc. unveiled its latest flagship smartphone with advanced camera features and A17 chip.",
+        "source": "techcrunch",
+        "category": "technology",
+        "published_at": "2024-01-15T09:00:00Z"
+      },
+      "article2": {
+        "id": "nfl_2",
+        "title": "Mahomes MVP Performance Seals Chiefs Victory",
+        "description": "Kansas City quarterback Patrick Mahomes was named Super Bowl MVP after his record-breaking performance.",
+        "source": "nfl",
+        "category": "sports",
+        "published_at": "2024-02-12T01:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_1",
+        "title": "Biden Administration Announces New Climate Policy",
+        "description": "President Biden unveiled ambitious new environmental regulations targeting carbon emissions.",
+        "source": "nytimes",
+        "category": "politics",
+        "published_at": "2024-01-10T08:00:00Z"
+      },
+      "article2": {
+        "id": "tesla_3",
+        "title": "Musk Comments on Tesla's Future Plans",
+        "description": "CEO Elon Musk discussed autonomous driving technology and new vehicle models during earnings call.",
+        "source": "reuters",
+        "category": "business",
+        "published_at": "2024-01-20T17:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "nfl_2",
+        "title": "Mahomes MVP Performance Seals Chiefs Victory",
+        "description": "Kansas City quarterback Patrick Mahomes was named Super Bowl MVP after his record-breaking performance.",
+        "source": "nfl",
+        "category": "sports",
+        "published_at": "2024-02-12T01:00:00Z"
+      },
+      "article2": {
+        "id": "middle_east_2",
+        "title": "Gaza Ceasefire Takes Effect",
+        "description": "Fighting paused in Gaza as both sides begin implementing the ceasefire agreement.",
+        "source": "aljazeera",
+        "category": "world",
+        "published_at": "2024-01-25T08:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_3",
+        "title": "Congress Reacts to Biden's Climate Plan",
+        "description": "Lawmakers from both parties commented on the president's new environmental initiative.",
+        "source": "politico",
+        "category": "politics",
+        "published_at": "2024-01-10T12:00:00Z"
+      },
+      "article2": {
+        "id": "tesla_2",
+        "title": "Tesla Stock Surges on Earnings Beat",
+        "description": "Tesla shares jumped 8% after the company reported stronger-than-expected revenue growth.",
+        "source": "cnbc",
+        "category": "business",
+        "published_at": "2024-01-20T16:30:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "nfl_3",
+        "title": "Super Bowl Halftime Show Controversy",
+        "description": "Usher's performance drew mixed reactions from viewers and social media users.",
+        "source": "variety",
+        "category": "sports",
+        "published_at": "2024-02-12T02:00:00Z"
+      },
+      "article2": {
+        "id": "tesla_3",
+        "title": "Musk Comments on Tesla's Future Plans",
+        "description": "CEO Elon Musk discussed autonomous driving technology and new vehicle models during earnings call.",
+        "source": "reuters",
+        "category": "business",
+        "published_at": "2024-01-20T17:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "nfl_1",
+        "title": "Chiefs Win Super Bowl LVIII in Overtime Thriller",
+        "description": "Patrick Mahomes led the Kansas City Chiefs to victory over the San Francisco 49ers in overtime.",
+        "source": "espn",
+        "category": "sports",
+        "published_at": "2024-02-11T22:30:00Z"
+      },
+      "article2": {
+        "id": "middle_east_1",
+        "title": "Ceasefire Agreement Reached in Gaza",
+        "description": "Israel and Hamas agreed to a temporary ceasefire after weeks of negotiations.",
+        "source": "bbc",
+        "category": "world",
+        "published_at": "2024-01-25T06:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "middle_east_3",
+        "title": "US Welcomes Gaza Ceasefire Deal",
+        "description": "Secretary of State Antony Blinken praised the ceasefire agreement as a step toward peace.",
+        "source": "ap",
+        "category": "world",
+        "published_at": "2024-01-25T10:00:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_1",
+        "title": "Paris Climate Agreement Anniversary",
+        "description": "World leaders marked the 5th anniversary of the Paris climate accord.",
+        "source": "guardian",
+        "category": "environment",
+        "published_at": "2024-01-12T12:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_3",
+        "title": "iPhone 15 Pro Max Review: Camera Innovation Shines",
+        "description": "Our hands-on review of Apple's latest smartphone reveals impressive camera capabilities.",
+        "source": "theverge",
+        "category": "technology",
+        "published_at": "2024-01-16T14:00:00Z"
+      },
+      "article2": {
+        "id": "election_2",
+        "title": "White House Climate Initiative Details Released",
+        "description": "The Biden administration provided specifics on the new environmental policy framework.",
+        "source": "washingtonpost",
+        "category": "politics",
+        "published_at": "2024-01-10T09:15:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_2",
+        "title": "White House Climate Initiative Details Released",
+        "description": "The Biden administration provided specifics on the new environmental policy framework.",
+        "source": "washingtonpost",
+        "category": "politics",
+        "published_at": "2024-01-10T09:15:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_2",
+        "title": "Paris Hilton Releases New Music",
+        "description": "Celebrity Paris Hilton announced her return to music with a new single.",
+        "source": "billboard",
+        "category": "entertainment",
+        "published_at": "2024-01-12T14:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "middle_east_3",
+        "title": "US Welcomes Gaza Ceasefire Deal",
+        "description": "Secretary of State Antony Blinken praised the ceasefire agreement as a step toward peace.",
+        "source": "ap",
+        "category": "world",
+        "published_at": "2024-01-25T10:00:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_1",
+        "title": "Sydney Dentist Charged with Murder",
+        "description": "A Sydney dentist faces murder charges in connection with a patient's death.",
+        "source": "abc_au",
+        "category": "crime",
+        "published_at": "2024-01-18T20:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_2",
+        "title": "White House Climate Initiative Details Released",
+        "description": "The Biden administration provided specifics on the new environmental policy framework.",
+        "source": "washingtonpost",
+        "category": "politics",
+        "published_at": "2024-01-10T09:15:00Z"
+      },
+      "article2": {
+        "id": "nfl_3",
+        "title": "Super Bowl Halftime Show Controversy",
+        "description": "Usher's performance drew mixed reactions from viewers and social media users.",
+        "source": "variety",
+        "category": "sports",
+        "published_at": "2024-02-12T02:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "nfl_3",
+        "title": "Super Bowl Halftime Show Controversy",
+        "description": "Usher's performance drew mixed reactions from viewers and social media users.",
+        "source": "variety",
+        "category": "sports",
+        "published_at": "2024-02-12T02:00:00Z"
+      },
+      "article2": {
+        "id": "middle_east_3",
+        "title": "US Welcomes Gaza Ceasefire Deal",
+        "description": "Secretary of State Antony Blinken praised the ceasefire agreement as a step toward peace.",
+        "source": "ap",
+        "category": "world",
+        "published_at": "2024-01-25T10:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "middle_east_2",
+        "title": "Gaza Ceasefire Takes Effect",
+        "description": "Fighting paused in Gaza as both sides begin implementing the ceasefire agreement.",
+        "source": "aljazeera",
+        "category": "world",
+        "published_at": "2024-01-25T08:00:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_2",
+        "title": "Sydney Stabbing Leaves One Dead",
+        "description": "Police are investigating a fatal stabbing incident in Sydney's CBD.",
+        "source": "sydney_morning_herald",
+        "category": "crime",
+        "published_at": "2024-01-18T22:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_1",
+        "title": "Apple Announces New iPhone 15 Pro Max",
+        "description": "Apple Inc. unveiled its latest flagship smartphone with advanced camera features and A17 chip.",
+        "source": "techcrunch",
+        "category": "technology",
+        "published_at": "2024-01-15T09:00:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_2",
+        "title": "Sydney Stabbing Leaves One Dead",
+        "description": "Police are investigating a fatal stabbing incident in Sydney's CBD.",
+        "source": "sydney_morning_herald",
+        "category": "crime",
+        "published_at": "2024-01-18T22:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "tesla_2",
+        "title": "Tesla Stock Surges on Earnings Beat",
+        "description": "Tesla shares jumped 8% after the company reported stronger-than-expected revenue growth.",
+        "source": "cnbc",
+        "category": "business",
+        "published_at": "2024-01-20T16:30:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_1",
+        "title": "Sydney Dentist Charged with Murder",
+        "description": "A Sydney dentist faces murder charges in connection with a patient's death.",
+        "source": "abc_au",
+        "category": "crime",
+        "published_at": "2024-01-18T20:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_1",
+        "title": "Biden Administration Announces New Climate Policy",
+        "description": "President Biden unveiled ambitious new environmental regulations targeting carbon emissions.",
+        "source": "nytimes",
+        "category": "politics",
+        "published_at": "2024-01-10T08:00:00Z"
+      },
+      "article2": {
+        "id": "middle_east_2",
+        "title": "Gaza Ceasefire Takes Effect",
+        "description": "Fighting paused in Gaza as both sides begin implementing the ceasefire agreement.",
+        "source": "aljazeera",
+        "category": "world",
+        "published_at": "2024-01-25T08:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "edge_sydney_1",
+        "title": "Sydney Dentist Charged with Murder",
+        "description": "A Sydney dentist faces murder charges in connection with a patient's death.",
+        "source": "abc_au",
+        "category": "crime",
+        "published_at": "2024-01-18T20:00:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_2",
+        "title": "Sydney Stabbing Leaves One Dead",
+        "description": "Police are investigating a fatal stabbing incident in Sydney's CBD.",
+        "source": "sydney_morning_herald",
+        "category": "crime",
+        "published_at": "2024-01-18T22:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "tesla_3",
+        "title": "Musk Comments on Tesla's Future Plans",
+        "description": "CEO Elon Musk discussed autonomous driving technology and new vehicle models during earnings call.",
+        "source": "reuters",
+        "category": "business",
+        "published_at": "2024-01-20T17:00:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_2",
+        "title": "Sydney Stabbing Leaves One Dead",
+        "description": "Police are investigating a fatal stabbing incident in Sydney's CBD.",
+        "source": "sydney_morning_herald",
+        "category": "crime",
+        "published_at": "2024-01-18T22:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_2",
+        "title": "Apple Launches iPhone 15 Series Globally",
+        "description": "The new iPhone 15 lineup is now available in stores worldwide, featuring improved battery life.",
+        "source": "cnet",
+        "category": "technology",
+        "published_at": "2024-01-15T10:30:00Z"
+      },
+      "article2": {
+        "id": "tesla_1",
+        "title": "Tesla Reports Record Q4 Earnings",
+        "description": "Electric vehicle maker Tesla posted better-than-expected financial results for Q4 2024.",
+        "source": "bloomberg",
+        "category": "business",
+        "published_at": "2024-01-20T16:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_3",
+        "title": "Congress Reacts to Biden's Climate Plan",
+        "description": "Lawmakers from both parties commented on the president's new environmental initiative.",
+        "source": "politico",
+        "category": "politics",
+        "published_at": "2024-01-10T12:00:00Z"
+      },
+      "article2": {
+        "id": "nfl_1",
+        "title": "Chiefs Win Super Bowl LVIII in Overtime Thriller",
+        "description": "Patrick Mahomes led the Kansas City Chiefs to victory over the San Francisco 49ers in overtime.",
+        "source": "espn",
+        "category": "sports",
+        "published_at": "2024-02-11T22:30:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_2",
+        "title": "Apple Launches iPhone 15 Series Globally",
+        "description": "The new iPhone 15 lineup is now available in stores worldwide, featuring improved battery life.",
+        "source": "cnet",
+        "category": "technology",
+        "published_at": "2024-01-15T10:30:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_1",
+        "title": "Sydney Dentist Charged with Murder",
+        "description": "A Sydney dentist faces murder charges in connection with a patient's death.",
+        "source": "abc_au",
+        "category": "crime",
+        "published_at": "2024-01-18T20:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "tesla_1",
+        "title": "Tesla Reports Record Q4 Earnings",
+        "description": "Electric vehicle maker Tesla posted better-than-expected financial results for Q4 2024.",
+        "source": "bloomberg",
+        "category": "business",
+        "published_at": "2024-01-20T16:00:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_2",
+        "title": "Paris Hilton Releases New Music",
+        "description": "Celebrity Paris Hilton announced her return to music with a new single.",
+        "source": "billboard",
+        "category": "entertainment",
+        "published_at": "2024-01-12T14:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_2",
+        "title": "Apple Launches iPhone 15 Series Globally",
+        "description": "The new iPhone 15 lineup is now available in stores worldwide, featuring improved battery life.",
+        "source": "cnet",
+        "category": "technology",
+        "published_at": "2024-01-15T10:30:00Z"
+      },
+      "article2": {
+        "id": "tesla_3",
+        "title": "Musk Comments on Tesla's Future Plans",
+        "description": "CEO Elon Musk discussed autonomous driving technology and new vehicle models during earnings call.",
+        "source": "reuters",
+        "category": "business",
+        "published_at": "2024-01-20T17:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "nfl_3",
+        "title": "Super Bowl Halftime Show Controversy",
+        "description": "Usher's performance drew mixed reactions from viewers and social media users.",
+        "source": "variety",
+        "category": "sports",
+        "published_at": "2024-02-12T02:00:00Z"
+      },
+      "article2": {
+        "id": "middle_east_2",
+        "title": "Gaza Ceasefire Takes Effect",
+        "description": "Fighting paused in Gaza as both sides begin implementing the ceasefire agreement.",
+        "source": "aljazeera",
+        "category": "world",
+        "published_at": "2024-01-25T08:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "tesla_1",
+        "title": "Tesla Reports Record Q4 Earnings",
+        "description": "Electric vehicle maker Tesla posted better-than-expected financial results for Q4 2024.",
+        "source": "bloomberg",
+        "category": "business",
+        "published_at": "2024-01-20T16:00:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_2",
+        "title": "Sydney Stabbing Leaves One Dead",
+        "description": "Police are investigating a fatal stabbing incident in Sydney's CBD.",
+        "source": "sydney_morning_herald",
+        "category": "crime",
+        "published_at": "2024-01-18T22:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_1",
+        "title": "Apple Announces New iPhone 15 Pro Max",
+        "description": "Apple Inc. unveiled its latest flagship smartphone with advanced camera features and A17 chip.",
+        "source": "techcrunch",
+        "category": "technology",
+        "published_at": "2024-01-15T09:00:00Z"
+      },
+      "article2": {
+        "id": "election_1",
+        "title": "Biden Administration Announces New Climate Policy",
+        "description": "President Biden unveiled ambitious new environmental regulations targeting carbon emissions.",
+        "source": "nytimes",
+        "category": "politics",
+        "published_at": "2024-01-10T08:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "tesla_2",
+        "title": "Tesla Stock Surges on Earnings Beat",
+        "description": "Tesla shares jumped 8% after the company reported stronger-than-expected revenue growth.",
+        "source": "cnbc",
+        "category": "business",
+        "published_at": "2024-01-20T16:30:00Z"
+      },
+      "article2": {
+        "id": "middle_east_2",
+        "title": "Gaza Ceasefire Takes Effect",
+        "description": "Fighting paused in Gaza as both sides begin implementing the ceasefire agreement.",
+        "source": "aljazeera",
+        "category": "world",
+        "published_at": "2024-01-25T08:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "tesla_3",
+        "title": "Musk Comments on Tesla's Future Plans",
+        "description": "CEO Elon Musk discussed autonomous driving technology and new vehicle models during earnings call.",
+        "source": "reuters",
+        "category": "business",
+        "published_at": "2024-01-20T17:00:00Z"
+      },
+      "article2": {
+        "id": "middle_east_2",
+        "title": "Gaza Ceasefire Takes Effect",
+        "description": "Fighting paused in Gaza as both sides begin implementing the ceasefire agreement.",
+        "source": "aljazeera",
+        "category": "world",
+        "published_at": "2024-01-25T08:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "nfl_1",
+        "title": "Chiefs Win Super Bowl LVIII in Overtime Thriller",
+        "description": "Patrick Mahomes led the Kansas City Chiefs to victory over the San Francisco 49ers in overtime.",
+        "source": "espn",
+        "category": "sports",
+        "published_at": "2024-02-11T22:30:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_1",
+        "title": "Paris Climate Agreement Anniversary",
+        "description": "World leaders marked the 5th anniversary of the Paris climate accord.",
+        "source": "guardian",
+        "category": "environment",
+        "published_at": "2024-01-12T12:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_2",
+        "title": "Apple Launches iPhone 15 Series Globally",
+        "description": "The new iPhone 15 lineup is now available in stores worldwide, featuring improved battery life.",
+        "source": "cnet",
+        "category": "technology",
+        "published_at": "2024-01-15T10:30:00Z"
+      },
+      "article2": {
+        "id": "election_2",
+        "title": "White House Climate Initiative Details Released",
+        "description": "The Biden administration provided specifics on the new environmental policy framework.",
+        "source": "washingtonpost",
+        "category": "politics",
+        "published_at": "2024-01-10T09:15:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "tesla_3",
+        "title": "Musk Comments on Tesla's Future Plans",
+        "description": "CEO Elon Musk discussed autonomous driving technology and new vehicle models during earnings call.",
+        "source": "reuters",
+        "category": "business",
+        "published_at": "2024-01-20T17:00:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_2",
+        "title": "Paris Hilton Releases New Music",
+        "description": "Celebrity Paris Hilton announced her return to music with a new single.",
+        "source": "billboard",
+        "category": "entertainment",
+        "published_at": "2024-01-12T14:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "tesla_2",
+        "title": "Tesla Stock Surges on Earnings Beat",
+        "description": "Tesla shares jumped 8% after the company reported stronger-than-expected revenue growth.",
+        "source": "cnbc",
+        "category": "business",
+        "published_at": "2024-01-20T16:30:00Z"
+      },
+      "article2": {
+        "id": "middle_east_1",
+        "title": "Ceasefire Agreement Reached in Gaza",
+        "description": "Israel and Hamas agreed to a temporary ceasefire after weeks of negotiations.",
+        "source": "bbc",
+        "category": "world",
+        "published_at": "2024-01-25T06:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "nfl_3",
+        "title": "Super Bowl Halftime Show Controversy",
+        "description": "Usher's performance drew mixed reactions from viewers and social media users.",
+        "source": "variety",
+        "category": "sports",
+        "published_at": "2024-02-12T02:00:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_2",
+        "title": "Sydney Stabbing Leaves One Dead",
+        "description": "Police are investigating a fatal stabbing incident in Sydney's CBD.",
+        "source": "sydney_morning_herald",
+        "category": "crime",
+        "published_at": "2024-01-18T22:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_3",
+        "title": "iPhone 15 Pro Max Review: Camera Innovation Shines",
+        "description": "Our hands-on review of Apple's latest smartphone reveals impressive camera capabilities.",
+        "source": "theverge",
+        "category": "technology",
+        "published_at": "2024-01-16T14:00:00Z"
+      },
+      "article2": {
+        "id": "tesla_1",
+        "title": "Tesla Reports Record Q4 Earnings",
+        "description": "Electric vehicle maker Tesla posted better-than-expected financial results for Q4 2024.",
+        "source": "bloomberg",
+        "category": "business",
+        "published_at": "2024-01-20T16:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_2",
+        "title": "Apple Launches iPhone 15 Series Globally",
+        "description": "The new iPhone 15 lineup is now available in stores worldwide, featuring improved battery life.",
+        "source": "cnet",
+        "category": "technology",
+        "published_at": "2024-01-15T10:30:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_2",
+        "title": "Paris Hilton Releases New Music",
+        "description": "Celebrity Paris Hilton announced her return to music with a new single.",
+        "source": "billboard",
+        "category": "entertainment",
+        "published_at": "2024-01-12T14:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_2",
+        "title": "White House Climate Initiative Details Released",
+        "description": "The Biden administration provided specifics on the new environmental policy framework.",
+        "source": "washingtonpost",
+        "category": "politics",
+        "published_at": "2024-01-10T09:15:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_1",
+        "title": "Paris Climate Agreement Anniversary",
+        "description": "World leaders marked the 5th anniversary of the Paris climate accord.",
+        "source": "guardian",
+        "category": "environment",
+        "published_at": "2024-01-12T12:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_3",
+        "title": "iPhone 15 Pro Max Review: Camera Innovation Shines",
+        "description": "Our hands-on review of Apple's latest smartphone reveals impressive camera capabilities.",
+        "source": "theverge",
+        "category": "technology",
+        "published_at": "2024-01-16T14:00:00Z"
+      },
+      "article2": {
+        "id": "middle_east_1",
+        "title": "Ceasefire Agreement Reached in Gaza",
+        "description": "Israel and Hamas agreed to a temporary ceasefire after weeks of negotiations.",
+        "source": "bbc",
+        "category": "world",
+        "published_at": "2024-01-25T06:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_3",
+        "title": "Congress Reacts to Biden's Climate Plan",
+        "description": "Lawmakers from both parties commented on the president's new environmental initiative.",
+        "source": "politico",
+        "category": "politics",
+        "published_at": "2024-01-10T12:00:00Z"
+      },
+      "article2": {
+        "id": "tesla_3",
+        "title": "Musk Comments on Tesla's Future Plans",
+        "description": "CEO Elon Musk discussed autonomous driving technology and new vehicle models during earnings call.",
+        "source": "reuters",
+        "category": "business",
+        "published_at": "2024-01-20T17:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "middle_east_1",
+        "title": "Ceasefire Agreement Reached in Gaza",
+        "description": "Israel and Hamas agreed to a temporary ceasefire after weeks of negotiations.",
+        "source": "bbc",
+        "category": "world",
+        "published_at": "2024-01-25T06:00:00Z"
+      },
+      "article2": {
+        "id": "middle_east_2",
+        "title": "Gaza Ceasefire Takes Effect",
+        "description": "Fighting paused in Gaza as both sides begin implementing the ceasefire agreement.",
+        "source": "aljazeera",
+        "category": "world",
+        "published_at": "2024-01-25T08:00:00Z"
+      },
+      "label": 1,
+      "pair_type": "positive"
+    },
+    {
+      "article1": {
+        "id": "election_2",
+        "title": "White House Climate Initiative Details Released",
+        "description": "The Biden administration provided specifics on the new environmental policy framework.",
+        "source": "washingtonpost",
+        "category": "politics",
+        "published_at": "2024-01-10T09:15:00Z"
+      },
+      "article2": {
+        "id": "middle_east_3",
+        "title": "US Welcomes Gaza Ceasefire Deal",
+        "description": "Secretary of State Antony Blinken praised the ceasefire agreement as a step toward peace.",
+        "source": "ap",
+        "category": "world",
+        "published_at": "2024-01-25T10:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_1",
+        "title": "Biden Administration Announces New Climate Policy",
+        "description": "President Biden unveiled ambitious new environmental regulations targeting carbon emissions.",
+        "source": "nytimes",
+        "category": "politics",
+        "published_at": "2024-01-10T08:00:00Z"
+      },
+      "article2": {
+        "id": "election_2",
+        "title": "White House Climate Initiative Details Released",
+        "description": "The Biden administration provided specifics on the new environmental policy framework.",
+        "source": "washingtonpost",
+        "category": "politics",
+        "published_at": "2024-01-10T09:15:00Z"
+      },
+      "label": 1,
+      "pair_type": "positive"
+    },
+    {
+      "article1": {
+        "id": "nfl_1",
+        "title": "Chiefs Win Super Bowl LVIII in Overtime Thriller",
+        "description": "Patrick Mahomes led the Kansas City Chiefs to victory over the San Francisco 49ers in overtime.",
+        "source": "espn",
+        "category": "sports",
+        "published_at": "2024-02-11T22:30:00Z"
+      },
+      "article2": {
+        "id": "nfl_2",
+        "title": "Mahomes MVP Performance Seals Chiefs Victory",
+        "description": "Kansas City quarterback Patrick Mahomes was named Super Bowl MVP after his record-breaking performance.",
+        "source": "nfl",
+        "category": "sports",
+        "published_at": "2024-02-12T01:00:00Z"
+      },
+      "label": 1,
+      "pair_type": "positive"
+    },
+    {
+      "article1": {
+        "id": "edge_paris_1",
+        "title": "Paris Climate Agreement Anniversary",
+        "description": "World leaders marked the 5th anniversary of the Paris climate accord.",
+        "source": "guardian",
+        "category": "environment",
+        "published_at": "2024-01-12T12:00:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_2",
+        "title": "Paris Hilton Releases New Music",
+        "description": "Celebrity Paris Hilton announced her return to music with a new single.",
+        "source": "billboard",
+        "category": "entertainment",
+        "published_at": "2024-01-12T14:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "nfl_2",
+        "title": "Mahomes MVP Performance Seals Chiefs Victory",
+        "description": "Kansas City quarterback Patrick Mahomes was named Super Bowl MVP after his record-breaking performance.",
+        "source": "nfl",
+        "category": "sports",
+        "published_at": "2024-02-12T01:00:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_2",
+        "title": "Paris Hilton Releases New Music",
+        "description": "Celebrity Paris Hilton announced her return to music with a new single.",
+        "source": "billboard",
+        "category": "entertainment",
+        "published_at": "2024-01-12T14:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_1",
+        "title": "Biden Administration Announces New Climate Policy",
+        "description": "President Biden unveiled ambitious new environmental regulations targeting carbon emissions.",
+        "source": "nytimes",
+        "category": "politics",
+        "published_at": "2024-01-10T08:00:00Z"
+      },
+      "article2": {
+        "id": "nfl_2",
+        "title": "Mahomes MVP Performance Seals Chiefs Victory",
+        "description": "Kansas City quarterback Patrick Mahomes was named Super Bowl MVP after his record-breaking performance.",
+        "source": "nfl",
+        "category": "sports",
+        "published_at": "2024-02-12T01:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "nfl_1",
+        "title": "Chiefs Win Super Bowl LVIII in Overtime Thriller",
+        "description": "Patrick Mahomes led the Kansas City Chiefs to victory over the San Francisco 49ers in overtime.",
+        "source": "espn",
+        "category": "sports",
+        "published_at": "2024-02-11T22:30:00Z"
+      },
+      "article2": {
+        "id": "middle_east_2",
+        "title": "Gaza Ceasefire Takes Effect",
+        "description": "Fighting paused in Gaza as both sides begin implementing the ceasefire agreement.",
+        "source": "aljazeera",
+        "category": "world",
+        "published_at": "2024-01-25T08:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_2",
+        "title": "White House Climate Initiative Details Released",
+        "description": "The Biden administration provided specifics on the new environmental policy framework.",
+        "source": "washingtonpost",
+        "category": "politics",
+        "published_at": "2024-01-10T09:15:00Z"
+      },
+      "article2": {
+        "id": "middle_east_2",
+        "title": "Gaza Ceasefire Takes Effect",
+        "description": "Fighting paused in Gaza as both sides begin implementing the ceasefire agreement.",
+        "source": "aljazeera",
+        "category": "world",
+        "published_at": "2024-01-25T08:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_3",
+        "title": "iPhone 15 Pro Max Review: Camera Innovation Shines",
+        "description": "Our hands-on review of Apple's latest smartphone reveals impressive camera capabilities.",
+        "source": "theverge",
+        "category": "technology",
+        "published_at": "2024-01-16T14:00:00Z"
+      },
+      "article2": {
+        "id": "nfl_3",
+        "title": "Super Bowl Halftime Show Controversy",
+        "description": "Usher's performance drew mixed reactions from viewers and social media users.",
+        "source": "variety",
+        "category": "sports",
+        "published_at": "2024-02-12T02:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "middle_east_2",
+        "title": "Gaza Ceasefire Takes Effect",
+        "description": "Fighting paused in Gaza as both sides begin implementing the ceasefire agreement.",
+        "source": "aljazeera",
+        "category": "world",
+        "published_at": "2024-01-25T08:00:00Z"
+      },
+      "article2": {
+        "id": "middle_east_3",
+        "title": "US Welcomes Gaza Ceasefire Deal",
+        "description": "Secretary of State Antony Blinken praised the ceasefire agreement as a step toward peace.",
+        "source": "ap",
+        "category": "world",
+        "published_at": "2024-01-25T10:00:00Z"
+      },
+      "label": 1,
+      "pair_type": "positive"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_1",
+        "title": "Apple Announces New iPhone 15 Pro Max",
+        "description": "Apple Inc. unveiled its latest flagship smartphone with advanced camera features and A17 chip.",
+        "source": "techcrunch",
+        "category": "technology",
+        "published_at": "2024-01-15T09:00:00Z"
+      },
+      "article2": {
+        "id": "apple_iphone_3",
+        "title": "iPhone 15 Pro Max Review: Camera Innovation Shines",
+        "description": "Our hands-on review of Apple's latest smartphone reveals impressive camera capabilities.",
+        "source": "theverge",
+        "category": "technology",
+        "published_at": "2024-01-16T14:00:00Z"
+      },
+      "label": 1,
+      "pair_type": "positive"
+    },
+    {
+      "article1": {
+        "id": "election_1",
+        "title": "Biden Administration Announces New Climate Policy",
+        "description": "President Biden unveiled ambitious new environmental regulations targeting carbon emissions.",
+        "source": "nytimes",
+        "category": "politics",
+        "published_at": "2024-01-10T08:00:00Z"
+      },
+      "article2": {
+        "id": "nfl_3",
+        "title": "Super Bowl Halftime Show Controversy",
+        "description": "Usher's performance drew mixed reactions from viewers and social media users.",
+        "source": "variety",
+        "category": "sports",
+        "published_at": "2024-02-12T02:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_3",
+        "title": "Congress Reacts to Biden's Climate Plan",
+        "description": "Lawmakers from both parties commented on the president's new environmental initiative.",
+        "source": "politico",
+        "category": "politics",
+        "published_at": "2024-01-10T12:00:00Z"
+      },
+      "article2": {
+        "id": "middle_east_3",
+        "title": "US Welcomes Gaza Ceasefire Deal",
+        "description": "Secretary of State Antony Blinken praised the ceasefire agreement as a step toward peace.",
+        "source": "ap",
+        "category": "world",
+        "published_at": "2024-01-25T10:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_1",
+        "title": "Biden Administration Announces New Climate Policy",
+        "description": "President Biden unveiled ambitious new environmental regulations targeting carbon emissions.",
+        "source": "nytimes",
+        "category": "politics",
+        "published_at": "2024-01-10T08:00:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_2",
+        "title": "Sydney Stabbing Leaves One Dead",
+        "description": "Police are investigating a fatal stabbing incident in Sydney's CBD.",
+        "source": "sydney_morning_herald",
+        "category": "crime",
+        "published_at": "2024-01-18T22:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_1",
+        "title": "Biden Administration Announces New Climate Policy",
+        "description": "President Biden unveiled ambitious new environmental regulations targeting carbon emissions.",
+        "source": "nytimes",
+        "category": "politics",
+        "published_at": "2024-01-10T08:00:00Z"
+      },
+      "article2": {
+        "id": "tesla_1",
+        "title": "Tesla Reports Record Q4 Earnings",
+        "description": "Electric vehicle maker Tesla posted better-than-expected financial results for Q4 2024.",
+        "source": "bloomberg",
+        "category": "business",
+        "published_at": "2024-01-20T16:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "tesla_3",
+        "title": "Musk Comments on Tesla's Future Plans",
+        "description": "CEO Elon Musk discussed autonomous driving technology and new vehicle models during earnings call.",
+        "source": "reuters",
+        "category": "business",
+        "published_at": "2024-01-20T17:00:00Z"
+      },
+      "article2": {
+        "id": "middle_east_3",
+        "title": "US Welcomes Gaza Ceasefire Deal",
+        "description": "Secretary of State Antony Blinken praised the ceasefire agreement as a step toward peace.",
+        "source": "ap",
+        "category": "world",
+        "published_at": "2024-01-25T10:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_3",
+        "title": "iPhone 15 Pro Max Review: Camera Innovation Shines",
+        "description": "Our hands-on review of Apple's latest smartphone reveals impressive camera capabilities.",
+        "source": "theverge",
+        "category": "technology",
+        "published_at": "2024-01-16T14:00:00Z"
+      },
+      "article2": {
+        "id": "election_1",
+        "title": "Biden Administration Announces New Climate Policy",
+        "description": "President Biden unveiled ambitious new environmental regulations targeting carbon emissions.",
+        "source": "nytimes",
+        "category": "politics",
+        "published_at": "2024-01-10T08:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "nfl_1",
+        "title": "Chiefs Win Super Bowl LVIII in Overtime Thriller",
+        "description": "Patrick Mahomes led the Kansas City Chiefs to victory over the San Francisco 49ers in overtime.",
+        "source": "espn",
+        "category": "sports",
+        "published_at": "2024-02-11T22:30:00Z"
+      },
+      "article2": {
+        "id": "tesla_3",
+        "title": "Musk Comments on Tesla's Future Plans",
+        "description": "CEO Elon Musk discussed autonomous driving technology and new vehicle models during earnings call.",
+        "source": "reuters",
+        "category": "business",
+        "published_at": "2024-01-20T17:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_1",
+        "title": "Apple Announces New iPhone 15 Pro Max",
+        "description": "Apple Inc. unveiled its latest flagship smartphone with advanced camera features and A17 chip.",
+        "source": "techcrunch",
+        "category": "technology",
+        "published_at": "2024-01-15T09:00:00Z"
+      },
+      "article2": {
+        "id": "middle_east_3",
+        "title": "US Welcomes Gaza Ceasefire Deal",
+        "description": "Secretary of State Antony Blinken praised the ceasefire agreement as a step toward peace.",
+        "source": "ap",
+        "category": "world",
+        "published_at": "2024-01-25T10:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_2",
+        "title": "White House Climate Initiative Details Released",
+        "description": "The Biden administration provided specifics on the new environmental policy framework.",
+        "source": "washingtonpost",
+        "category": "politics",
+        "published_at": "2024-01-10T09:15:00Z"
+      },
+      "article2": {
+        "id": "nfl_2",
+        "title": "Mahomes MVP Performance Seals Chiefs Victory",
+        "description": "Kansas City quarterback Patrick Mahomes was named Super Bowl MVP after his record-breaking performance.",
+        "source": "nfl",
+        "category": "sports",
+        "published_at": "2024-02-12T01:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_3",
+        "title": "Congress Reacts to Biden's Climate Plan",
+        "description": "Lawmakers from both parties commented on the president's new environmental initiative.",
+        "source": "politico",
+        "category": "politics",
+        "published_at": "2024-01-10T12:00:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_2",
+        "title": "Sydney Stabbing Leaves One Dead",
+        "description": "Police are investigating a fatal stabbing incident in Sydney's CBD.",
+        "source": "sydney_morning_herald",
+        "category": "crime",
+        "published_at": "2024-01-18T22:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "tesla_2",
+        "title": "Tesla Stock Surges on Earnings Beat",
+        "description": "Tesla shares jumped 8% after the company reported stronger-than-expected revenue growth.",
+        "source": "cnbc",
+        "category": "business",
+        "published_at": "2024-01-20T16:30:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_1",
+        "title": "Paris Climate Agreement Anniversary",
+        "description": "World leaders marked the 5th anniversary of the Paris climate accord.",
+        "source": "guardian",
+        "category": "environment",
+        "published_at": "2024-01-12T12:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_3",
+        "title": "iPhone 15 Pro Max Review: Camera Innovation Shines",
+        "description": "Our hands-on review of Apple's latest smartphone reveals impressive camera capabilities.",
+        "source": "theverge",
+        "category": "technology",
+        "published_at": "2024-01-16T14:00:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_2",
+        "title": "Sydney Stabbing Leaves One Dead",
+        "description": "Police are investigating a fatal stabbing incident in Sydney's CBD.",
+        "source": "sydney_morning_herald",
+        "category": "crime",
+        "published_at": "2024-01-18T22:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_3",
+        "title": "iPhone 15 Pro Max Review: Camera Innovation Shines",
+        "description": "Our hands-on review of Apple's latest smartphone reveals impressive camera capabilities.",
+        "source": "theverge",
+        "category": "technology",
+        "published_at": "2024-01-16T14:00:00Z"
+      },
+      "article2": {
+        "id": "middle_east_3",
+        "title": "US Welcomes Gaza Ceasefire Deal",
+        "description": "Secretary of State Antony Blinken praised the ceasefire agreement as a step toward peace.",
+        "source": "ap",
+        "category": "world",
+        "published_at": "2024-01-25T10:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_1",
+        "title": "Apple Announces New iPhone 15 Pro Max",
+        "description": "Apple Inc. unveiled its latest flagship smartphone with advanced camera features and A17 chip.",
+        "source": "techcrunch",
+        "category": "technology",
+        "published_at": "2024-01-15T09:00:00Z"
+      },
+      "article2": {
+        "id": "apple_iphone_2",
+        "title": "Apple Launches iPhone 15 Series Globally",
+        "description": "The new iPhone 15 lineup is now available in stores worldwide, featuring improved battery life.",
+        "source": "cnet",
+        "category": "technology",
+        "published_at": "2024-01-15T10:30:00Z"
+      },
+      "label": 1,
+      "pair_type": "positive"
+    },
+    {
+      "article1": {
+        "id": "middle_east_1",
+        "title": "Ceasefire Agreement Reached in Gaza",
+        "description": "Israel and Hamas agreed to a temporary ceasefire after weeks of negotiations.",
+        "source": "bbc",
+        "category": "world",
+        "published_at": "2024-01-25T06:00:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_2",
+        "title": "Paris Hilton Releases New Music",
+        "description": "Celebrity Paris Hilton announced her return to music with a new single.",
+        "source": "billboard",
+        "category": "entertainment",
+        "published_at": "2024-01-12T14:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_3",
+        "title": "Congress Reacts to Biden's Climate Plan",
+        "description": "Lawmakers from both parties commented on the president's new environmental initiative.",
+        "source": "politico",
+        "category": "politics",
+        "published_at": "2024-01-10T12:00:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_1",
+        "title": "Sydney Dentist Charged with Murder",
+        "description": "A Sydney dentist faces murder charges in connection with a patient's death.",
+        "source": "abc_au",
+        "category": "crime",
+        "published_at": "2024-01-18T20:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "nfl_1",
+        "title": "Chiefs Win Super Bowl LVIII in Overtime Thriller",
+        "description": "Patrick Mahomes led the Kansas City Chiefs to victory over the San Francisco 49ers in overtime.",
+        "source": "espn",
+        "category": "sports",
+        "published_at": "2024-02-11T22:30:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_2",
+        "title": "Sydney Stabbing Leaves One Dead",
+        "description": "Police are investigating a fatal stabbing incident in Sydney's CBD.",
+        "source": "sydney_morning_herald",
+        "category": "crime",
+        "published_at": "2024-01-18T22:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "nfl_3",
+        "title": "Super Bowl Halftime Show Controversy",
+        "description": "Usher's performance drew mixed reactions from viewers and social media users.",
+        "source": "variety",
+        "category": "sports",
+        "published_at": "2024-02-12T02:00:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_1",
+        "title": "Paris Climate Agreement Anniversary",
+        "description": "World leaders marked the 5th anniversary of the Paris climate accord.",
+        "source": "guardian",
+        "category": "environment",
+        "published_at": "2024-01-12T12:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "tesla_1",
+        "title": "Tesla Reports Record Q4 Earnings",
+        "description": "Electric vehicle maker Tesla posted better-than-expected financial results for Q4 2024.",
+        "source": "bloomberg",
+        "category": "business",
+        "published_at": "2024-01-20T16:00:00Z"
+      },
+      "article2": {
+        "id": "middle_east_3",
+        "title": "US Welcomes Gaza Ceasefire Deal",
+        "description": "Secretary of State Antony Blinken praised the ceasefire agreement as a step toward peace.",
+        "source": "ap",
+        "category": "world",
+        "published_at": "2024-01-25T10:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "tesla_3",
+        "title": "Musk Comments on Tesla's Future Plans",
+        "description": "CEO Elon Musk discussed autonomous driving technology and new vehicle models during earnings call.",
+        "source": "reuters",
+        "category": "business",
+        "published_at": "2024-01-20T17:00:00Z"
+      },
+      "article2": {
+        "id": "middle_east_1",
+        "title": "Ceasefire Agreement Reached in Gaza",
+        "description": "Israel and Hamas agreed to a temporary ceasefire after weeks of negotiations.",
+        "source": "bbc",
+        "category": "world",
+        "published_at": "2024-01-25T06:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "middle_east_2",
+        "title": "Gaza Ceasefire Takes Effect",
+        "description": "Fighting paused in Gaza as both sides begin implementing the ceasefire agreement.",
+        "source": "aljazeera",
+        "category": "world",
+        "published_at": "2024-01-25T08:00:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_2",
+        "title": "Paris Hilton Releases New Music",
+        "description": "Celebrity Paris Hilton announced her return to music with a new single.",
+        "source": "billboard",
+        "category": "entertainment",
+        "published_at": "2024-01-12T14:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "tesla_1",
+        "title": "Tesla Reports Record Q4 Earnings",
+        "description": "Electric vehicle maker Tesla posted better-than-expected financial results for Q4 2024.",
+        "source": "bloomberg",
+        "category": "business",
+        "published_at": "2024-01-20T16:00:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_1",
+        "title": "Paris Climate Agreement Anniversary",
+        "description": "World leaders marked the 5th anniversary of the Paris climate accord.",
+        "source": "guardian",
+        "category": "environment",
+        "published_at": "2024-01-12T12:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_1",
+        "title": "Biden Administration Announces New Climate Policy",
+        "description": "President Biden unveiled ambitious new environmental regulations targeting carbon emissions.",
+        "source": "nytimes",
+        "category": "politics",
+        "published_at": "2024-01-10T08:00:00Z"
+      },
+      "article2": {
+        "id": "tesla_2",
+        "title": "Tesla Stock Surges on Earnings Beat",
+        "description": "Tesla shares jumped 8% after the company reported stronger-than-expected revenue growth.",
+        "source": "cnbc",
+        "category": "business",
+        "published_at": "2024-01-20T16:30:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_3",
+        "title": "iPhone 15 Pro Max Review: Camera Innovation Shines",
+        "description": "Our hands-on review of Apple's latest smartphone reveals impressive camera capabilities.",
+        "source": "theverge",
+        "category": "technology",
+        "published_at": "2024-01-16T14:00:00Z"
+      },
+      "article2": {
+        "id": "nfl_1",
+        "title": "Chiefs Win Super Bowl LVIII in Overtime Thriller",
+        "description": "Patrick Mahomes led the Kansas City Chiefs to victory over the San Francisco 49ers in overtime.",
+        "source": "espn",
+        "category": "sports",
+        "published_at": "2024-02-11T22:30:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "tesla_2",
+        "title": "Tesla Stock Surges on Earnings Beat",
+        "description": "Tesla shares jumped 8% after the company reported stronger-than-expected revenue growth.",
+        "source": "cnbc",
+        "category": "business",
+        "published_at": "2024-01-20T16:30:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_2",
+        "title": "Paris Hilton Releases New Music",
+        "description": "Celebrity Paris Hilton announced her return to music with a new single.",
+        "source": "billboard",
+        "category": "entertainment",
+        "published_at": "2024-01-12T14:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_2",
+        "title": "Apple Launches iPhone 15 Series Globally",
+        "description": "The new iPhone 15 lineup is now available in stores worldwide, featuring improved battery life.",
+        "source": "cnet",
+        "category": "technology",
+        "published_at": "2024-01-15T10:30:00Z"
+      },
+      "article2": {
+        "id": "nfl_3",
+        "title": "Super Bowl Halftime Show Controversy",
+        "description": "Usher's performance drew mixed reactions from viewers and social media users.",
+        "source": "variety",
+        "category": "sports",
+        "published_at": "2024-02-12T02:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_2",
+        "title": "Apple Launches iPhone 15 Series Globally",
+        "description": "The new iPhone 15 lineup is now available in stores worldwide, featuring improved battery life.",
+        "source": "cnet",
+        "category": "technology",
+        "published_at": "2024-01-15T10:30:00Z"
+      },
+      "article2": {
+        "id": "nfl_2",
+        "title": "Mahomes MVP Performance Seals Chiefs Victory",
+        "description": "Kansas City quarterback Patrick Mahomes was named Super Bowl MVP after his record-breaking performance.",
+        "source": "nfl",
+        "category": "sports",
+        "published_at": "2024-02-12T01:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "tesla_1",
+        "title": "Tesla Reports Record Q4 Earnings",
+        "description": "Electric vehicle maker Tesla posted better-than-expected financial results for Q4 2024.",
+        "source": "bloomberg",
+        "category": "business",
+        "published_at": "2024-01-20T16:00:00Z"
+      },
+      "article2": {
+        "id": "tesla_2",
+        "title": "Tesla Stock Surges on Earnings Beat",
+        "description": "Tesla shares jumped 8% after the company reported stronger-than-expected revenue growth.",
+        "source": "cnbc",
+        "category": "business",
+        "published_at": "2024-01-20T16:30:00Z"
+      },
+      "label": 1,
+      "pair_type": "positive"
+    },
+    {
+      "article1": {
+        "id": "edge_paris_1",
+        "title": "Paris Climate Agreement Anniversary",
+        "description": "World leaders marked the 5th anniversary of the Paris climate accord.",
+        "source": "guardian",
+        "category": "environment",
+        "published_at": "2024-01-12T12:00:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_2",
+        "title": "Sydney Stabbing Leaves One Dead",
+        "description": "Police are investigating a fatal stabbing incident in Sydney's CBD.",
+        "source": "sydney_morning_herald",
+        "category": "crime",
+        "published_at": "2024-01-18T22:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_1",
+        "title": "Apple Announces New iPhone 15 Pro Max",
+        "description": "Apple Inc. unveiled its latest flagship smartphone with advanced camera features and A17 chip.",
+        "source": "techcrunch",
+        "category": "technology",
+        "published_at": "2024-01-15T09:00:00Z"
+      },
+      "article2": {
+        "id": "election_2",
+        "title": "White House Climate Initiative Details Released",
+        "description": "The Biden administration provided specifics on the new environmental policy framework.",
+        "source": "washingtonpost",
+        "category": "politics",
+        "published_at": "2024-01-10T09:15:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_3",
+        "title": "iPhone 15 Pro Max Review: Camera Innovation Shines",
+        "description": "Our hands-on review of Apple's latest smartphone reveals impressive camera capabilities.",
+        "source": "theverge",
+        "category": "technology",
+        "published_at": "2024-01-16T14:00:00Z"
+      },
+      "article2": {
+        "id": "tesla_2",
+        "title": "Tesla Stock Surges on Earnings Beat",
+        "description": "Tesla shares jumped 8% after the company reported stronger-than-expected revenue growth.",
+        "source": "cnbc",
+        "category": "business",
+        "published_at": "2024-01-20T16:30:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_2",
+        "title": "Apple Launches iPhone 15 Series Globally",
+        "description": "The new iPhone 15 lineup is now available in stores worldwide, featuring improved battery life.",
+        "source": "cnet",
+        "category": "technology",
+        "published_at": "2024-01-15T10:30:00Z"
+      },
+      "article2": {
+        "id": "election_3",
+        "title": "Congress Reacts to Biden's Climate Plan",
+        "description": "Lawmakers from both parties commented on the president's new environmental initiative.",
+        "source": "politico",
+        "category": "politics",
+        "published_at": "2024-01-10T12:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_3",
+        "title": "Congress Reacts to Biden's Climate Plan",
+        "description": "Lawmakers from both parties commented on the president's new environmental initiative.",
+        "source": "politico",
+        "category": "politics",
+        "published_at": "2024-01-10T12:00:00Z"
+      },
+      "article2": {
+        "id": "middle_east_1",
+        "title": "Ceasefire Agreement Reached in Gaza",
+        "description": "Israel and Hamas agreed to a temporary ceasefire after weeks of negotiations.",
+        "source": "bbc",
+        "category": "world",
+        "published_at": "2024-01-25T06:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "nfl_1",
+        "title": "Chiefs Win Super Bowl LVIII in Overtime Thriller",
+        "description": "Patrick Mahomes led the Kansas City Chiefs to victory over the San Francisco 49ers in overtime.",
+        "source": "espn",
+        "category": "sports",
+        "published_at": "2024-02-11T22:30:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_2",
+        "title": "Paris Hilton Releases New Music",
+        "description": "Celebrity Paris Hilton announced her return to music with a new single.",
+        "source": "billboard",
+        "category": "entertainment",
+        "published_at": "2024-01-12T14:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "nfl_1",
+        "title": "Chiefs Win Super Bowl LVIII in Overtime Thriller",
+        "description": "Patrick Mahomes led the Kansas City Chiefs to victory over the San Francisco 49ers in overtime.",
+        "source": "espn",
+        "category": "sports",
+        "published_at": "2024-02-11T22:30:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_1",
+        "title": "Sydney Dentist Charged with Murder",
+        "description": "A Sydney dentist faces murder charges in connection with a patient's death.",
+        "source": "abc_au",
+        "category": "crime",
+        "published_at": "2024-01-18T20:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "middle_east_3",
+        "title": "US Welcomes Gaza Ceasefire Deal",
+        "description": "Secretary of State Antony Blinken praised the ceasefire agreement as a step toward peace.",
+        "source": "ap",
+        "category": "world",
+        "published_at": "2024-01-25T10:00:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_2",
+        "title": "Sydney Stabbing Leaves One Dead",
+        "description": "Police are investigating a fatal stabbing incident in Sydney's CBD.",
+        "source": "sydney_morning_herald",
+        "category": "crime",
+        "published_at": "2024-01-18T22:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_3",
+        "title": "iPhone 15 Pro Max Review: Camera Innovation Shines",
+        "description": "Our hands-on review of Apple's latest smartphone reveals impressive camera capabilities.",
+        "source": "theverge",
+        "category": "technology",
+        "published_at": "2024-01-16T14:00:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_1",
+        "title": "Paris Climate Agreement Anniversary",
+        "description": "World leaders marked the 5th anniversary of the Paris climate accord.",
+        "source": "guardian",
+        "category": "environment",
+        "published_at": "2024-01-12T12:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "nfl_2",
+        "title": "Mahomes MVP Performance Seals Chiefs Victory",
+        "description": "Kansas City quarterback Patrick Mahomes was named Super Bowl MVP after his record-breaking performance.",
+        "source": "nfl",
+        "category": "sports",
+        "published_at": "2024-02-12T01:00:00Z"
+      },
+      "article2": {
+        "id": "tesla_2",
+        "title": "Tesla Stock Surges on Earnings Beat",
+        "description": "Tesla shares jumped 8% after the company reported stronger-than-expected revenue growth.",
+        "source": "cnbc",
+        "category": "business",
+        "published_at": "2024-01-20T16:30:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_1",
+        "title": "Biden Administration Announces New Climate Policy",
+        "description": "President Biden unveiled ambitious new environmental regulations targeting carbon emissions.",
+        "source": "nytimes",
+        "category": "politics",
+        "published_at": "2024-01-10T08:00:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_2",
+        "title": "Paris Hilton Releases New Music",
+        "description": "Celebrity Paris Hilton announced her return to music with a new single.",
+        "source": "billboard",
+        "category": "entertainment",
+        "published_at": "2024-01-12T14:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "tesla_1",
+        "title": "Tesla Reports Record Q4 Earnings",
+        "description": "Electric vehicle maker Tesla posted better-than-expected financial results for Q4 2024.",
+        "source": "bloomberg",
+        "category": "business",
+        "published_at": "2024-01-20T16:00:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_1",
+        "title": "Sydney Dentist Charged with Murder",
+        "description": "A Sydney dentist faces murder charges in connection with a patient's death.",
+        "source": "abc_au",
+        "category": "crime",
+        "published_at": "2024-01-18T20:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_2",
+        "title": "Apple Launches iPhone 15 Series Globally",
+        "description": "The new iPhone 15 lineup is now available in stores worldwide, featuring improved battery life.",
+        "source": "cnet",
+        "category": "technology",
+        "published_at": "2024-01-15T10:30:00Z"
+      },
+      "article2": {
+        "id": "middle_east_2",
+        "title": "Gaza Ceasefire Takes Effect",
+        "description": "Fighting paused in Gaza as both sides begin implementing the ceasefire agreement.",
+        "source": "aljazeera",
+        "category": "world",
+        "published_at": "2024-01-25T08:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_3",
+        "title": "iPhone 15 Pro Max Review: Camera Innovation Shines",
+        "description": "Our hands-on review of Apple's latest smartphone reveals impressive camera capabilities.",
+        "source": "theverge",
+        "category": "technology",
+        "published_at": "2024-01-16T14:00:00Z"
+      },
+      "article2": {
+        "id": "election_3",
+        "title": "Congress Reacts to Biden's Climate Plan",
+        "description": "Lawmakers from both parties commented on the president's new environmental initiative.",
+        "source": "politico",
+        "category": "politics",
+        "published_at": "2024-01-10T12:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "nfl_2",
+        "title": "Mahomes MVP Performance Seals Chiefs Victory",
+        "description": "Kansas City quarterback Patrick Mahomes was named Super Bowl MVP after his record-breaking performance.",
+        "source": "nfl",
+        "category": "sports",
+        "published_at": "2024-02-12T01:00:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_2",
+        "title": "Sydney Stabbing Leaves One Dead",
+        "description": "Police are investigating a fatal stabbing incident in Sydney's CBD.",
+        "source": "sydney_morning_herald",
+        "category": "crime",
+        "published_at": "2024-01-18T22:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_2",
+        "title": "White House Climate Initiative Details Released",
+        "description": "The Biden administration provided specifics on the new environmental policy framework.",
+        "source": "washingtonpost",
+        "category": "politics",
+        "published_at": "2024-01-10T09:15:00Z"
+      },
+      "article2": {
+        "id": "tesla_3",
+        "title": "Musk Comments on Tesla's Future Plans",
+        "description": "CEO Elon Musk discussed autonomous driving technology and new vehicle models during earnings call.",
+        "source": "reuters",
+        "category": "business",
+        "published_at": "2024-01-20T17:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "tesla_3",
+        "title": "Musk Comments on Tesla's Future Plans",
+        "description": "CEO Elon Musk discussed autonomous driving technology and new vehicle models during earnings call.",
+        "source": "reuters",
+        "category": "business",
+        "published_at": "2024-01-20T17:00:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_1",
+        "title": "Sydney Dentist Charged with Murder",
+        "description": "A Sydney dentist faces murder charges in connection with a patient's death.",
+        "source": "abc_au",
+        "category": "crime",
+        "published_at": "2024-01-18T20:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_3",
+        "title": "iPhone 15 Pro Max Review: Camera Innovation Shines",
+        "description": "Our hands-on review of Apple's latest smartphone reveals impressive camera capabilities.",
+        "source": "theverge",
+        "category": "technology",
+        "published_at": "2024-01-16T14:00:00Z"
+      },
+      "article2": {
+        "id": "tesla_3",
+        "title": "Musk Comments on Tesla's Future Plans",
+        "description": "CEO Elon Musk discussed autonomous driving technology and new vehicle models during earnings call.",
+        "source": "reuters",
+        "category": "business",
+        "published_at": "2024-01-20T17:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_2",
+        "title": "Apple Launches iPhone 15 Series Globally",
+        "description": "The new iPhone 15 lineup is now available in stores worldwide, featuring improved battery life.",
+        "source": "cnet",
+        "category": "technology",
+        "published_at": "2024-01-15T10:30:00Z"
+      },
+      "article2": {
+        "id": "apple_iphone_3",
+        "title": "iPhone 15 Pro Max Review: Camera Innovation Shines",
+        "description": "Our hands-on review of Apple's latest smartphone reveals impressive camera capabilities.",
+        "source": "theverge",
+        "category": "technology",
+        "published_at": "2024-01-16T14:00:00Z"
+      },
+      "label": 1,
+      "pair_type": "positive"
+    },
+    {
+      "article1": {
+        "id": "nfl_2",
+        "title": "Mahomes MVP Performance Seals Chiefs Victory",
+        "description": "Kansas City quarterback Patrick Mahomes was named Super Bowl MVP after his record-breaking performance.",
+        "source": "nfl",
+        "category": "sports",
+        "published_at": "2024-02-12T01:00:00Z"
+      },
+      "article2": {
+        "id": "tesla_3",
+        "title": "Musk Comments on Tesla's Future Plans",
+        "description": "CEO Elon Musk discussed autonomous driving technology and new vehicle models during earnings call.",
+        "source": "reuters",
+        "category": "business",
+        "published_at": "2024-01-20T17:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_1",
+        "title": "Apple Announces New iPhone 15 Pro Max",
+        "description": "Apple Inc. unveiled its latest flagship smartphone with advanced camera features and A17 chip.",
+        "source": "techcrunch",
+        "category": "technology",
+        "published_at": "2024-01-15T09:00:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_1",
+        "title": "Paris Climate Agreement Anniversary",
+        "description": "World leaders marked the 5th anniversary of the Paris climate accord.",
+        "source": "guardian",
+        "category": "environment",
+        "published_at": "2024-01-12T12:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_3",
+        "title": "Congress Reacts to Biden's Climate Plan",
+        "description": "Lawmakers from both parties commented on the president's new environmental initiative.",
+        "source": "politico",
+        "category": "politics",
+        "published_at": "2024-01-10T12:00:00Z"
+      },
+      "article2": {
+        "id": "nfl_2",
+        "title": "Mahomes MVP Performance Seals Chiefs Victory",
+        "description": "Kansas City quarterback Patrick Mahomes was named Super Bowl MVP after his record-breaking performance.",
+        "source": "nfl",
+        "category": "sports",
+        "published_at": "2024-02-12T01:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_1",
+        "title": "Apple Announces New iPhone 15 Pro Max",
+        "description": "Apple Inc. unveiled its latest flagship smartphone with advanced camera features and A17 chip.",
+        "source": "techcrunch",
+        "category": "technology",
+        "published_at": "2024-01-15T09:00:00Z"
+      },
+      "article2": {
+        "id": "nfl_3",
+        "title": "Super Bowl Halftime Show Controversy",
+        "description": "Usher's performance drew mixed reactions from viewers and social media users.",
+        "source": "variety",
+        "category": "sports",
+        "published_at": "2024-02-12T02:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_3",
+        "title": "Congress Reacts to Biden's Climate Plan",
+        "description": "Lawmakers from both parties commented on the president's new environmental initiative.",
+        "source": "politico",
+        "category": "politics",
+        "published_at": "2024-01-10T12:00:00Z"
+      },
+      "article2": {
+        "id": "tesla_1",
+        "title": "Tesla Reports Record Q4 Earnings",
+        "description": "Electric vehicle maker Tesla posted better-than-expected financial results for Q4 2024.",
+        "source": "bloomberg",
+        "category": "business",
+        "published_at": "2024-01-20T16:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_1",
+        "title": "Apple Announces New iPhone 15 Pro Max",
+        "description": "Apple Inc. unveiled its latest flagship smartphone with advanced camera features and A17 chip.",
+        "source": "techcrunch",
+        "category": "technology",
+        "published_at": "2024-01-15T09:00:00Z"
+      },
+      "article2": {
+        "id": "tesla_1",
+        "title": "Tesla Reports Record Q4 Earnings",
+        "description": "Electric vehicle maker Tesla posted better-than-expected financial results for Q4 2024.",
+        "source": "bloomberg",
+        "category": "business",
+        "published_at": "2024-01-20T16:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "middle_east_1",
+        "title": "Ceasefire Agreement Reached in Gaza",
+        "description": "Israel and Hamas agreed to a temporary ceasefire after weeks of negotiations.",
+        "source": "bbc",
+        "category": "world",
+        "published_at": "2024-01-25T06:00:00Z"
+      },
+      "article2": {
+        "id": "middle_east_3",
+        "title": "US Welcomes Gaza Ceasefire Deal",
+        "description": "Secretary of State Antony Blinken praised the ceasefire agreement as a step toward peace.",
+        "source": "ap",
+        "category": "world",
+        "published_at": "2024-01-25T10:00:00Z"
+      },
+      "label": 1,
+      "pair_type": "positive"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_3",
+        "title": "iPhone 15 Pro Max Review: Camera Innovation Shines",
+        "description": "Our hands-on review of Apple's latest smartphone reveals impressive camera capabilities.",
+        "source": "theverge",
+        "category": "technology",
+        "published_at": "2024-01-16T14:00:00Z"
+      },
+      "article2": {
+        "id": "middle_east_2",
+        "title": "Gaza Ceasefire Takes Effect",
+        "description": "Fighting paused in Gaza as both sides begin implementing the ceasefire agreement.",
+        "source": "aljazeera",
+        "category": "world",
+        "published_at": "2024-01-25T08:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_2",
+        "title": "White House Climate Initiative Details Released",
+        "description": "The Biden administration provided specifics on the new environmental policy framework.",
+        "source": "washingtonpost",
+        "category": "politics",
+        "published_at": "2024-01-10T09:15:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_1",
+        "title": "Sydney Dentist Charged with Murder",
+        "description": "A Sydney dentist faces murder charges in connection with a patient's death.",
+        "source": "abc_au",
+        "category": "crime",
+        "published_at": "2024-01-18T20:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_2",
+        "title": "White House Climate Initiative Details Released",
+        "description": "The Biden administration provided specifics on the new environmental policy framework.",
+        "source": "washingtonpost",
+        "category": "politics",
+        "published_at": "2024-01-10T09:15:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_2",
+        "title": "Sydney Stabbing Leaves One Dead",
+        "description": "Police are investigating a fatal stabbing incident in Sydney's CBD.",
+        "source": "sydney_morning_herald",
+        "category": "crime",
+        "published_at": "2024-01-18T22:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_1",
+        "title": "Apple Announces New iPhone 15 Pro Max",
+        "description": "Apple Inc. unveiled its latest flagship smartphone with advanced camera features and A17 chip.",
+        "source": "techcrunch",
+        "category": "technology",
+        "published_at": "2024-01-15T09:00:00Z"
+      },
+      "article2": {
+        "id": "apple_watch_1",
+        "title": "Apple Watch Series 9 Gets Major Update",
+        "description": "Apple introduced new health features and improved performance in the latest Watch model.",
+        "source": "macrumors",
+        "category": "technology",
+        "published_at": "2024-01-15T11:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "edge_paris_2",
+        "title": "Paris Hilton Releases New Music",
+        "description": "Celebrity Paris Hilton announced her return to music with a new single.",
+        "source": "billboard",
+        "category": "entertainment",
+        "published_at": "2024-01-12T14:00:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_2",
+        "title": "Sydney Stabbing Leaves One Dead",
+        "description": "Police are investigating a fatal stabbing incident in Sydney's CBD.",
+        "source": "sydney_morning_herald",
+        "category": "crime",
+        "published_at": "2024-01-18T22:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_1",
+        "title": "Apple Announces New iPhone 15 Pro Max",
+        "description": "Apple Inc. unveiled its latest flagship smartphone with advanced camera features and A17 chip.",
+        "source": "techcrunch",
+        "category": "technology",
+        "published_at": "2024-01-15T09:00:00Z"
+      },
+      "article2": {
+        "id": "tesla_2",
+        "title": "Tesla Stock Surges on Earnings Beat",
+        "description": "Tesla shares jumped 8% after the company reported stronger-than-expected revenue growth.",
+        "source": "cnbc",
+        "category": "business",
+        "published_at": "2024-01-20T16:30:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "nfl_3",
+        "title": "Super Bowl Halftime Show Controversy",
+        "description": "Usher's performance drew mixed reactions from viewers and social media users.",
+        "source": "variety",
+        "category": "sports",
+        "published_at": "2024-02-12T02:00:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_2",
+        "title": "Paris Hilton Releases New Music",
+        "description": "Celebrity Paris Hilton announced her return to music with a new single.",
+        "source": "billboard",
+        "category": "entertainment",
+        "published_at": "2024-01-12T14:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "tesla_2",
+        "title": "Tesla Stock Surges on Earnings Beat",
+        "description": "Tesla shares jumped 8% after the company reported stronger-than-expected revenue growth.",
+        "source": "cnbc",
+        "category": "business",
+        "published_at": "2024-01-20T16:30:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_2",
+        "title": "Sydney Stabbing Leaves One Dead",
+        "description": "Police are investigating a fatal stabbing incident in Sydney's CBD.",
+        "source": "sydney_morning_herald",
+        "category": "crime",
+        "published_at": "2024-01-18T22:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_2",
+        "title": "Apple Launches iPhone 15 Series Globally",
+        "description": "The new iPhone 15 lineup is now available in stores worldwide, featuring improved battery life.",
+        "source": "cnet",
+        "category": "technology",
+        "published_at": "2024-01-15T10:30:00Z"
+      },
+      "article2": {
+        "id": "middle_east_1",
+        "title": "Ceasefire Agreement Reached in Gaza",
+        "description": "Israel and Hamas agreed to a temporary ceasefire after weeks of negotiations.",
+        "source": "bbc",
+        "category": "world",
+        "published_at": "2024-01-25T06:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "tesla_1",
+        "title": "Tesla Reports Record Q4 Earnings",
+        "description": "Electric vehicle maker Tesla posted better-than-expected financial results for Q4 2024.",
+        "source": "bloomberg",
+        "category": "business",
+        "published_at": "2024-01-20T16:00:00Z"
+      },
+      "article2": {
+        "id": "middle_east_1",
+        "title": "Ceasefire Agreement Reached in Gaza",
+        "description": "Israel and Hamas agreed to a temporary ceasefire after weeks of negotiations.",
+        "source": "bbc",
+        "category": "world",
+        "published_at": "2024-01-25T06:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_3",
+        "title": "iPhone 15 Pro Max Review: Camera Innovation Shines",
+        "description": "Our hands-on review of Apple's latest smartphone reveals impressive camera capabilities.",
+        "source": "theverge",
+        "category": "technology",
+        "published_at": "2024-01-16T14:00:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_1",
+        "title": "Sydney Dentist Charged with Murder",
+        "description": "A Sydney dentist faces murder charges in connection with a patient's death.",
+        "source": "abc_au",
+        "category": "crime",
+        "published_at": "2024-01-18T20:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "middle_east_1",
+        "title": "Ceasefire Agreement Reached in Gaza",
+        "description": "Israel and Hamas agreed to a temporary ceasefire after weeks of negotiations.",
+        "source": "bbc",
+        "category": "world",
+        "published_at": "2024-01-25T06:00:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_1",
+        "title": "Paris Climate Agreement Anniversary",
+        "description": "World leaders marked the 5th anniversary of the Paris climate accord.",
+        "source": "guardian",
+        "category": "environment",
+        "published_at": "2024-01-12T12:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_2",
+        "title": "White House Climate Initiative Details Released",
+        "description": "The Biden administration provided specifics on the new environmental policy framework.",
+        "source": "washingtonpost",
+        "category": "politics",
+        "published_at": "2024-01-10T09:15:00Z"
+      },
+      "article2": {
+        "id": "election_3",
+        "title": "Congress Reacts to Biden's Climate Plan",
+        "description": "Lawmakers from both parties commented on the president's new environmental initiative.",
+        "source": "politico",
+        "category": "politics",
+        "published_at": "2024-01-10T12:00:00Z"
+      },
+      "label": 1,
+      "pair_type": "positive"
+    },
+    {
+      "article1": {
+        "id": "nfl_2",
+        "title": "Mahomes MVP Performance Seals Chiefs Victory",
+        "description": "Kansas City quarterback Patrick Mahomes was named Super Bowl MVP after his record-breaking performance.",
+        "source": "nfl",
+        "category": "sports",
+        "published_at": "2024-02-12T01:00:00Z"
+      },
+      "article2": {
+        "id": "middle_east_1",
+        "title": "Ceasefire Agreement Reached in Gaza",
+        "description": "Israel and Hamas agreed to a temporary ceasefire after weeks of negotiations.",
+        "source": "bbc",
+        "category": "world",
+        "published_at": "2024-01-25T06:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_2",
+        "title": "Apple Launches iPhone 15 Series Globally",
+        "description": "The new iPhone 15 lineup is now available in stores worldwide, featuring improved battery life.",
+        "source": "cnet",
+        "category": "technology",
+        "published_at": "2024-01-15T10:30:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_1",
+        "title": "Paris Climate Agreement Anniversary",
+        "description": "World leaders marked the 5th anniversary of the Paris climate accord.",
+        "source": "guardian",
+        "category": "environment",
+        "published_at": "2024-01-12T12:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_2",
+        "title": "White House Climate Initiative Details Released",
+        "description": "The Biden administration provided specifics on the new environmental policy framework.",
+        "source": "washingtonpost",
+        "category": "politics",
+        "published_at": "2024-01-10T09:15:00Z"
+      },
+      "article2": {
+        "id": "tesla_2",
+        "title": "Tesla Stock Surges on Earnings Beat",
+        "description": "Tesla shares jumped 8% after the company reported stronger-than-expected revenue growth.",
+        "source": "cnbc",
+        "category": "business",
+        "published_at": "2024-01-20T16:30:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "nfl_3",
+        "title": "Super Bowl Halftime Show Controversy",
+        "description": "Usher's performance drew mixed reactions from viewers and social media users.",
+        "source": "variety",
+        "category": "sports",
+        "published_at": "2024-02-12T02:00:00Z"
+      },
+      "article2": {
+        "id": "middle_east_1",
+        "title": "Ceasefire Agreement Reached in Gaza",
+        "description": "Israel and Hamas agreed to a temporary ceasefire after weeks of negotiations.",
+        "source": "bbc",
+        "category": "world",
+        "published_at": "2024-01-25T06:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "nfl_1",
+        "title": "Chiefs Win Super Bowl LVIII in Overtime Thriller",
+        "description": "Patrick Mahomes led the Kansas City Chiefs to victory over the San Francisco 49ers in overtime.",
+        "source": "espn",
+        "category": "sports",
+        "published_at": "2024-02-11T22:30:00Z"
+      },
+      "article2": {
+        "id": "tesla_1",
+        "title": "Tesla Reports Record Q4 Earnings",
+        "description": "Electric vehicle maker Tesla posted better-than-expected financial results for Q4 2024.",
+        "source": "bloomberg",
+        "category": "business",
+        "published_at": "2024-01-20T16:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "nfl_3",
+        "title": "Super Bowl Halftime Show Controversy",
+        "description": "Usher's performance drew mixed reactions from viewers and social media users.",
+        "source": "variety",
+        "category": "sports",
+        "published_at": "2024-02-12T02:00:00Z"
+      },
+      "article2": {
+        "id": "tesla_1",
+        "title": "Tesla Reports Record Q4 Earnings",
+        "description": "Electric vehicle maker Tesla posted better-than-expected financial results for Q4 2024.",
+        "source": "bloomberg",
+        "category": "business",
+        "published_at": "2024-01-20T16:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_2",
+        "title": "Apple Launches iPhone 15 Series Globally",
+        "description": "The new iPhone 15 lineup is now available in stores worldwide, featuring improved battery life.",
+        "source": "cnet",
+        "category": "technology",
+        "published_at": "2024-01-15T10:30:00Z"
+      },
+      "article2": {
+        "id": "election_1",
+        "title": "Biden Administration Announces New Climate Policy",
+        "description": "President Biden unveiled ambitious new environmental regulations targeting carbon emissions.",
+        "source": "nytimes",
+        "category": "politics",
+        "published_at": "2024-01-10T08:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_3",
+        "title": "Congress Reacts to Biden's Climate Plan",
+        "description": "Lawmakers from both parties commented on the president's new environmental initiative.",
+        "source": "politico",
+        "category": "politics",
+        "published_at": "2024-01-10T12:00:00Z"
+      },
+      "article2": {
+        "id": "nfl_3",
+        "title": "Super Bowl Halftime Show Controversy",
+        "description": "Usher's performance drew mixed reactions from viewers and social media users.",
+        "source": "variety",
+        "category": "sports",
+        "published_at": "2024-02-12T02:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_2",
+        "title": "Apple Launches iPhone 15 Series Globally",
+        "description": "The new iPhone 15 lineup is now available in stores worldwide, featuring improved battery life.",
+        "source": "cnet",
+        "category": "technology",
+        "published_at": "2024-01-15T10:30:00Z"
+      },
+      "article2": {
+        "id": "tesla_2",
+        "title": "Tesla Stock Surges on Earnings Beat",
+        "description": "Tesla shares jumped 8% after the company reported stronger-than-expected revenue growth.",
+        "source": "cnbc",
+        "category": "business",
+        "published_at": "2024-01-20T16:30:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "tesla_1",
+        "title": "Tesla Reports Record Q4 Earnings",
+        "description": "Electric vehicle maker Tesla posted better-than-expected financial results for Q4 2024.",
+        "source": "bloomberg",
+        "category": "business",
+        "published_at": "2024-01-20T16:00:00Z"
+      },
+      "article2": {
+        "id": "tesla_3",
+        "title": "Musk Comments on Tesla's Future Plans",
+        "description": "CEO Elon Musk discussed autonomous driving technology and new vehicle models during earnings call.",
+        "source": "reuters",
+        "category": "business",
+        "published_at": "2024-01-20T17:00:00Z"
+      },
+      "label": 1,
+      "pair_type": "positive"
+    },
+    {
+      "article1": {
+        "id": "election_3",
+        "title": "Congress Reacts to Biden's Climate Plan",
+        "description": "Lawmakers from both parties commented on the president's new environmental initiative.",
+        "source": "politico",
+        "category": "politics",
+        "published_at": "2024-01-10T12:00:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_2",
+        "title": "Paris Hilton Releases New Music",
+        "description": "Celebrity Paris Hilton announced her return to music with a new single.",
+        "source": "billboard",
+        "category": "entertainment",
+        "published_at": "2024-01-12T14:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_1",
+        "title": "Biden Administration Announces New Climate Policy",
+        "description": "President Biden unveiled ambitious new environmental regulations targeting carbon emissions.",
+        "source": "nytimes",
+        "category": "politics",
+        "published_at": "2024-01-10T08:00:00Z"
+      },
+      "article2": {
+        "id": "nfl_1",
+        "title": "Chiefs Win Super Bowl LVIII in Overtime Thriller",
+        "description": "Patrick Mahomes led the Kansas City Chiefs to victory over the San Francisco 49ers in overtime.",
+        "source": "espn",
+        "category": "sports",
+        "published_at": "2024-02-11T22:30:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "apple_iphone_1",
+        "title": "Apple Announces New iPhone 15 Pro Max",
+        "description": "Apple Inc. unveiled its latest flagship smartphone with advanced camera features and A17 chip.",
+        "source": "techcrunch",
+        "category": "technology",
+        "published_at": "2024-01-15T09:00:00Z"
+      },
+      "article2": {
+        "id": "tesla_3",
+        "title": "Musk Comments on Tesla's Future Plans",
+        "description": "CEO Elon Musk discussed autonomous driving technology and new vehicle models during earnings call.",
+        "source": "reuters",
+        "category": "business",
+        "published_at": "2024-01-20T17:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "election_1",
+        "title": "Biden Administration Announces New Climate Policy",
+        "description": "President Biden unveiled ambitious new environmental regulations targeting carbon emissions.",
+        "source": "nytimes",
+        "category": "politics",
+        "published_at": "2024-01-10T08:00:00Z"
+      },
+      "article2": {
+        "id": "edge_sydney_1",
+        "title": "Sydney Dentist Charged with Murder",
+        "description": "A Sydney dentist faces murder charges in connection with a patient's death.",
+        "source": "abc_au",
+        "category": "crime",
+        "published_at": "2024-01-18T20:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "tesla_3",
+        "title": "Musk Comments on Tesla's Future Plans",
+        "description": "CEO Elon Musk discussed autonomous driving technology and new vehicle models during earnings call.",
+        "source": "reuters",
+        "category": "business",
+        "published_at": "2024-01-20T17:00:00Z"
+      },
+      "article2": {
+        "id": "edge_paris_1",
+        "title": "Paris Climate Agreement Anniversary",
+        "description": "World leaders marked the 5th anniversary of the Paris climate accord.",
+        "source": "guardian",
+        "category": "environment",
+        "published_at": "2024-01-12T12:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    },
+    {
+      "article1": {
+        "id": "tesla_1",
+        "title": "Tesla Reports Record Q4 Earnings",
+        "description": "Electric vehicle maker Tesla posted better-than-expected financial results for Q4 2024.",
+        "source": "bloomberg",
+        "category": "business",
+        "published_at": "2024-01-20T16:00:00Z"
+      },
+      "article2": {
+        "id": "middle_east_2",
+        "title": "Gaza Ceasefire Takes Effect",
+        "description": "Fighting paused in Gaza as both sides begin implementing the ceasefire agreement.",
+        "source": "aljazeera",
+        "category": "world",
+        "published_at": "2024-01-25T08:00:00Z"
+      },
+      "label": 0,
+      "pair_type": "negative"
+    }
+  ],
+  "metadata": {
+    "generated_at": "2025-11-12T21:46:28.492508",
+    "num_pairs": 173,
+    "positive_pairs": 13,
+    "negative_pairs": 160,
+    "description": "Ground truth dataset for clustering validation"
+  }
+}

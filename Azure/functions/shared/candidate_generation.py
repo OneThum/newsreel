@@ -215,12 +215,39 @@ class CandidateGenerator:
                         break
 
                 if candidate_meta and 'embedding' in candidate_meta:
-                    candidate_embedding = np.array(candidate_meta['embedding'])
+                    # Phase 3.5: Use optimized ML-based similarity scorer
+                    if config.SCORING_OPTIMIZATION_ENABLED:
+                        try:
+                            from .scoring_optimization import predict_article_similarity
 
-                    # Compute cosine similarity
-                    similarity = np.dot(article_embedding, candidate_embedding) / (
-                        np.linalg.norm(article_embedding) * np.linalg.norm(candidate_embedding)
-                    )
+                            # Reconstruct candidate article dict for scoring
+                            candidate_article = {
+                                'id': candidate_id,
+                                'title': candidate_meta.get('title', ''),
+                                'description': candidate_meta.get('description', ''),
+                                'published_at': candidate_meta.get('publish_datetime'),
+                                'source': candidate_meta.get('source'),
+                                'category': candidate_meta.get('category'),
+                                'entities': [],  # Would need to be populated from Cosmos DB
+                                'event_signature': candidate_meta.get('event_signature'),
+                                'geographic_features': candidate_meta.get('geographic_features'),
+                                'embedding': candidate_meta.get('embedding')
+                            }
+
+                            similarity = predict_article_similarity(article, candidate_article)
+
+                        except Exception as e:
+                            logger.warning(f"Optimized scoring failed for {candidate_id}, using cosine: {e}")
+                            candidate_embedding = np.array(candidate_meta['embedding'])
+                            similarity = np.dot(article_embedding, candidate_embedding) / (
+                                np.linalg.norm(article_embedding) * np.linalg.norm(candidate_embedding)
+                            )
+                    else:
+                        # Fallback to cosine similarity
+                        candidate_embedding = np.array(candidate_meta['embedding'])
+                        similarity = np.dot(article_embedding, candidate_embedding) / (
+                            np.linalg.norm(article_embedding) * np.linalg.norm(candidate_embedding)
+                        )
 
                     if similarity >= similarity_threshold:
                         match_type = "semantic"  # Could be enhanced to detect keyword vs semantic
