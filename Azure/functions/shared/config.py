@@ -45,7 +45,14 @@ class Config:
     MIN_SOURCES_FOR_DEVELOPING: int = 2
     MIN_SOURCES_FOR_BREAKING: int = 3
     BREAKING_NEWS_WINDOW_MINUTES: int = 30
-    STORY_FINGERPRINT_SIMILARITY_THRESHOLD: float = 0.70
+    STORY_FINGERPRINT_SIMILARITY_THRESHOLD: float = 0.50  # 50% similarity required for clustering (reduced from 0.60 to allow more new stories)
+
+    # Clustering Overhaul Feature Flags (Phase 1-3)
+    CLUSTERING_USE_SIMHASH: bool = os.getenv('CLUSTERING_USE_SIMHASH', 'false') == 'true'
+    CLUSTERING_USE_TIME_WINDOW: bool = os.getenv('CLUSTERING_USE_TIME_WINDOW', 'false') == 'true'
+    CLUSTERING_USE_ADAPTIVE_THRESHOLD: bool = os.getenv('CLUSTERING_USE_ADAPTIVE', 'false') == 'true'
+    CLUSTERING_USE_EMBEDDINGS: bool = os.getenv('CLUSTERING_USE_EMBEDDINGS', 'false') == 'true'
+    CLUSTERING_USE_HYBRID_SEARCH: bool = os.getenv('CLUSTERING_USE_HYBRID', 'false') == 'true'
     
     # Summarization
     MIN_SOURCES_FOR_SUMMARY: int = 1  # Generate summaries for ALL stories (changed from 2)

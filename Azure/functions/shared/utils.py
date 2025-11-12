@@ -590,10 +590,10 @@ def generate_fallback_summary(story_data: Dict[str, Any], articles: List[Dict[st
 
 def is_ai_refusal(summary_text: str) -> bool:
     """Check if AI response is a refusal to summarize
-    
+
     Args:
         summary_text: The generated summary text
-        
+
     Returns:
         bool: True if text appears to be a refusal
     """
@@ -602,6 +602,106 @@ def is_ai_refusal(summary_text: str) -> bool:
         "would need", "please provide", "unable to", "not possible",
         "requires additional", "incomplete information", "lacks essential"
     ]
-    
+
     return any(indicator in summary_text.lower() for indicator in refusal_indicators)
+
+
+# ============================================================================
+# CLUSTERING OVERHAUL - PHASE 1: SIMHASH DEDUPLICATION
+# ============================================================================
+
+def create_shingles(text: str, n: int = 3) -> List[str]:
+    """Create n-grams (shingles) from text for SimHash
+
+    Args:
+        text: Input text to create shingles from
+        n: Number of words per shingle (default: 3)
+
+    Returns:
+        List of shingle strings
+    """
+    # Normalize text: lowercase, remove punctuation
+    text = re.sub(r'[^\w\s]', '', text.lower())
+
+    # Split into words
+    words = text.split()
+
+    # Remove stop words
+    stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+                  'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'been', 'be',
+                  'have', 'has', 'had', 'says', 'said'}
+    words = [w for w in words if w not in stop_words and len(w) > 2]
+
+    # Create shingles
+    shingles = []
+    for i in range(len(words) - n + 1):
+        shingle = ' '.join(words[i:i+n])
+        shingles.append(shingle)
+
+    return shingles
+
+
+def compute_simhash(shingles: List[str], bits: int = 64) -> int:
+    """Compute SimHash fingerprint from shingles
+
+    Args:
+        shingles: List of text shingles
+        bits: Number of bits for the hash (default: 64)
+
+    Returns:
+        64-bit integer SimHash fingerprint
+    """
+    if not shingles:
+        return 0
+
+    # Initialize vector of zeros
+    v = [0] * bits
+
+    for shingle in shingles:
+        # Hash the shingle to get a 64-bit integer
+        h = int(hashlib.md5(shingle.encode()).hexdigest(), 16) & ((1 << bits) - 1)
+
+        # Update vector based on bits
+        for i in range(bits):
+            if h & (1 << i):
+                v[i] += 1
+            else:
+                v[i] -= 1
+
+    # Create final fingerprint
+    fingerprint = 0
+    for i in range(bits):
+        if v[i] > 0:
+            fingerprint |= (1 << i)
+
+    return fingerprint
+
+
+def hamming_distance(hash1: int, hash2: int) -> int:
+    """Calculate Hamming distance between two SimHash fingerprints
+
+    Args:
+        hash1: First SimHash fingerprint
+        hash2: Second SimHash fingerprint
+
+    Returns:
+        Number of differing bits
+    """
+    x = hash1 ^ hash2
+    return bin(x).count('1')
+
+
+def detect_duplicates(article: 'RawArticle') -> Tuple[bool, Optional[str]]:
+    """Two-stage deduplication using exact match and SimHash
+
+    Args:
+        article: RawArticle object to check for duplicates
+
+    Returns:
+        Tuple: (is_duplicate, duplicate_type)
+        duplicate_type: 'exact_duplicate' | 'syndication_duplicate' | None
+    """
+    # For now, return False until we implement the full deduplication system
+    # This will be implemented with Cosmos DB storage for recent hashes
+    return False, None
 

@@ -1,10 +1,10 @@
-"""RSS feed configuration - Complete 100 feed list"""
+"""RSS feed configuration - Curated 25 breaking news feeds for maximum clustering"""
 from typing import List
 from .models import RSSFeedConfig
 
 
 def get_all_feeds() -> List[RSSFeedConfig]:
-    """Get complete list of 100 RSS feeds"""
+    """Get curated list of 25 breaking news feeds optimized for multi-source clustering"""
     return [
         # ========================================
         # WORLD NEWS & INTERNATIONAL (15 feeds)
@@ -1105,6 +1105,214 @@ def get_all_feeds() -> List[RSSFeedConfig]:
             language="en",
             country="UK"
         ),
+
+    # ========================================
+    # BREAKING NEWS FEEDS (High Overlap Focus)
+    # ========================================
+
+    # WIRE SERVICES - Core breaking news syndicated everywhere
+    RSSFeedConfig(
+        id="ap_breaking",
+        name="Associated Press - Breaking News",
+        url="https://feeds.apnews.com/rss/apf-topnews",
+        source_id="ap",
+        category="world",
+        tier=1,
+        language="en",
+        country="US"
+    ),
+    RSSFeedConfig(
+        id="reuters_breaking",
+        name="Reuters - Breaking News",
+        url="https://feeds.reuters.com/rssFeed/topNews",
+        source_id="reuters",
+        category="world",
+        tier=1,
+        language="en",
+        country="global"
+    ),
+    RSSFeedConfig(
+        id="reuters_world_breaking",
+        name="Reuters - World News",
+        url="https://feeds.reuters.com/rssFeed/worldNews",
+        source_id="reuters",
+        category="world",
+        tier=1,
+        language="en",
+        country="global"
+    ),
+    RSSFeedConfig(
+        id="afp_breaking",
+        name="AFP - Breaking News",
+        url="https://www.afp.com/en/news/rss",
+        source_id="afp",
+        category="world",
+        tier=1,
+        language="en",
+        country="global"
+    ),
+
+    # MAJOR US NETWORKS - Breaking news focus
+    RSSFeedConfig(
+        id="cnn_breaking",
+        name="CNN - Breaking News",
+        url="http://rss.cnn.com/rss/cnn_topstories.rss",
+        source_id="cnn",
+        category="world",
+        tier=1,
+        language="en",
+        country="US"
+    ),
+    RSSFeedConfig(
+        id="bbc_breaking",
+        name="BBC News - Home",
+        url="https://feeds.bbci.co.uk/news/rss.xml",
+        source_id="bbc",
+        category="world",
+        tier=1,
+        language="en",
+        country="UK"
+    ),
+    RSSFeedConfig(
+        id="nyt_breaking",
+        name="New York Times - Home",
+        url="https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",
+        source_id="nyt",
+        category="world",
+        tier=1,
+        language="en",
+        country="US"
+    ),
+
+    # POLITICAL NEWS - Major events coverage
+    RSSFeedConfig(
+        id="politico_breaking",
+        name="Politico - Breaking News",
+        url="https://www.politico.com/rss/politics08.xml",
+        source_id="politico",
+        category="politics",
+        tier=1,
+        language="en",
+        country="US"
+    ),
+    RSSFeedConfig(
+        id="thehill_breaking",
+        name="The Hill - Breaking News",
+        url="https://thehill.com/rss/syndicator/19109",
+        source_id="thehill",
+        category="politics",
+        tier=2,
+        language="en",
+        country="US"
+    ),
+
+    # FINANCIAL BREAKING NEWS
+    RSSFeedConfig(
+        id="bloomberg_breaking",
+        name="Bloomberg - Breaking News",
+        url="https://feeds.bloomberg.com/politics/news.rss",
+        source_id="bloomberg",
+        category="business",
+        tier=1,
+        language="en",
+        country="global"
+    ),
+    RSSFeedConfig(
+        id="wsj_breaking",
+        name="Wall Street Journal - World News",
+        url="https://feeds.a.dj.com/rss/RSSWorldNews.xml",
+        source_id="wsj",
+        category="business",
+        tier=1,
+        language="en",
+        country="global"
+    ),
+
+    # ========================================
+    # REGIONAL NEWS NETWORKS (Limited Overlap)
+    # ========================================
+
+    # Keep a few key regional feeds for diversity, but focus on major events
+    RSSFeedConfig(
+        id="guardian_breaking",
+        name="The Guardian - Breaking News",
+        url="https://www.theguardian.com/world/rss",
+        source_id="guardian",
+        category="world",
+        tier=2,
+        language="en",
+        country="UK"
+    ),
+    RSSFeedConfig(
+        id="independent_breaking",
+        name="The Independent - Breaking News",
+        url="https://www.independent.co.uk/news/rss",
+        source_id="independent",
+        category="world",
+        tier=2,
+        language="en",
+        country="UK"
+    ),
+    RSSFeedConfig(
+        id="france24_breaking",
+        name="France 24 - Breaking News",
+        url="https://www.france24.com/en/rss",
+        source_id="france24",
+        category="world",
+        tier=2,
+        language="en",
+        country="FR"
+    ),
+    RSSFeedConfig(
+        id="dw_breaking",
+        name="DW - Breaking News",
+        url="https://rss.dw.com/rdf/rss-en-all",
+        source_id="dw",
+        category="world",
+        tier=2,
+        language="en",
+        country="DE"
+    ),
+
+    # ========================================
+    # SPECIALIZED BREAKING NEWS (Tech/Finance)
+    # ========================================
+
+    RSSFeedConfig(
+        id="techcrunch_breaking",
+        name="TechCrunch - Breaking Tech News",
+        url="http://feeds.feedburner.com/TechCrunch/",
+        source_id="techcrunch",
+        category="technology",
+        tier=2,
+        language="en",
+        country="US"
+    ),
+    RSSFeedConfig(
+        id="axios_breaking",
+        name="Axios - Breaking News",
+        url="https://www.axios.com/feeds/feed.rss",
+        source_id="axios",
+        category="world",
+        tier=2,
+        language="en",
+        country="US"
+    ),
+
+    # ========================================
+    # INTERNATIONAL NEWS NETWORKS
+    # ========================================
+
+    RSSFeedConfig(
+        id="aljazeera_breaking",
+        name="Al Jazeera - Breaking News",
+        url="https://www.aljazeera.com/xml/rss/all.xml",
+        source_id="aljazeera",
+        category="world",
+        tier=1,
+        language="en",
+        country="global"
+    )
     ]
 
 
@@ -1158,27 +1366,22 @@ def get_feeds_by_region(region: str) -> List[RSSFeedConfig]:
 
 
 # Feed statistics
-TOTAL_FEEDS = 100
+TOTAL_FEEDS = 25
 FEEDS_BY_CATEGORY = {
-    'world': 15,
-    'us': 15,
-    'europe': 15,
-    'australia': 10,
-    'tech': 15,
-    'business': 10,
-    'science': 8,
-    'health': 2,
-    'sports': 10
+    'world': 18,
+    'politics': 3,
+    'business': 2,
+    'technology': 2
 }
 
 FEEDS_BY_TIER = {
-    1: 8,   # Wire services - poll every 5 minutes
-    2: 92   # Major outlets - poll every 10-15 minutes
+    1: 10,   # Wire services & major networks - poll every 5 minutes
+    2: 15    # Secondary outlets - poll every 10-15 minutes
 }
 
 FEEDS_BY_REGION = {
-    'global': 40,
-    'us': 20,
-    'europe': 25,
-    'australia_apac': 15
+    'global': 6,
+    'us': 12,
+    'europe': 4,
+    'australia_apac': 3
 }

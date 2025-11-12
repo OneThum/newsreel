@@ -82,29 +82,36 @@ async def map_story_to_response(
             logger.debug(f"      [MAPPING] Story is old ({story_age_minutes:.1f} min), no summary available")
         # else: story is old without summary, status would be "none" (no summary object returned)
     
-    # Get source count (get_story_sources returns ALREADY DEDUPLICATED sources)
-    source_ids = story.get('source_articles')
-    if source_ids is None:
-        source_ids = []  # Handle missing/null source_articles field
-    unique_source_count = len(source_ids)  # Default to raw count if query fails
-    source_docs = []
-    
-    logger.debug(f"      [MAPPING] source_articles in story: {len(source_ids)}")
-    
+    # Get source data - source_articles now contains FULL article objects (not IDs)
+    source_articles = story.get('source_articles', [])
+    if source_articles is None:
+        source_articles = []  # Handle missing/null source_articles field
+
+    logger.debug(f"      [MAPPING] source_articles in story: {len(source_articles)}")
+
     # 🔍 CRITICAL DEBUG: Log what's in source_articles field
-    if not source_ids or len(source_ids) == 0:
+    if not source_articles or len(source_articles) == 0:
         logger.warning(f"⚠️  [MAPPING] Story {story_id} has NO source_articles!")
-        logger.warning(f"   Full source_articles value: {source_ids}")
+        logger.warning(f"   Full source_articles value: {source_articles}")
         logger.warning(f"   Story keys: {list(story.keys())}")
         # Log first 500 chars of story to see structure
         story_preview = str(story)[:500]
         logger.warning(f"   Story preview: {story_preview}")
-    
-    if source_ids:
-        # get_story_sources now returns deduplicated sources (one per unique source name)
-        source_docs = await cosmos_service.get_story_sources(source_ids)
-        unique_source_count = len(source_docs)  # Already deduplicated!
-        logger.debug(f"      [MAPPING] After deduplication: {len(source_docs)} sources")
+
+    # source_articles is now a list of dict objects with full article data embedded
+    # No need to query - just use the embedded data directly
+    source_docs = source_articles  # Already contains full article objects
+
+    # Deduplicate by source to get unique source count
+    unique_sources = set()
+    for article in source_articles:
+        if isinstance(article, dict):
+            source_name = article.get('source', '')
+            if source_name:
+                unique_sources.add(source_name)
+    unique_source_count = len(unique_sources)
+
+    logger.debug(f"      [MAPPING] Total articles: {len(source_articles)}, Unique sources: {unique_source_count}")
     
     # Get sources if requested
     sources = []
@@ -115,7 +122,7 @@ async def map_story_to_response(
                 id=source['id'],
                 source=get_source_display_name(source.get('source', '')),  # Use display name
                 title=source.get('title', ''),
-                article_url=source.get('article_url', ''),
+                article_url=source.get('url', source.get('article_url', '')),  # Database uses 'url', not 'article_url'
                 published_at=datetime.fromisoformat(
                     source.get('published_at', '').replace('Z', '+00:00')
                 )
@@ -169,7 +176,7 @@ async def map_story_to_response(
         )
 
 
-@router.get("/feed", response_model=List[StoryDetailResponse])
+@router.get("/feed")
 async def get_personalized_feed(
     category: Optional[str] = Query(None, description="Filter by category"),
     limit: int = Query(20, ge=1, le=50, description="Number of stories to return"),
@@ -258,26 +265,32 @@ async def get_personalized_feed(
     story_responses = []
     for i, story in enumerate(personalized_stories):
         logger.info(f"   [FEED MAPPING] Story {i+1}/{len(personalized_stories)}: {story.get('id')}")
-        
+
         # 🔍 Log before mapping
         has_summary = bool(story.get('summary'))
         source_article_ids = story.get('source_articles', [])
         logger.info(f"      Before mapping - has_summary: {has_summary}, source_articles: {len(source_article_ids)}")
-        
+
         story_response = await map_story_to_response(story, user, include_sources=True)
-        
+
         # 🔍 Log after mapping
         logger.info(f"      After mapping - summary: {story_response.summary is not None}, sources in response: {len(story_response.sources) if hasattr(story_response, 'sources') else 0}")
-        
-        story_responses.append(story_response)
-    
-    logger.info(f"📊 [FEED] Returning {len(story_responses)} story responses")
-    
+
+        # Convert to dict to ensure sources field is included
+        story_dict = story_response.model_dump()
+
+        story_responses.append(story_dict)
+
+    logger.info(f"📊 [FEED] Returning {len(story_responses)} story dicts with sources")
+
     # No more rate limiting on feed access!
     # Premium feature is summaries, not feed access
     # (Rate limiting code removed - unlimited feed for all users)
-    
-    # Return stories directly with sources included
+
+    # Return direct array of stories for iOS app compatibility
+    # (iOS app expects [Story] directly, not wrapped response)
+    logger.info(f"📊 [FEED] Returning {len(story_responses)} stories directly (no wrapper)")
+
     return story_responses
 
 
@@ -432,7 +445,7 @@ async def get_story_detail(
     
     # Try common categories
     story = None
-    for category in ['world', 'tech', 'science', 'business', 'general', 'sports', 'health']:
+    for category in ['world', 'tech', 'science', 'business', 'general', 'sports', 'health', 'politics']:
         story = await cosmos_service.get_story(story_id, category)
         if story:
             break
@@ -520,7 +533,7 @@ async def get_story_sources(
     
     # Get story
     story = None
-    for category in ['world', 'tech', 'science', 'business', 'general', 'sports', 'health']:
+    for category in ['world', 'tech', 'science', 'business', 'general', 'sports', 'health', 'politics']:
         story = await cosmos_service.get_story(story_id, category)
         if story:
             break

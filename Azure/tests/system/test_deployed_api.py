@@ -53,7 +53,7 @@ class TestDeployedAPI:
             f"❌ Endpoint returned {response.status_code}: {response.text[:200]}"
         
         data = response.json()
-        stories = data if isinstance(data, list) else data.get('stories', [])
+        stories = data.get('stories', []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
         
         # REAL TEST: Are there actual stories?
         assert len(stories) > 0, \
@@ -78,7 +78,7 @@ class TestDeployedAPI:
         
         assert response.status_code == 200
         data = response.json()
-        stories = data if isinstance(data, list) else data.get('stories', [])
+        stories = data.get('stories', []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
         
         assert len(stories) > 0, "No stories to check"
         
@@ -113,7 +113,7 @@ class TestDeployedAPI:
         
         assert response.status_code == 200
         data = response.json()
-        stories = data if isinstance(data, list) else data.get('stories', [])
+        stories = data.get('stories', []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
         
         assert len(stories) > 0, "No stories to check"
         
@@ -151,7 +151,7 @@ class TestDeployedAPI:
         assert response.status_code == 200
         
         data = response.json()
-        stories = data if isinstance(data, list) else data.get('stories', [])
+        stories = data.get('stories', []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
         
         assert len(stories) > 0, "No stories to check"
         
@@ -189,7 +189,7 @@ class TestDeployedAPI:
         assert response.status_code == 200, f"Breaking endpoint returned {response.status_code}"
         
         data = response.json()
-        stories = data if isinstance(data, list) else data.get('stories', [])
+        stories = data.get('stories', []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
         
         if stories:
             print(f"✅ Breaking news endpoint returned {len(stories)} stories")
@@ -214,7 +214,7 @@ class TestDeployedAPI:
             return
         
         data = response.json()
-        stories = data if isinstance(data, list) else data.get('stories', [])
+        stories = data.get('stories', []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
         
         print(f"✅ Search endpoint returned {len(stories)} results")
 
@@ -257,7 +257,7 @@ class TestDataPipeline:
             pytest.skip("Cannot query stories")
         
         data = response.json()
-        stories = data if isinstance(data, list) else data.get('stories', [])
+        stories = data.get('stories', []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
         
         total_articles = sum(len(story.get('sources', [])) for story in stories)
         
@@ -278,7 +278,7 @@ class TestDataPipeline:
             pytest.skip("Cannot query stories")
         
         data = response.json()
-        stories = data if isinstance(data, list) else data.get('stories', [])
+        stories = data.get('stories', []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
         
         # Check if stories have multiple sources (indication of clustering)
         multi_source_stories = [
@@ -304,7 +304,7 @@ class TestDataPipeline:
             pytest.skip("Cannot query stories")
         
         data = response.json()
-        stories = data if isinstance(data, list) else data.get('stories', [])
+        stories = data.get('stories', []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
         
         with_summaries = [
             s for s in stories

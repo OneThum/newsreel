@@ -436,46 +436,66 @@ def parse_entry_date(entry) -> datetime:
         return datetime.now(timezone.utc)
 
 
+def normalize_category(category: str) -> str:
+    """Normalize category names to match iOS app expectations"""
+    category_mapping = {
+        'tech': 'technology',
+        'entertainment': 'entertainment',
+        'sports': 'sports',
+        'business': 'business',
+        'health': 'health',
+        'science': 'science',
+        'technology': 'technology',
+        'general': 'general',
+        'politics': 'politics',
+        'world': 'world'
+    }
+    return category_mapping.get(category.lower(), category)
+
+
 def process_feed_entry(entry, feed_result: Dict[str, Any]) -> Optional[RawArticle]:
     """Process a single feed entry into a RawArticle"""
     try:
         feed_config = feed_result['config']
         fetched_at = feed_result['fetched_at']
-        
+
         title = clean_html(entry.get('title', ''))
         if not title:
             return None
-        
+
         description = clean_html(entry.get('description', '') or entry.get('summary', ''))
         article_url = entry.get('link', '')
-        
+
         if not article_url:
             return None
-        
+
         # Filter out spam/promotional content
         if is_spam_or_promotional(title, description, article_url):
             logger.info(f"🚫 Filtered spam/promotional content: {title[:80]}...")
             return None
-        
+
         published_at = parse_entry_date(entry)
         published_date = published_at.strftime('%Y-%m-%d')
-        
+
         content = None
         if hasattr(entry, 'content') and entry.content:
             content = clean_html(entry.content[0].value)
         elif description:
             content = description
-        
+
         if content:
             content = truncate_text(content, max_length=2000)
-        
+
         author = entry.get('author', None)
         text_for_entities = f"{title} {description}"
         entities = extract_simple_entities(text_for_entities)
         category = categorize_article(title, description, article_url)
-        
+
         if category == 'general':
             category = feed_config.category
+
+        # Normalize category to match iOS app expectations (tech -> technology)
+        category = normalize_category(category)
         
         article_id = generate_article_id(feed_config.source_id, article_url, published_at)
         story_fingerprint = generate_story_fingerprint(title, entities)
@@ -789,6 +809,26 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
             if not stories:
                 # Query recent stories in same category for better relevance
                 recent_stories = await cosmos_client.query_recent_stories(category=article.category, limit=500)
+
+                # PHASE 1: Time-window filtering (72-hour windows)
+                if config.CLUSTERING_USE_TIME_WINDOW:
+                    from datetime import timedelta
+                    time_window_hours = 72  # 72-hour window for clustering
+                    cutoff_time = article.published_at - timedelta(hours=time_window_hours)
+
+                    # Filter stories to only those within time window
+                    filtered_stories = []
+                    for story in recent_stories:
+                        story_updated = story.get('last_updated')
+                        if isinstance(story_updated, str):
+                            from dateutil import parser
+                            story_updated = parser.parse(story_updated)
+
+                        if story_updated and story_updated >= cutoff_time:
+                            filtered_stories.append(story)
+
+                    logger.info(f"⏰ Time-window filtering: {len(recent_stories)} → {len(filtered_stories)} stories (within {time_window_hours}h of {article.published_at})")
+                    recent_stories = filtered_stories
                 
                 best_match = None
                 best_similarity = 0.0
@@ -811,9 +851,29 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                     if title_similarity > 0.50:
                         logger.info(f"📊 Similarity {title_similarity:.3f}: '{article.title[:60]}...' vs '{existing_story.get('title', '')[:60]}...'")
                     
-                    # CRITICAL FIX: Use config threshold (75%) for better clustering
-                    # 75% ensures stories actually share core topic/event while allowing some variation
-                    if title_similarity > config.STORY_FINGERPRINT_SIMILARITY_THRESHOLD:
+                    # PHASE 1: Adaptive thresholds based on article age
+                    if config.CLUSTERING_USE_ADAPTIVE_THRESHOLD:
+                        # Calculate article age in hours
+                        from datetime import datetime
+                        article_age_hours = (datetime.now() - article.published_at).total_seconds() / 3600
+
+                        # Adaptive threshold: stricter for breaking news, looser for older stories
+                        if article_age_hours < 12:
+                            adaptive_threshold = 0.65  # Breaking news - stricter (65%)
+                        elif article_age_hours < 72:
+                            adaptive_threshold = 0.60  # Recent news (60%)
+                        else:
+                            adaptive_threshold = 0.55  # Older stories - more lenient (55%)
+                    else:
+                        # Use default threshold
+                        adaptive_threshold = config.STORY_FINGERPRINT_SIMILARITY_THRESHOLD
+
+                    # Log threshold selection for debugging
+                    if config.CLUSTERING_USE_ADAPTIVE_THRESHOLD and title_similarity > 0.50:
+                        logger.info(f"🎯 Adaptive threshold: {adaptive_threshold:.2f} (age: {article_age_hours:.1f}h) for similarity {title_similarity:.3f}")
+
+                    # CRITICAL FIX: Use adaptive or config threshold for better clustering
+                    if title_similarity > adaptive_threshold:
                         threshold_matches.append({
                             'similarity': title_similarity,
                             'story_id': existing_story.get('id', 'unknown'),
@@ -824,7 +884,7 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                         if not has_topic_conflict(article.title, existing_story.get('title', '')):
                             stories = [existing_story]
                             matched_story = True
-                            logger.info(f"✅ CLUSTERING MATCH: {title_similarity:.3f} - '{article.title[:60]}...' → '{existing_story.get('title', '')[:60]}...' (threshold: {config.STORY_FINGERPRINT_SIMILARITY_THRESHOLD})")
+                            logger.info(f"✅ CLUSTERING MATCH: {title_similarity:.3f} - '{article.title[:60]}...' → '{existing_story.get('title', '')[:60]}...' (threshold: {adaptive_threshold:.2f})")
                             break
                         else:
                             topic_conflicts.append({
@@ -838,7 +898,8 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                 if similarity_scores:
                     avg_similarity = sum(similarity_scores) / len(similarity_scores)
                     max_similarity = max(similarity_scores)
-                    logger.info(f"📈 Clustering analysis for '{article.title[:60]}...': avg={avg_similarity:.3f}, max={max_similarity:.3f}, threshold={config.STORY_FINGERPRINT_SIMILARITY_THRESHOLD}")
+                    threshold_used = adaptive_threshold if config.CLUSTERING_USE_ADAPTIVE_THRESHOLD else config.STORY_FINGERPRINT_SIMILARITY_THRESHOLD
+                    logger.info(f"📈 Clustering analysis for '{article.title[:60]}...': avg={avg_similarity:.3f}, max={max_similarity:.3f}, threshold={threshold_used:.2f}")
                     logger.info(f"📊 Similarity distribution: {len([s for s in similarity_scores if s > 0.8])} above 80%, {len([s for s in similarity_scores if s > 0.7])} above 70%, {len([s for s in similarity_scores if s > 0.6])} above 60%")
                 
                 if threshold_matches:
@@ -847,22 +908,23 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                 if topic_conflicts:
                     logger.info(f"⚠️ Topic conflicts ({len(topic_conflicts)}): {[c['similarity'] for c in topic_conflicts]}")
                 
-                # If still no match, try entity-based matching (MORE STRICT)
-                # Use higher threshold to prevent false clustering
-                if not stories and best_match and best_similarity > 0.70:
+                # If still no match, try entity-based matching for near-misses (0.50-0.60 range)
+                # This catches stories that are about same event but phrased differently
+                if not stories and best_match and 0.50 <= best_similarity < config.STORY_FINGERPRINT_SIMILARITY_THRESHOLD:
                     # Extract key entities from both titles
-                    article_entities = set(word.lower() for word in article.title.split() 
+                    article_entities = set(word.lower() for word in article.title.split()
                                           if len(word) > 4 and word[0].isupper())
-                    story_entities = set(word.lower() for word in best_match.get('title', '').split() 
+                    story_entities = set(word.lower() for word in best_match.get('title', '').split()
                                         if len(word) > 4 and word[0].isupper())
-                    
-                    # Require 3+ entities match (not just location) AND no topic conflict
+
+                    # For near-misses, require 2+ entities match (lower than before) AND no topic conflict
+                    # This allows "Senate", "government shutdown" to match across different phrasings
                     entity_overlap = len(article_entities.intersection(story_entities))
-                    if entity_overlap >= 3 and not has_topic_conflict(article.title, best_match.get('title', '')):
+                    if entity_overlap >= 2 and not has_topic_conflict(article.title, best_match.get('title', '')):
                         stories = [best_match]
                         matched_story = True
-                        logger.info(f"✓ Entity match ({entity_overlap} shared): '{article.title[:60]}...' → '{best_match.get('title', '')[:60]}...'")
-                
+                        logger.info(f"✓ Entity match (near-miss recovery: {entity_overlap} shared, {best_similarity:.3f} similarity): '{article.title[:60]}...' → '{best_match.get('title', '')[:60]}...'")
+
                 # Log near-misses for future tuning and threshold analysis
                 if not stories:
                     if best_match and best_similarity > 0.60:
@@ -879,7 +941,8 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                     logger.info(f"🎯 CLUSTERING DECISION: Creating new story (no match found)")
                     logger.info(f"   Article: [{article.source}] {article.title[:80]}...")
                     logger.info(f"   Best similarity: {best_similarity:.3f}")
-                    logger.info(f"   Threshold used: {config.STORY_FINGERPRINT_SIMILARITY_THRESHOLD}")
+                    threshold_used = adaptive_threshold if config.CLUSTERING_USE_ADAPTIVE_THRESHOLD else config.STORY_FINGERPRINT_SIMILARITY_THRESHOLD
+                    logger.info(f"   Threshold used: {threshold_used:.2f}")
                     logger.info(f"   Stories compared: {len(recent_stories)}")
             
             # Log article processing
@@ -936,8 +999,15 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                     continue  # Skip to next article - DON'T update last_updated!
                 
                 # Article not in cluster yet and source is unique - ADD IT
-                # Store article ID instead of full object for API to fetch
-                source_articles.append(article.id)
+                # Store full article object (consistent with story creation format)
+                source_articles.append({
+                    "id": article.id,
+                    "source": article.source,
+                    "title": article.title,
+                    "url": article.article_url,
+                    "published_at": article.published_at.isoformat() if article.published_at else None,
+                    "content": article.content or article.description
+                })
                 
                 # 🔍 ENHANCED SOURCE TRACKING LOGGING
                 # Calculate source diversity BEFORE updating
@@ -949,10 +1019,20 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                     else:
                         source_part = art.split('_')[0]  # Fallback for old format
                     existing_sources.append(source_part)
-                
+
                 source_counts = Counter(existing_sources)
                 unique_sources = len(source_counts)
                 duplicate_sources = {k: v for k, v in source_counts.items() if v > 1}
+
+                # Calculate the updated unique source count (after adding the new article)
+                all_sources = set()
+                for art in source_articles:
+                    if isinstance(art, dict):
+                        source_part = art.get('source', art.get('id', '').split('_')[0])
+                    else:
+                        source_part = art.split('_')[0]  # Fallback for old format
+                    all_sources.add(source_part)
+                updated_unique_source_count = len(all_sources)
                 
                 logger.info(
                     f"📰 Added [{article.source}] to story {story['id']}: "
@@ -1043,6 +1123,7 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                 updates = {
                     'source_articles': source_articles,
                     'verification_level': verification_level,
+                    'unique_source_count': updated_unique_source_count,  # FIX: Store calculated unique source count
                     'status': status,
                     'last_updated': datetime.now(timezone.utc).isoformat(),
                     'update_count': story.get('update_count', 0) + 1
@@ -1085,7 +1166,7 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
             else:
                 # Create new story
                 story_id = f"story_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{article.story_fingerprint}"
-                
+
                 story = StoryCluster(
                     id=story_id,
                     event_fingerprint=article.story_fingerprint,
@@ -1094,9 +1175,18 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                     tags=article.tags,
                     status=StoryStatus.MONITORING,
                     verification_level=1,
+                    unique_source_count=1,  # FIX: Store calculated unique source count
                     first_seen=article.published_at,
                     last_updated=datetime.now(timezone.utc),
-                    source_articles=[article.id],
+                    published_at=article.published_at,  # Set published_at for iOS app
+                    source_articles=[{
+                        "id": article.id,
+                        "source": article.source,
+                        "title": article.title,
+                        "url": article.article_url,
+                        "published_at": article.published_at.isoformat() if article.published_at else None,
+                        "content": article.content or article.description
+                    }],
                     importance_score=50 + (20 if article.source_tier == 1 else 0),
                     confidence_score=40,
                     breaking_news=False
@@ -2025,7 +2115,7 @@ async def fetch_story_articles(story_id: str, story_data: Dict[str, Any]) -> Lis
     """Fetch source articles for a story (helper function)"""
     articles = []
     source_articles = story_data.get('source_articles', [])
-    
+
     for article_id in source_articles[:6]:  # Limit to 6 articles
         try:
             parts = article_id.split('_')
@@ -2037,6 +2127,97 @@ async def fetch_story_articles(story_id: str, story_data: Dict[str, Any]) -> Lis
                     articles.append(article)
         except Exception as e:
             logger.warning(f"Could not fetch article {article_id}: {e}")
-    
+
     return articles
+
+
+# ============================================================================
+# TEMPORARY CLEANUP FUNCTION - Remove test stories
+# ============================================================================
+
+@app.function_name(name="CleanupTestStories")
+@app.schedule(schedule="0 0 * * * *", arg_name="timer", run_on_startup=False)
+async def cleanup_test_stories_timer(timer: func.TimerRequest) -> None:
+    """TEMPORARY: Clean up test stories from database - Runs once per hour"""
+    logger.info("🧹 CLEANUP: Starting test story cleanup...")
+
+    try:
+        cosmos_client.connect()
+
+        # Query all stories
+        stories_container = cosmos_client._get_container('story_clusters')
+        query = 'SELECT * FROM c'
+        all_stories = list(stories_container.query_items(
+            query=query,
+            enable_cross_partition_query=True
+        ))
+
+        logger.info(f"📊 Found {len(all_stories)} total stories")
+
+        # Identify test stories
+        test_story_ids = []
+        for story in all_stories:
+            story_id = story.get('id', '')
+            title = story.get('title', '').lower()
+            source_articles = story.get('source_articles', [])
+
+            # Check for test patterns
+            is_test = False
+
+            # Title patterns
+            test_title_patterns = [
+                'breaking: major event',
+                'major policy announcement',
+                'test article',
+                'test article 0',
+                'major breakthrough in renewable energy',
+                'global markets rally',
+                'new climate agreement reached'
+            ]
+
+            if any(pattern in title for pattern in test_title_patterns):
+                is_test = True
+
+            # Check for test sources
+            test_source_count = 0
+            for article in source_articles:
+                if isinstance(article, dict):
+                    source = article.get('source', '').lower()
+                    if ('test' in source or
+                        source.startswith('source ') or
+                        source == 'test source' or
+                        source == 'test source 1'):
+                        test_source_count += 1
+
+            # If more than half the sources are test sources, it's a test story
+            if test_source_count > len(source_articles) // 2 and len(source_articles) > 0:
+                is_test = True
+
+            # Unrealistic number of sources (>100 is definitely test data)
+            if len(source_articles) > 100:
+                is_test = True
+
+            # Only test sources
+            if len(source_articles) > 0 and test_source_count == len(source_articles):
+                is_test = True
+
+            if is_test:
+                test_story_ids.append((story_id, story.get('category', 'general')))
+
+        logger.info(f"🗑️ Found {len(test_story_ids)} test stories to delete")
+
+        # Delete test stories
+        deleted_count = 0
+        for story_id, category in test_story_ids:
+            try:
+                stories_container.delete_item(item=story_id, partition_key=category)
+                deleted_count += 1
+                logger.info(f"✅ Deleted test story: {story_id}")
+            except Exception as e:
+                logger.error(f"❌ Failed to delete story {story_id}: {e}")
+
+        logger.info(f"🎉 CLEANUP COMPLETE: Deleted {deleted_count} test stories")
+
+    except Exception as e:
+        logger.error(f"❌ Cleanup failed: {e}", exc_info=True)
 

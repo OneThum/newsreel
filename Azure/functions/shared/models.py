@@ -1,7 +1,7 @@
 """Data models for Newsreel"""
 from datetime import datetime
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum
 
 
@@ -73,11 +73,12 @@ class RawArticle(BaseModel):
     embedding: Optional[List[float]] = None
     processed: bool = False
     processing_attempts: int = 0
-    
-    class Config:
-        json_encoders = {
+
+    model_config = ConfigDict(
+        json_encoders={
             datetime: lambda v: v.isoformat()
         }
+    )
 
 
 class SummaryVersion(BaseModel):
@@ -93,10 +94,11 @@ class SummaryVersion(BaseModel):
     cached_tokens: int = 0
     cost_usd: float
     
-    class Config:
-        json_encoders = {
+    model_config = ConfigDict(
+        json_encoders={
             datetime: lambda v: v.isoformat()
         }
+    )
 
 
 class VersionHistory(BaseModel):
@@ -107,10 +109,11 @@ class VersionHistory(BaseModel):
     source_count: int
     status: StoryStatus
     
-    class Config:
-        json_encoders = {
+    model_config = ConfigDict(
+        json_encoders={
             datetime: lambda v: v.isoformat()
         }
+    )
 
 
 class StoryCluster(BaseModel):
@@ -124,6 +127,7 @@ class StoryCluster(BaseModel):
     verification_level: int  # Number of sources
     first_seen: datetime
     last_updated: datetime
+    published_at: Optional[datetime] = None  # Publication date for iOS app (set to first_seen)
     source_articles: List[Dict[str, Any]] = Field(default_factory=list)
     summary: Optional[SummaryVersion] = None
     version_history: List[VersionHistory] = Field(default_factory=list)
@@ -143,10 +147,11 @@ class StoryCluster(BaseModel):
     human_reviewed: bool = False
     corrections: List[Dict[str, Any]] = Field(default_factory=list)
     
-    class Config:
-        json_encoders = {
+    model_config = ConfigDict(
+        json_encoders={
             datetime: lambda v: v.isoformat()
         }
+    )
     
     @property
     def article_count(self) -> int:
@@ -188,10 +193,11 @@ class Subscription(BaseModel):
     original_transaction_id: Optional[str] = None
     receipt_validated_at: Optional[datetime] = None
     
-    class Config:
-        json_encoders = {
+    model_config = ConfigDict(
+        json_encoders={
             datetime: lambda v: v.isoformat()
         }
+    )
 
 
 class RateLimiting(BaseModel):
@@ -200,10 +206,11 @@ class RateLimiting(BaseModel):
     last_reset: datetime = Field(default_factory=datetime.utcnow)
     exceeded_limit: bool = False
     
-    class Config:
-        json_encoders = {
+    model_config = ConfigDict(
+        json_encoders={
             datetime: lambda v: v.isoformat()
         }
+    )
 
 
 class DeviceToken(BaseModel):
@@ -213,10 +220,11 @@ class DeviceToken(BaseModel):
     added_at: datetime = Field(default_factory=datetime.utcnow)
     last_used: Optional[datetime] = None
     
-    class Config:
-        json_encoders = {
+    model_config = ConfigDict(
+        json_encoders={
             datetime: lambda v: v.isoformat()
         }
+    )
 
 
 class UserProfile(BaseModel):
@@ -234,10 +242,11 @@ class UserProfile(BaseModel):
     rate_limiting: RateLimiting = Field(default_factory=RateLimiting)
     device_tokens: List[DeviceToken] = Field(default_factory=list)
     
-    class Config:
-        json_encoders = {
+    model_config = ConfigDict(
+        json_encoders={
             datetime: lambda v: v.isoformat()
         }
+    )
 
 
 class UserInteraction(BaseModel):
@@ -253,10 +262,11 @@ class UserInteraction(BaseModel):
     sources_clicked: List[str] = Field(default_factory=list)
     device_info: Optional[Dict[str, Any]] = None
     
-    class Config:
-        json_encoders = {
+    model_config = ConfigDict(
+        json_encoders={
             datetime: lambda v: v.isoformat()
         }
+    )
 
 
 class RSSFeedConfig(BaseModel):
@@ -275,8 +285,9 @@ class RSSFeedConfig(BaseModel):
     last_modified: Optional[str] = None
     error_count: int = 0
     
-    class Config:
-        json_encoders = {
+    model_config = ConfigDict(
+        json_encoders={
             datetime: lambda v: v.isoformat()
         }
+    )
 

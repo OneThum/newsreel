@@ -124,12 +124,12 @@ class TestClusteringThresholds:
     """Test clustering threshold logic"""
     
     def test_threshold_75_percent(self):
-        """Test 75% threshold separates similar from dissimilar"""
+        """Test 60% threshold separates similar from dissimilar"""
         from shared.config import config
-        
-        # Should be 0.70 (70%) based on config
+
+        # Should be 0.60 (60%) - lowered for better clustering recall
         threshold = config.STORY_FINGERPRINT_SIMILARITY_THRESHOLD
-        assert threshold == 0.70
+        assert threshold == 0.60
         
         # Test titles that should cluster
         similar_title1 = "Earthquake Strikes Northern Japan"
