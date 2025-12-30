@@ -293,7 +293,7 @@ struct StoryDetailView: View {
                                 
                                 // Source Cards
                                 VStack(spacing: 12) {
-                                    ForEach(viewModel.story.sources) { sourceArticle in
+                                    ForEach(viewModel.allSourcesToDisplay) { sourceArticle in
                                         Button(action: {
                                             if let url = sourceArticle.url {
                                                 HapticManager.selection()
@@ -462,6 +462,29 @@ class StoryDetailViewModel: ObservableObject {
         uniqueSources.insert(story.source.displayName) // Primary source
         story.sources.forEach { uniqueSources.insert($0.displayName) }
         return uniqueSources.count
+    }
+    
+    /// All sources to display in the Multiple Perspectives section (deduplicated)
+    var allSourcesToDisplay: [SourceArticle] {
+        var displayedSources = story.sources
+        
+        // Check if primary source is already in the sources array
+        let primaryName = story.source.displayName.lowercased()
+        let alreadyIncluded = story.sources.contains { $0.displayName.lowercased() == primaryName }
+        
+        // If primary source isn't in sources array, add it as a SourceArticle
+        if !alreadyIncluded {
+            let primaryArticle = SourceArticle(
+                id: story.source.id,
+                source: story.source.name,
+                title: story.title,
+                articleURL: story.url.absoluteString,
+                publishedAt: ISO8601DateFormatter().string(from: story.publishedAt)
+            )
+            displayedSources.insert(primaryArticle, at: 0)
+        }
+        
+        return displayedSources
     }
     
     func markAsRead() async {

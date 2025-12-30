@@ -6,11 +6,12 @@ from enum import Enum
 
 
 class StoryStatus(str, Enum):
-    """Story verification status"""
-    MONITORING = "MONITORING"  # 1 source
-    DEVELOPING = "DEVELOPING"  # 2 sources
-    BREAKING = "BREAKING"      # 3+ sources, within 30 min
-    VERIFIED = "VERIFIED"      # 3+ sources, after 30 min
+    """Story verification status - indicates source count confidence level"""
+    NEW = "NEW"                # 1 source - fresh report, unverified
+    DEVELOPING = "DEVELOPING"  # 2 sources - story gaining traction
+    VERIFIED = "VERIFIED"      # 3+ sources - confirmed by multiple outlets
+    # Note: BREAKING removed as display status - now only used for push notification triggers
+    # Legacy MONITORING maps to NEW, legacy BREAKING maps to VERIFIED
 
 
 class SubscriptionTier(str, Enum):

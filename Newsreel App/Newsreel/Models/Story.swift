@@ -90,19 +90,34 @@ struct Story: Identifiable, Codable, Hashable {
 }
 
 // MARK: - Story Status
+// Simplified status system based on source count (verification confidence)
+// - NEW: 1 source (unverified, fresh report)
+// - DEVELOPING: 2 sources (story gaining traction)
+// - VERIFIED: 3+ sources (confirmed by multiple outlets)
 
 enum StoryStatus: String, Codable {
-    case monitoring = "MONITORING"  // Single source, unverified
-    case developing = "DEVELOPING"  // 2 sources
-    case verified = "VERIFIED"      // 3+ sources, not breaking
-    case breaking = "BREAKING"      // 3+ sources, recent
+    case new = "NEW"                // 1 source - fresh report
+    case developing = "DEVELOPING"  // 2 sources - gaining traction
+    case verified = "VERIFIED"      // 3+ sources - confirmed
+    
+    // Legacy status mappings for backward compatibility
+    case monitoring = "MONITORING"  // Legacy: maps to NEW
+    case breaking = "BREAKING"      // Legacy: maps to VERIFIED
     
     var displayName: String {
         switch self {
-        case .monitoring: return "MONITORING"
+        case .new, .monitoring: return "NEW"
         case .developing: return "DEVELOPING"
-        case .verified: return "VERIFIED"
-        case .breaking: return "BREAKING"
+        case .verified, .breaking: return "VERIFIED"
+        }
+    }
+    
+    /// Normalized status (converts legacy values to new system)
+    var normalized: StoryStatus {
+        switch self {
+        case .monitoring: return .new
+        case .breaking: return .verified
+        default: return self
         }
     }
 }

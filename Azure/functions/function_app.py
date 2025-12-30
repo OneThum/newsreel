@@ -1030,58 +1030,24 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                 first_seen = datetime.fromisoformat(story['first_seen'].replace('Z', '+00:00'))
                 time_since_first = now - first_seen
                 
-                # CRITICAL: For breaking news, check if story is ACTIVELY DEVELOPING
-                # A story that's getting new sources RIGHT NOW is breaking news, even if created days ago
-                # This handles ongoing stories (e.g., hostage releases, elections, disasters)
-                current_status = story.get('status', 'MONITORING')
-                is_gaining_sources = len(source_articles) > prev_source_count
+                # SIMPLIFIED STATUS SYSTEM (based purely on source count)
+                # Status indicates verification confidence level, not urgency
+                # - NEW: 1 source (unverified)
+                # - DEVELOPING: 2 sources (gaining traction)
+                # - VERIFIED: 3+ sources (confirmed by multiple outlets)
+                # 
+                # Note: Push notifications for breaking news are handled separately
+                # by BreakingNewsMonitor based on recency + source count
                 
-                # Check if this story was recently updated (within last 30 min)
-                # This catches actively developing stories
-                last_updated_str = story.get('last_updated', story['first_seen'])
-                last_updated = datetime.fromisoformat(last_updated_str.replace('Z', '+00:00'))
-                time_since_update = now - last_updated
-                
-                # Determine status based on source count, recency, and momentum
                 if verification_level >= 3:
-                    # Story has 3+ sources
-                    update_mins = int(time_since_update.total_seconds() / 60)
-                    age_mins = int(time_since_first.total_seconds() / 60)
-                    
-                    # Log decision factors for debugging
-                    logger.info(
-                        f"📊 Status evaluation for {story['id']}: "
-                        f"sources={prev_source_count}→{verification_level}, "
-                        f"age={age_mins}m, last_update={update_mins}m ago, "
-                        f"current_status={current_status}, is_gaining={is_gaining_sources}"
-                    )
-                    
-                    if time_since_first < timedelta(minutes=30):
-                        # Story created recently → BREAKING
-                        status = StoryStatus.BREAKING.value
-                        logger.info(f"   → BREAKING (created {age_mins}m ago)")
-                    elif is_gaining_sources and time_since_update < timedelta(minutes=30):
-                        # Story actively developing (new source just added, last update was recent) → BREAKING
-                        # This ensures ongoing breaking news (like hostage releases) stays visible
-                        # Increased to 30 minutes to catch slower-developing stories
-                        status = StoryStatus.BREAKING.value
-                        logger.info(
-                            f"🔥 Story promoted to BREAKING (actively developing): {story['id']} - "
-                            f"{prev_source_count}→{verification_level} sources, last update {update_mins}m ago"
-                        )
-                    elif current_status == 'BREAKING' and time_since_first < timedelta(hours=2):
-                        # Keep BREAKING status for up to 2 hours if still actively updated
-                        # (BreakingNewsMonitor will transition to VERIFIED after 90 min of no updates)
-                        status = StoryStatus.BREAKING.value
-                        logger.info(f"   → Keeping BREAKING status (actively updated story)")
-                    else:
-                        # Story is old and stable → VERIFIED
-                        status = StoryStatus.VERIFIED.value
-                        logger.info(f"   → VERIFIED (stable story, age={age_mins}m, idle={update_mins}m)")
+                    status = StoryStatus.VERIFIED.value
+                    logger.info(f"   → VERIFIED ({verification_level} sources)")
                 elif verification_level == 2:
                     status = StoryStatus.DEVELOPING.value
+                    logger.info(f"   → DEVELOPING ({verification_level} sources)")
                 else:
-                    status = StoryStatus.MONITORING.value
+                    status = StoryStatus.NEW.value
+                    logger.info(f"   → NEW ({verification_level} source)")
                 
                 updates = {
                     'source_articles': source_articles,
@@ -1148,7 +1114,7 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                     title=article.title,
                     category=article.category,
                     tags=article.tags,
-                    status=StoryStatus.MONITORING,
+                    status=StoryStatus.NEW,  # New stories start as NEW (1 source)
                     verification_level=1,
                     first_seen=article.published_at,
                     last_updated=datetime.now(timezone.utc),
@@ -1161,12 +1127,12 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                 
                 await cosmos_client.create_story_cluster(story)
                 
-                # Log story cluster creation with initial MONITORING status
+                # Log story cluster creation with initial NEW status
                 logger.log_story_cluster(
                     story_id=story_id,
                     action="created",
                     source_count=1,
-                    status=StoryStatus.MONITORING.value,
+                    status=StoryStatus.NEW.value,
                     category=article.category,
                     fingerprint=article.story_fingerprint,
                     title=article.title
@@ -1289,7 +1255,10 @@ async def summarization_changefeed(documents: func.DocumentList) -> None:
             
             if len(articles) == 1:
                 # Single-source: Extract maximum value from available content
+                story_title = story_data.get('title', '')
                 prompt = f"""You are a senior news editor creating a summary from a news report. Extract and present the key information clearly.
+
+HEADLINE (already shown to readers): "{story_title}"
 
 ESSENTIAL FACTS TO INCLUDE:
 - What happened (the core event)
@@ -1299,10 +1268,11 @@ ESSENTIAL FACTS TO INCLUDE:
 - What happens next (if mentioned)
 
 QUALITY STANDARDS:
+- Do NOT repeat the headline - readers already see it. Start with NEW details.
 - Include ALL specific details available: numbers, dates, names, locations, quotes
 - Use clear, direct language that intelligent readers can understand
 - Write 80-120 words (concise but complete)
-- Lead with the most important information
+- Lead with the most important NEW information not in the headline
 - Maintain neutral, factual tone
 
 YOU MUST provide a summary based on what IS available. Never refuse or say you need more sources.
@@ -1311,11 +1281,14 @@ Article to summarize:
 
 {combined_articles}
 
-Write the summary now (start directly with the news, no preamble):"""
+Write the summary now (start directly with new details, don't repeat the headline):"""
             
             else:
                 # Multi-source: Synthesize perspectives for comprehensive view
+                story_title = story_data.get('title', '')
                 prompt = f"""You are a senior news editor synthesizing {len(articles)} reports about the same event. Create a comprehensive summary that shows readers the full picture from multiple perspectives.
+
+HEADLINE (already shown to readers): "{story_title}"
 
 ESSENTIAL FACTS TO INCLUDE:
 - What happened (the core event)  
@@ -1325,6 +1298,7 @@ ESSENTIAL FACTS TO INCLUDE:
 - What happens next (if known)
 
 SYNTHESIS REQUIREMENTS:
+- Do NOT repeat the headline - readers already see it. Start with NEW details.
 - Identify facts reported by MULTIPLE sources (high confidence - state these directly)
 - Note facts from single sources (lower confidence - attribute: "According to [Source]...")
 - Highlight any conflicting information or different framings between sources
@@ -1334,14 +1308,14 @@ QUALITY STANDARDS:
 - Include specific details: numbers, dates, direct quotes, locations
 - Use clear, accessible language (write for intelligent readers, not specialists)
 - Write 120-150 words (comprehensive but scannable)
-- Lead with the most important information
+- Lead with the most important NEW information not in the headline
 - Present multiple perspectives fairly
 
 Articles to summarize:
 
 {combined_articles}
 
-Write the summary now (start directly with the news, no preamble):"""
+Write the summary now (start directly with new details, don't repeat the headline):"""
             
             # Enhanced system prompt emphasizing quality and trustworthiness
             system_prompt = """You are a senior news editor known for creating trustworthy, comprehensive summaries. Your summaries help readers understand complex events quickly while maintaining journalistic standards.
@@ -1355,6 +1329,7 @@ Core principles:
 
 CRITICAL FORMAT RULES:
 - Start IMMEDIATELY with the news content. NO introductions like "Here's a summary:" or "COMPREHENSIVE NEWS SUMMARY:"
+- Do NOT repeat or paraphrase the headline in your opening sentence - readers already see the headline, so add NEW information
 - End with the last fact. NO meta-commentary like "This summary provides..." or "The above maintains neutral tone..."
 - Write ONLY the summary itself - nothing else before or after
 
@@ -1689,120 +1664,96 @@ Write the summary now (start directly with the news, no preamble or header):"""
 
 
 # ============================================================================
-# BREAKING NEWS MONITOR
+# BREAKING NEWS PUSH NOTIFICATION MONITOR
 # ============================================================================
 
 @app.function_name(name="BreakingNewsMonitor")
 @app.schedule(schedule="0 */2 * * * *", arg_name="timer", run_on_startup=False)
 async def breaking_news_monitor_timer(timer: func.TimerRequest) -> None:
     """
-    Breaking News Monitor & Status Transition Manager - Runs every 2 minutes
+    Breaking News Push Notification Monitor - Runs every 2 minutes
     
-    Responsibilities:
-    1. Auto-transition BREAKING → VERIFIED after 30 minutes (time-based)
-    2. Send push notifications for new breaking news
-    3. Monitor and log status distribution
+    Sends push notifications for VERIFIED stories (3+ sources) that:
+    1. Were created or became VERIFIED in the last 30 minutes
+    2. Haven't already received a push notification
+    
+    Note: Status system is now simplified to NEW/DEVELOPING/VERIFIED
+    Push notifications are an EVENT, not a status.
     """
-    logger.info("Breaking news monitor & status transition manager triggered")
+    logger.info("Breaking news push notification monitor triggered")
     
     try:
         cosmos_client.connect()
         now = datetime.now(timezone.utc)
+        thirty_minutes_ago = now - timedelta(minutes=30)
         
-        # 1. HANDLE STATUS TRANSITIONS (BREAKING → VERIFIED after 30 min)
-        breaking_stories = await cosmos_client.query_stories_by_status("BREAKING", limit=100)
+        # Find VERIFIED stories (3+ sources) created in last 30 min that need notifications
+        verified_stories = await cosmos_client.query_stories_by_status("VERIFIED", limit=100)
         
-        transitions_made = 0
         notifications_sent = 0
+        eligible_count = 0
         
-        for story in breaking_stories:
+        for story in verified_stories:
+            # Check if story is recent enough for breaking news notification
             first_seen = datetime.fromisoformat(story['first_seen'].replace('Z', '+00:00'))
-            time_since_first = now - first_seen
             
-            # UPDATED LOGIC: Transition based on last_updated, not first_seen
-            # This allows actively developing stories to stay BREAKING even if created hours ago
-            last_updated_str = story.get('last_updated', story['first_seen'])
-            last_updated = datetime.fromisoformat(last_updated_str.replace('Z', '+00:00'))
-            time_since_update = now - last_updated
+            # Only notify for stories created in the last 30 minutes
+            if first_seen < thirty_minutes_ago:
+                continue
+                
+            eligible_count += 1
             
-            # Check if story should transition from BREAKING to VERIFIED
-            # Transition if NO NEW UPDATES for 90 minutes (story has stopped developing)
-            # Extended to 90 minutes for major breaking news that develops over hours
-            if time_since_update >= timedelta(minutes=90):
-                # Story hasn't been updated in 30 min, transition to VERIFIED
+            # Skip if already notified
+            if story.get('push_notification_sent', False):
+                continue
+            
+            source_count = len(story.get('source_articles', []))
+            logger.info(f"📢 Sending push notification for VERIFIED story: {story['id']} - {story.get('title', '')[:60]}... ({source_count} sources)")
+            
+            # Get all FCM tokens from user_preferences
+            try:
+                user_container = cosmos_client.client.get_database_client(config.COSMOS_DATABASE_NAME).get_container_client("user_preferences")
+                
+                # Query for all users with notifications enabled
+                query = """
+                SELECT c.fcm_token 
+                FROM c 
+                WHERE c.notifications_enabled = true 
+                AND c.fcm_token != null
+                AND (NOT IS_DEFINED(c.notification_preferences.breaking_news) OR c.notification_preferences.breaking_news = true)
+                """
+                
+                fcm_tokens = []
+                for item in user_container.query_items(query=query, enable_cross_partition_query=True):
+                    if item.get('fcm_token'):
+                        fcm_tokens.append(item['fcm_token'])
+                
+                if fcm_tokens:
+                    # Send push notifications
+                    result = await fcm_service.send_breaking_news_notification(fcm_tokens, story)
+                    logger.info(
+                        f"📲 Push notification results: {result['success']} success, "
+                        f"{result['failure']} failure, {result['total_tokens']} total users"
+                    )
+                else:
+                    logger.info("⚠️  No FCM tokens found, skipping push notifications")
+                
+                # Mark as notified regardless of whether we sent (to avoid retries)
                 await cosmos_client.update_story_cluster(
                     story['id'],
                     story['category'],
                     {
-                        'status': StoryStatus.VERIFIED.value,
-                        'last_updated': now.isoformat()
+                        'push_notification_sent': True,
+                        'push_notification_sent_at': now.isoformat(),
+                        'push_notification_recipients': len(fcm_tokens) if fcm_tokens else 0
                     }
                 )
-                transitions_made += 1
-                age_minutes = int(time_since_first.total_seconds() / 60)
-                idle_minutes = int(time_since_update.total_seconds() / 60)
-                logger.info(
-                    f"🔄 Status transition: {story['id']} - BREAKING → VERIFIED "
-                    f"(age: {age_minutes}min, idle: {idle_minutes}min, sources: {len(story.get('source_articles', []))}) "
-                    f"- No updates for 90 minutes"
-                )
-            
-            # 2. HANDLE PUSH NOTIFICATIONS for stories still BREAKING
-            elif not story.get('push_notification_sent', False):
-                # Story is still fresh (<30min) and needs notification
-                logger.info(f"📢 Sending push notification for: {story['id']} - {story.get('title', '')[:60]}...")
+                notifications_sent += 1
                 
-                # Get all FCM tokens from user_preferences
-                try:
-                    user_container = cosmos_client.client.get_database_client(config.COSMOS_DATABASE_NAME).get_container_client("user_preferences")
-                    
-                    # Query for all users with notifications enabled
-                    query = """
-                    SELECT c.fcm_token 
-                    FROM c 
-                    WHERE c.notifications_enabled = true 
-                    AND c.fcm_token != null
-                    AND (NOT IS_DEFINED(c.notification_preferences.breaking_news) OR c.notification_preferences.breaking_news = true)
-                    """
-                    
-                    fcm_tokens = []
-                    for item in user_container.query_items(query=query, enable_cross_partition_query=True):
-                        if item.get('fcm_token'):
-                            fcm_tokens.append(item['fcm_token'])
-                    
-                    if fcm_tokens:
-                        # Send push notifications
-                        result = await fcm_service.send_breaking_news_notification(fcm_tokens, story)
-                        logger.info(
-                            f"📲 Push notification results: {result['success']} success, "
-                            f"{result['failure']} failure, {result['total_tokens']} total users"
-                        )
-                    else:
-                        logger.info("⚠️  No FCM tokens found, skipping push notifications")
-                    
-                    # Mark as notified regardless of whether we sent (to avoid retries)
-                    await cosmos_client.update_story_cluster(
-                        story['id'],
-                        story['category'],
-                        {
-                            'push_notification_sent': True,
-                            'push_notification_sent_at': now.isoformat(),
-                            'push_notification_recipients': len(fcm_tokens) if fcm_tokens else 0
-                        }
-                    )
-                    notifications_sent += 1
-                    
-                except Exception as e:
-                    logger.error(f"❌ Failed to send push notifications for story {story['id']}: {e}", exc_info=True)
+            except Exception as e:
+                logger.error(f"❌ Failed to send push notifications for story {story['id']}: {e}", exc_info=True)
         
-        # 3. LOG SUMMARY
-        if transitions_made > 0 or notifications_sent > 0:
-            logger.info(
-                f"✅ Status monitor complete: {transitions_made} BREAKING→VERIFIED transitions, "
-                f"{notifications_sent} notifications sent, {len(breaking_stories)} total BREAKING stories"
-            )
-        else:
-            logger.info(f"✅ Status monitor complete: {len(breaking_stories)} BREAKING stories, no actions needed")
+        logger.info(f"✅ Breaking news monitor complete: {notifications_sent} notifications sent, {eligible_count} eligible stories (VERIFIED, <30min old)")
         
     except Exception as e:
         logger.error(f"Breaking news monitoring failed: {e}", exc_info=True)

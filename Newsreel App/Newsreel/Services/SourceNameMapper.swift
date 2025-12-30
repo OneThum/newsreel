@@ -15,6 +15,9 @@ enum SourceNameMapper {
     private static let sourceDisplayNames: [String: String] = [
         // Major News Agencies
         "bbc": "BBC",
+        "bbc news": "BBC News",
+        "bbc-news": "BBC News",
+        "bbc_news": "BBC News",
         "bbc_world": "BBC World",
         "bbc_uk": "BBC UK",
         "bbc_tech": "BBC Technology",

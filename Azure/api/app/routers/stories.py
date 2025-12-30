@@ -253,38 +253,27 @@ async def get_personalized_feed(
         if story.get('summary'):
             logger.info(f"   Summary text: {story.get('summary', {}).get('text', '')[:100]}...")
     
-    # ✅ SMART FILTERING: Include MONITORING stories if they have summaries (fresh content!)
-    # Keep: DEVELOPING (2+ sources), VERIFIED (3+ sources), BREAKING, or MONITORING with summary
-    from datetime import datetime, timezone, timedelta
-    
-    one_day_ago = datetime.now(timezone.utc) - timedelta(hours=24)
+    # ✅ SIMPLIFIED FILTERING: Show ALL stories with summaries (regardless of status)
+    # Status is now just for user information (verification level), not for filtering
+    # - NEW (1 source): Fresh report, single source
+    # - DEVELOPING (2 sources): Story gaining traction  
+    # - VERIFIED (3+ sources): Confirmed by multiple outlets
     
     processed_stories = []
     for story in stories:
-        status = story.get('status', 'MONITORING')
         has_summary = bool(story.get('summary', {}).get('text'))
         
-        # Always include DEVELOPING, VERIFIED, BREAKING
-        if status in ('DEVELOPING', 'VERIFIED', 'BREAKING'):
+        # Include any story that has a summary - let users see all news
+        if has_summary:
             processed_stories.append(story)
-        # Include MONITORING stories if they're fresh (last 24h) and have a summary
-        elif status == 'MONITORING' and has_summary:
-            try:
-                last_updated_str = story.get('last_updated', '')
-                if last_updated_str:
-                    last_updated = datetime.fromisoformat(last_updated_str.replace('Z', '+00:00'))
-                    if last_updated >= one_day_ago:
-                        processed_stories.append(story)
-            except (ValueError, TypeError):
-                pass
     
-    logger.info(f"🔍 [FEED] Filtered: {len(stories)} → {len(processed_stories)} stories (kept summarized stories)")
+    logger.info(f"🔍 [FEED] Filtered: {len(stories)} → {len(processed_stories)} stories (all with summaries)")
+    
     if len(processed_stories) == 0:
-        logger.warning("⚠️  [FEED] No processed stories available after filtering!")
-        logger.warning("⚠️  [FEED] Pipeline Issue: Summaries may still be generating")
-        # Show all stories including MONITORING if nothing else available (better UX)
+        logger.warning("⚠️  [FEED] No stories with summaries available!")
+        # Fallback: show recent stories even without summaries
         processed_stories = sorted(stories, key=lambda s: s.get('last_updated', ''), reverse=True)[:20]
-        logger.info(f"⚠️  [FEED] Fallback: showing {len(processed_stories)} recent stories without filtering")
+        logger.info(f"⚠️  [FEED] Fallback: showing {len(processed_stories)} recent stories")
     
     # Personalize feed
     personalized_stories = await recommendation_service.personalize_feed(
