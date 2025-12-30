@@ -48,7 +48,71 @@ class CosmosService:
         except Exception as e:
             logger.error(f"Error getting story {story_id}: {e}")
             raise
+
+    async def get_latest_cluster_update(self) -> Optional[datetime]:
+        """Get the timestamp of the most recently updated story cluster
+
+        Used for ETag generation to enable caching.
+        """
+        try:
+            container = self._get_container("story_clusters")
+            # Query for the most recently updated cluster
+            query = """
+            SELECT TOP 1 c.last_updated
+            FROM c
+            WHERE c.status != 'MONITORING'
+            ORDER BY c.last_updated DESC
+            """
+
+            items = list(container.query_items(
+                query=query,
+                enable_cross_partition_query=True
+            ))
+
+            if items:
+                last_updated_str = items[0]['last_updated']
+                # Parse the ISO string back to datetime
+                if isinstance(last_updated_str, str):
+                    # Handle different datetime formats
+                    try:
+                        return datetime.fromisoformat(last_updated_str.replace('Z', '+00:00'))
+                    except ValueError:
+                        # Fallback for other formats
+                        return datetime.strptime(last_updated_str, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=timezone.utc)
+
+            return None
+        except Exception as e:
+            logger.error(f"Error getting latest cluster update: {e}")
+            return None
     
+    async def get_latest_cluster_update(self) -> Optional[datetime]:
+        """Get the timestamp of the most recently updated story cluster for ETag generation"""
+        try:
+            container = self._get_container("story_clusters")
+
+            # Query for the most recently updated story
+            query = """
+                SELECT TOP 1 c.last_updated FROM c
+                WHERE c.last_updated != null
+                ORDER BY c.last_updated DESC
+            """
+            items = list(container.query_items(
+                query=query,
+                enable_cross_partition_query=True
+            ))
+
+            if items and items[0].get('last_updated'):
+                # Parse the ISO datetime string
+                last_updated_str = items[0]['last_updated']
+                return datetime.fromisoformat(last_updated_str.replace('Z', '+00:00'))
+            else:
+                # Fallback: return current time if no stories found
+                return datetime.now(timezone.utc)
+
+        except Exception as e:
+            logger.error(f"Failed to get latest cluster update: {e}")
+            return None
+
     async def query_recent_stories(
         self,
         category: Optional[str] = None,
@@ -141,14 +205,17 @@ class CosmosService:
             raise
     
     async def query_breaking_news(self, limit: int = 10) -> List[Dict[str, Any]]:
-        """Query recent stories (BREAKING, DEVELOPING, and VERIFIED)"""
+        """Query recent stories - include all recent stories, prioritizing BREAKING/DEVELOPING/VERIFIED"""
         try:
             container = self._get_container("story_clusters")
-            # Remove ORDER BY to ensure all fields are returned by Cosmos DB
-            # We'll sort in Python instead
-            query = """
+            
+            # Query ALL stories from the last 24 hours to ensure fresh content shows up
+            # This includes MONITORING stories so users see fresh news even if single-source
+            one_day_ago = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+            
+            query = f"""
                 SELECT * FROM c
-                WHERE c.status IN ('BREAKING', 'DEVELOPING', 'VERIFIED')
+                WHERE c.last_updated >= '{one_day_ago}'
             """
             items = list(container.query_items(
                 query=query,
@@ -156,7 +223,28 @@ class CosmosService:
             ))
             
             # 🔍 DIAGNOSTIC: Log query results
-            logger.info(f"📊 [COSMOS] query_breaking_news returned {len(items)} items")
+            logger.info(f"📊 [COSMOS] query_breaking_news (24h) returned {len(items)} items")
+            
+            # If no recent stories, fallback to VERIFIED/DEVELOPING/BREAKING from any time
+            if len(items) < limit:
+                logger.info(f"📊 [COSMOS] Insufficient recent stories ({len(items)}), adding verified stories")
+                fallback_query = """
+                    SELECT * FROM c
+                    WHERE c.status IN ('BREAKING', 'DEVELOPING', 'VERIFIED')
+                """
+                fallback_items = list(container.query_items(
+                    query=fallback_query,
+                    enable_cross_partition_query=True
+                ))
+                
+                # Add fallback items that aren't already in items
+                existing_ids = {item['id'] for item in items}
+                for fallback in fallback_items:
+                    if fallback['id'] not in existing_ids:
+                        items.append(fallback)
+                
+                logger.info(f"📊 [COSMOS] After fallback: {len(items)} total items")
+            
             if items:
                 first_item = items[0]
                 logger.info(f"   [COSMOS] First item ID: {first_item.get('id')}")
@@ -165,7 +253,7 @@ class CosmosService:
                 if 'source_articles' in first_item:
                     logger.info(f"   [COSMOS] First item source_articles length: {len(first_item['source_articles'])}")
             
-            # Sort by last_updated in Python
+            # Sort by last_updated in Python (newest first)
             items_sorted = sorted(items, key=lambda x: x.get('last_updated', ''), reverse=True)
             
             # Apply limit
@@ -173,7 +261,42 @@ class CosmosService:
         except Exception as e:
             logger.error(f"Error querying recent stories: {e}")
             raise
-    
+
+    async def get_latest_cluster_update(self) -> Optional[datetime]:
+        """Get the timestamp of the most recently updated story cluster for ETag generation"""
+        try:
+            container = self._get_container("story_clusters")
+
+            # Query for the most recently updated story
+            query = """
+                SELECT TOP 1 c.last_updated FROM c
+                WHERE c.status != 'MONITORING'
+                ORDER BY c.last_updated DESC
+            """
+            items = list(container.query_items(
+                query=query,
+                enable_cross_partition_query=True
+            ))
+
+            if items:
+                last_updated_str = items[0].get('last_updated')
+                if last_updated_str:
+                    # Parse the timestamp (Cosmos DB returns as string)
+                    if isinstance(last_updated_str, str):
+                        # Handle both ISO format and other formats
+                        try:
+                            return datetime.fromisoformat(last_updated_str.replace('Z', '+00:00'))
+                        except ValueError:
+                            # Fallback parsing
+                            return datetime.strptime(last_updated_str, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=timezone.utc)
+
+            # If no stories found, return None
+            return None
+
+        except Exception as e:
+            logger.error(f"Error getting latest cluster update: {e}")
+            return None
+
     async def get_story_sources(self, source_ids: List[str]) -> List[Dict[str, Any]]:
         """Get source articles for a story - DEDUPLICATED by source name
         

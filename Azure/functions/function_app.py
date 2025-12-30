@@ -219,18 +219,27 @@ async def generate_updated_headline(story: Dict[str, Any], source_articles: List
         new_source_description = new_article.description or ''
         
         # Gather all source headlines for context
+        # source_articles can be dicts (new format) or string IDs (old format)
         all_source_headlines = []
-        for art_id in source_articles[:10]:  # Limit to 10 most recent
-            parts = art_id.split('_')
-            if len(parts) >= 2:
-                date_str = parts[1]
-                partition_key = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
-                article = await cosmos_client.get_raw_article(art_id, partition_key)
-                if article:
-                    source_name = article.get('source', 'Unknown')
-                    title = article.get('title', '')
-                    if title:
-                        all_source_headlines.append(f"- {source_name}: {title}")
+        for art_data in source_articles[:10]:  # Limit to 10 most recent
+            if isinstance(art_data, dict):
+                # New format: article data is already embedded
+                source_name = art_data.get('source', 'Unknown')
+                title = art_data.get('title', '')
+                if title:
+                    all_source_headlines.append(f"- {source_name}: {title}")
+            elif isinstance(art_data, str):
+                # Old format: article_id string, need to fetch from Cosmos
+                parts = art_data.split('_')
+                if len(parts) >= 2:
+                    date_str = parts[1]
+                    partition_key = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
+                    article = await cosmos_client.get_raw_article(art_data, partition_key)
+                    if article:
+                        source_name = article.get('source', 'Unknown')
+                        title = article.get('title', '')
+                        if title:
+                            all_source_headlines.append(f"- {source_name}: {title}")
         
         combined_headlines = "\n".join(all_source_headlines)
         source_count = len(source_articles)
@@ -1189,15 +1198,21 @@ async def summarization_changefeed(documents: func.DocumentList) -> None:
             )
             
             # Fetch source articles
+            # source_articles can be dicts (new format) or string IDs (old format)
             articles = []
-            for article_id in source_articles[:6]:  # Limit to 6 sources
-                parts = article_id.split('_')
-                if len(parts) >= 2:
-                    date_str = parts[1]
-                    partition_key = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
-                    article = await cosmos_client.get_raw_article(article_id, partition_key)
-                    if article:
-                        articles.append(article)
+            for art_data in source_articles[:6]:  # Limit to 6 sources
+                if isinstance(art_data, dict):
+                    # New format: article data is already embedded
+                    articles.append(art_data)
+                elif isinstance(art_data, str):
+                    # Old format: article_id string, need to fetch from Cosmos
+                    parts = art_data.split('_')
+                    if len(parts) >= 2:
+                        date_str = parts[1]
+                        partition_key = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
+                        article = await cosmos_client.get_raw_article(art_data, partition_key)
+                        if article:
+                            articles.append(article)
             
             if not articles:
                 continue
@@ -1473,15 +1488,21 @@ async def summarization_backfill_timer(timer: func.TimerRequest) -> None:
                 source_articles = story_data.get('source_articles', [])
                 
                 # Fetch source articles (limit to 6 for efficiency)
+                # source_articles can be dicts (new format) or string IDs (old format)
                 articles = []
-                for article_id in source_articles[:6]:
-                    parts = article_id.split('_')
-                    if len(parts) >= 2:
-                        date_str = parts[1]
-                        partition_key = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
-                        article = await cosmos_client.get_raw_article(article_id, partition_key)
-                        if article:
-                            articles.append(article)
+                for art_data in source_articles[:6]:
+                    if isinstance(art_data, dict):
+                        # New format: article data is already embedded
+                        articles.append(art_data)
+                    elif isinstance(art_data, str):
+                        # Old format: article_id string, need to fetch from Cosmos
+                        parts = art_data.split('_')
+                        if len(parts) >= 2:
+                            date_str = parts[1]
+                            partition_key = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
+                            article = await cosmos_client.get_raw_article(art_data, partition_key)
+                            if article:
+                                articles.append(article)
                 
                 if not articles:
                     logger.warning(f"Could not fetch articles for story {story_id}")
@@ -2022,21 +2043,29 @@ async def submit_new_batch(anthropic_client) -> None:
 
 
 async def fetch_story_articles(story_id: str, story_data: Dict[str, Any]) -> List[Dict[str, Any]]:
-    """Fetch source articles for a story (helper function)"""
+    """Fetch source articles for a story (helper function)
+    
+    source_articles can be dicts (new format) or string IDs (old format)
+    """
     articles = []
     source_articles = story_data.get('source_articles', [])
     
-    for article_id in source_articles[:6]:  # Limit to 6 articles
+    for art_data in source_articles[:6]:  # Limit to 6 articles
         try:
-            parts = article_id.split('_')
-            if len(parts) >= 2:
-                date_str = parts[1]
-                partition_key = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
-                article = await cosmos_client.get_raw_article(article_id, partition_key)
-                if article:
-                    articles.append(article)
+            if isinstance(art_data, dict):
+                # New format: article data is already embedded
+                articles.append(art_data)
+            elif isinstance(art_data, str):
+                # Old format: article_id string, need to fetch from Cosmos
+                parts = art_data.split('_')
+                if len(parts) >= 2:
+                    date_str = parts[1]
+                    partition_key = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
+                    article = await cosmos_client.get_raw_article(art_data, partition_key)
+                    if article:
+                        articles.append(article)
         except Exception as e:
-            logger.warning(f"Could not fetch article {article_id}: {e}")
+            logger.warning(f"Could not fetch article {art_data}: {e}")
     
     return articles
 
