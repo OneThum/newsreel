@@ -1,5 +1,6 @@
 """API Configuration"""
 import os
+from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
 
@@ -36,9 +37,8 @@ class Settings(BaseSettings):
     
     # Logging
     log_level: str = os.getenv("LOG_LEVEL", "INFO")
-    
-    class Config:
-        case_sensitive = False
+
+    model_config = ConfigDict(case_sensitive=False)
 
 
 settings = Settings()

@@ -25,7 +25,13 @@ from shared.utils import (
     generate_article_id, generate_story_fingerprint,
     generate_event_fingerprint, extract_simple_entities,
     categorize_article, clean_html, truncate_text,
-    calculate_text_similarity, is_spam_or_promotional
+    is_spam_or_promotional
+)
+# New semantic clustering (2025 best practices - replaces keyword matching)
+from shared.semantic_clustering import (
+    generate_article_embedding, find_matching_story,
+    cosine_similarity, compute_story_embedding, generate_legacy_fingerprint,
+    CLUSTER_MATCH_THRESHOLD, is_semantic_clustering_enabled
 )
 
 # Try to import Anthropic
@@ -142,48 +148,6 @@ class FCMNotificationService:
 
 # Initialize FCM service
 fcm_service = FCMNotificationService()
-
-
-# ============================================================================
-# CLUSTERING HELPER FUNCTIONS
-# ============================================================================
-
-def has_topic_conflict(title1: str, title2: str) -> bool:
-    """
-    Detect if two titles are about fundamentally different topics
-    
-    Prevents false clustering of unrelated stories that happen to share
-    location words (e.g., "Sydney dentist" vs "Sydney stabbing")
-    """
-    # Define mutually exclusive topic keywords
-    topic_groups = {
-        'crime_violence': {'stabbed', 'stabbing', 'murder', 'killed', 'shooting', 'attack', 'assault', 'robbery', 'theft', 'arrested'},
-        'medical_health': {'dentist', 'doctor', 'hospital', 'patient', 'disease', 'virus', 'hiv', 'covid', 'surgery', 'medical', 'health'},
-        'politics': {'election', 'vote', 'parliament', 'government', 'president', 'prime minister', 'senator', 'legislation', 'policy'},
-        'sports': {'game', 'match', 'team', 'player', 'scored', 'championship', 'league', 'tournament', 'olympic'},
-        'business': {'stock', 'market', 'earnings', 'profit', 'ceo', 'company', 'merger', 'acquisition', 'investor'},
-        'weather': {'storm', 'hurricane', 'flood', 'earthquake', 'tornado', 'weather', 'forecast', 'climate'},
-        'entertainment': {'movie', 'film', 'actor', 'actress', 'concert', 'album', 'celebrity', 'award', 'premiere'},
-    }
-    
-    t1_lower = title1.lower()
-    t2_lower = title2.lower()
-    
-    # Find which topic groups each title belongs to
-    t1_topics = set()
-    t2_topics = set()
-    
-    for topic_name, keywords in topic_groups.items():
-        if any(keyword in t1_lower for keyword in keywords):
-            t1_topics.add(topic_name)
-        if any(keyword in t2_lower for keyword in keywords):
-            t2_topics.add(topic_name)
-    
-    # If both titles have topics and they don't overlap, it's a conflict
-    if t1_topics and t2_topics and not t1_topics.intersection(t2_topics):
-        return True
-    
-    return False
 
 
 # ============================================================================
@@ -487,7 +451,13 @@ def process_feed_entry(entry, feed_result: Dict[str, Any]) -> Optional[RawArticl
             category = feed_config.category
         
         article_id = generate_article_id(feed_config.source_id, article_url, published_at)
-        story_fingerprint = generate_story_fingerprint(title, entities)
+        
+        # Generate semantic embedding for clustering (2025 best practices)
+        # This replaces the old fingerprint-based approach with true semantic understanding
+        embedding = generate_article_embedding(title, description)
+        
+        # Legacy fingerprint for backward compatibility (will be phased out)
+        story_fingerprint = generate_legacy_fingerprint(title)
         
         # Note: fetched_at is immutable (when we first saw it)
         # updated_at will be updated on each upsert
@@ -512,6 +482,7 @@ def process_feed_entry(entry, feed_result: Dict[str, Any]) -> Optional[RawArticl
             tags=[],
             language='en',
             story_fingerprint=story_fingerprint,
+            embedding=embedding,  # Semantic embedding for clustering
             processed=False,
             processing_attempts=0
         )
@@ -788,108 +759,51 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
             if article.processed:
                 continue
             
-            # Find or create story cluster
-            # Try fingerprint matching first (fast)
-            stories = await cosmos_client.query_stories_by_fingerprint(article.story_fingerprint)
+            # =================================================================
+            # SEMANTIC CLUSTERING (2025 Best Practices)
+            # Uses OpenAI embeddings for true semantic understanding
+            # Replaces old keyword-based fingerprint matching
+            # =================================================================
             
-            matched_story = bool(stories)
+            stories = []
+            matched_story = False
+            best_similarity = 0.0
             
-            # If no match by fingerprint, try IMPROVED fuzzy title matching (fallback)
-            if not stories:
-                # Query recent stories in same category for better relevance
-                recent_stories = await cosmos_client.query_recent_stories(category=article.category, limit=500)
+            # Check if article has embedding (new articles should)
+            article_embedding = article.embedding
+            
+            if not article_embedding:
+                # Generate embedding if missing (handles articles created before semantic clustering)
+                logger.info(f"⚠️ Article missing embedding, generating now: {article.id}")
+                article_embedding = generate_article_embedding(article.title, article.description)
+                if article_embedding:
+                    # Update article with embedding for future use
+                    await cosmos_client.update_article_embedding(article.id, article.published_date, article_embedding)
+            
+            if article_embedding:
+                # Query recent stories in same category
+                recent_stories = await cosmos_client.query_recent_stories(category=article.category, limit=200)
                 
-                best_match = None
-                best_similarity = 0.0
-                similarity_scores = []
-                topic_conflicts = []
-                threshold_matches = []
+                logger.info(f"🧠 SEMANTIC CLUSTERING: '{article.title[:60]}...' vs {len(recent_stories)} stories")
                 
-                logger.info(f"🔍 Fuzzy matching for article '{article.title[:80]}...' against {len(recent_stories)} recent stories in category '{article.category}'")
+                # Use semantic similarity to find matching story
+                matching_story, best_similarity = find_matching_story(
+                    article_embedding=article_embedding,
+                    article_title=article.title,
+                    candidate_stories=recent_stories,
+                    threshold=CLUSTER_MATCH_THRESHOLD
+                )
                 
-                for existing_story in recent_stories:
-                    title_similarity = calculate_text_similarity(article.title, existing_story.get('title', ''))
-                    similarity_scores.append(title_similarity)
-                    
-                    # Track best match for logging
-                    if title_similarity > best_similarity:
-                        best_similarity = title_similarity
-                        best_match = existing_story
-                    
-                    # Log all similarity scores above 50% for analysis
-                    if title_similarity > 0.50:
-                        logger.info(f"📊 Similarity {title_similarity:.3f}: '{article.title[:60]}...' vs '{existing_story.get('title', '')[:60]}...'")
-                    
-                    # CRITICAL FIX: Use config threshold (75%) for better clustering
-                    # 75% ensures stories actually share core topic/event while allowing some variation
-                    if title_similarity > config.STORY_FINGERPRINT_SIMILARITY_THRESHOLD:
-                        threshold_matches.append({
-                            'similarity': title_similarity,
-                            'story_id': existing_story.get('id', 'unknown'),
-                            'story_title': existing_story.get('title', '')[:80]
-                        })
-                        
-                        # Additional validation: Check for topic conflicts
-                        if not has_topic_conflict(article.title, existing_story.get('title', '')):
-                            stories = [existing_story]
-                            matched_story = True
-                            logger.info(f"✅ CLUSTERING MATCH: {title_similarity:.3f} - '{article.title[:60]}...' → '{existing_story.get('title', '')[:60]}...' (threshold: {config.STORY_FINGERPRINT_SIMILARITY_THRESHOLD})")
-                            break
-                        else:
-                            topic_conflicts.append({
-                                'similarity': title_similarity,
-                                'story_id': existing_story.get('id', 'unknown'),
-                                'story_title': existing_story.get('title', '')[:80]
-                            })
-                            logger.info(f"❌ Topic conflict prevented match: {title_similarity:.3f} - '{article.title[:60]}...' vs '{existing_story.get('title', '')[:60]}...'")
-                
-                # Log comprehensive clustering analysis
-                if similarity_scores:
-                    avg_similarity = sum(similarity_scores) / len(similarity_scores)
-                    max_similarity = max(similarity_scores)
-                    logger.info(f"📈 Clustering analysis for '{article.title[:60]}...': avg={avg_similarity:.3f}, max={max_similarity:.3f}, threshold={config.STORY_FINGERPRINT_SIMILARITY_THRESHOLD}")
-                    logger.info(f"📊 Similarity distribution: {len([s for s in similarity_scores if s > 0.8])} above 80%, {len([s for s in similarity_scores if s > 0.7])} above 70%, {len([s for s in similarity_scores if s > 0.6])} above 60%")
-                
-                if threshold_matches:
-                    logger.info(f"🎯 Threshold matches ({len(threshold_matches)}): {[m['similarity'] for m in threshold_matches]}")
-                
-                if topic_conflicts:
-                    logger.info(f"⚠️ Topic conflicts ({len(topic_conflicts)}): {[c['similarity'] for c in topic_conflicts]}")
-                
-                # If still no match, try entity-based matching (MORE STRICT)
-                # Use higher threshold to prevent false clustering
-                if not stories and best_match and best_similarity > 0.70:
-                    # Extract key entities from both titles
-                    article_entities = set(word.lower() for word in article.title.split() 
-                                          if len(word) > 4 and word[0].isupper())
-                    story_entities = set(word.lower() for word in best_match.get('title', '').split() 
-                                        if len(word) > 4 and word[0].isupper())
-                    
-                    # Require 3+ entities match (not just location) AND no topic conflict
-                    entity_overlap = len(article_entities.intersection(story_entities))
-                    if entity_overlap >= 3 and not has_topic_conflict(article.title, best_match.get('title', '')):
-                        stories = [best_match]
-                        matched_story = True
-                        logger.info(f"✓ Entity match ({entity_overlap} shared): '{article.title[:60]}...' → '{best_match.get('title', '')[:60]}...'")
-                
-                # Log near-misses for future tuning and threshold analysis
-                if not stories:
-                    if best_match and best_similarity > 0.60:
-                        logger.info(f"📊 THRESHOLD ANALYSIS - Near miss: {best_similarity:.3f} (threshold: {config.STORY_FINGERPRINT_SIMILARITY_THRESHOLD})")
-                        logger.info(f"   Article: '{article.title[:60]}...'")
-                        logger.info(f"   Best match: '{best_match.get('title', '')[:60]}...'")
-                        logger.info(f"   Gap to threshold: {config.STORY_FINGERPRINT_SIMILARITY_THRESHOLD - best_similarity:.3f}")
-                    else:
-                        logger.info(f"📊 THRESHOLD ANALYSIS - No close matches: best={best_similarity:.3f}")
-                        logger.info(f"   Article: '{article.title[:60]}...'")
-                        logger.info(f"   All similarities below 60%")
-                    
-                    # Log clustering decision for analysis
-                    logger.info(f"🎯 CLUSTERING DECISION: Creating new story (no match found)")
-                    logger.info(f"   Article: [{article.source}] {article.title[:80]}...")
-                    logger.info(f"   Best similarity: {best_similarity:.3f}")
-                    logger.info(f"   Threshold used: {config.STORY_FINGERPRINT_SIMILARITY_THRESHOLD}")
-                    logger.info(f"   Stories compared: {len(recent_stories)}")
+                if matching_story:
+                    stories = [matching_story]
+                    matched_story = True
+                    logger.info(f"✅ SEMANTIC MATCH: {best_similarity:.3f} - '{article.title[:50]}...' → '{matching_story.get('title', '')[:50]}...'")
+                else:
+                    logger.info(f"🆕 NO SEMANTIC MATCH: Creating new story (best: {best_similarity:.3f})")
+            else:
+                # Fallback: No embedding available, query recent stories and create new story
+                logger.warning(f"⚠️ No embedding available for article {article.id}, creating new story")
+                recent_stories = await cosmos_client.query_recent_stories(category=article.category, limit=50)
             
             # Log article processing
             logger.log_article_processed(
@@ -945,8 +859,20 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                     continue  # Skip to next article - DON'T update last_updated!
                 
                 # Article not in cluster yet and source is unique - ADD IT
-                # Store article ID instead of full object for API to fetch
-                source_articles.append(article.id)
+                # Store embedded article dictionary (new format)
+                embedded_article = {
+                    'id': article.id,
+                    'source': article.source,
+                    'title': article.title,
+                    'url': article.article_url,
+                    'published_at': article.published_at.isoformat() if isinstance(article.published_at, datetime) else str(article.published_at),
+                    'content': article.description or '',
+                    'embedding': article_embedding  # Store embedding for clustering
+                }
+                source_articles.append(embedded_article)
+                
+                # Recompute story embedding (centroid of all article embeddings)
+                story_embedding = compute_story_embedding(source_articles)
                 
                 # 🔍 ENHANCED SOURCE TRACKING LOGGING
                 # Calculate source diversity BEFORE updating
@@ -1054,7 +980,8 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                     'verification_level': verification_level,
                     'status': status,
                     'last_updated': datetime.now(timezone.utc).isoformat(),
-                    'update_count': story.get('update_count', 0) + 1
+                    'update_count': story.get('update_count', 0) + 1,
+                    'embedding': story_embedding  # Updated story centroid embedding
                 }
                 
                 # RE-EVALUATE HEADLINE on EVERY source addition
@@ -1095,6 +1022,18 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                 # Create new story
                 story_id = f"story_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{article.story_fingerprint}"
                 
+                # Create embedded article dictionary (new format)
+                # Include embedding for future clustering comparisons
+                embedded_article = {
+                    'id': article.id,
+                    'source': article.source,
+                    'title': article.title,
+                    'url': article.article_url,
+                    'published_at': article.published_at.isoformat() if isinstance(article.published_at, datetime) else str(article.published_at),
+                    'content': article.description or '',
+                    'embedding': article_embedding  # Store embedding for clustering
+                }
+                
                 story = StoryCluster(
                     id=story_id,
                     event_fingerprint=article.story_fingerprint,
@@ -1105,7 +1044,8 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                     verification_level=1,
                     first_seen=article.published_at,
                     last_updated=datetime.now(timezone.utc),
-                    source_articles=[article.id],
+                    source_articles=[embedded_article],
+                    embedding=article_embedding,  # Story embedding = first article's embedding
                     importance_score=50 + (20 if article.source_tier == 1 else 0),
                     confidence_score=40,
                     breaking_news=False

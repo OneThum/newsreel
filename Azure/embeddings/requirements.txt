@@ -1,0 +1,17 @@
+# Embedding Service Dependencies
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.5.0
+numpy>=1.24.0
+
+# Sentence Transformers and ML dependencies
+sentence-transformers>=2.3.0
+torch>=2.1.0
+transformers>=4.35.0
+tokenizers>=0.15.0
+
+# Optional: GPU support (uncomment if deploying to GPU-enabled ACI)
+# torch[cu118]>=2.1.0  # CUDA 11.8 support
+
+# Utilities
+python-multipart>=0.0.6

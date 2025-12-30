@@ -5,9 +5,12 @@ import os
 import sys
 import pytest
 import asyncio
+import logging
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 # Add parent directories to path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -101,6 +104,7 @@ def test_config():
         'cosmos_connection_string': os.getenv('COSMOS_CONNECTION_STRING'),
         'cosmos_database_name': os.getenv('COSMOS_DATABASE_NAME', 'newsreel-db'),
         'anthropic_api_key': os.getenv('ANTHROPIC_API_KEY'),
+        'ai_test_budget': float(os.getenv('AI_TEST_BUDGET', '5.0')),
         'api_url': os.getenv('API_URL'),
         'api_test_user_email': os.getenv('API_TEST_USER_EMAIL'),
         'api_test_user_password': os.getenv('API_TEST_USER_PASSWORD'),
@@ -108,6 +112,52 @@ def test_config():
         'test_timeout': int(os.getenv('TEST_TIMEOUT', '300')),
         'mock_external_apis': os.getenv('MOCK_EXTERNAL_APIS', 'true').lower() == 'true'
     }
+
+
+# ============================================================================
+# AI TESTING FIXTURES
+# ============================================================================
+
+@pytest.fixture(scope="session")
+def ai_test_budget(test_config):
+    """AI testing budget control - shared across all AI tests"""
+    try:
+        from tests.ai.test_ai_summary_quality import AITestBudget
+        budget = AITestBudget(max_daily_cost=test_config['ai_test_budget'])
+        logger.info(f"💰 AI Test Budget initialized: ${budget.max_daily_cost} per day")
+        return budget
+    except ImportError:
+        pytest.skip("AI testing not available - missing dependencies")
+
+
+@pytest.fixture
+def ai_summary_tester(ai_test_budget):
+    """AI-powered summary quality tester"""
+    try:
+        from tests.ai.test_ai_summary_quality import AISummaryQualityTester
+        return AISummaryQualityTester(ai_test_budget)
+    except ImportError:
+        pytest.skip("AI summary testing not available")
+
+
+@pytest.fixture
+def ingestion_timeliness_monitor(ai_test_budget):
+    """AI-powered ingestion timeliness monitor"""
+    try:
+        from tests.ai.test_ingestion_timeliness import IngestionTimelinessMonitor
+        return IngestionTimelinessMonitor(ai_test_budget)
+    except ImportError:
+        pytest.skip("AI timeliness monitoring not available")
+
+
+@pytest.fixture
+def ios_quality_tester(ai_test_budget):
+    """iOS client data quality tester"""
+    try:
+        from tests.ai.test_ios_client_data_quality import IOSClientDataQualityTester
+        return IOSClientDataQualityTester(ai_test_budget)
+    except ImportError:
+        pytest.skip("iOS quality testing not available")
 
 
 # ============================================================================

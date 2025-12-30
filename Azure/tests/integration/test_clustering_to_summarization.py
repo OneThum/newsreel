@@ -43,7 +43,7 @@ class TestClusteringToSummarizationFlow:
         )
         
         try:
-            await cosmos_client_for_tests.upsert_story(story.dict())
+            await cosmos_client_for_tests.upsert_story(story.model_dump())
             clean_test_data['register_story'](story.id)
         except Exception as e:
             pytest.skip(f"Could not store story: {e}")
@@ -82,7 +82,7 @@ class TestClusteringToSummarizationFlow:
         )
         
         try:
-            await cosmos_client_for_tests.upsert_story(story.dict())
+            await cosmos_client_for_tests.upsert_story(story.model_dump())
             clean_test_data['register_story'](story.id)
         except Exception as e:
             pytest.skip(f"Could not store story: {e}")
@@ -169,7 +169,7 @@ Provide a balanced, factual summary combining information from all sources."""
         
         # Act: Store story with summary
         try:
-            await cosmos_client_for_tests.upsert_story(story.dict())
+            await cosmos_client_for_tests.upsert_story(story.model_dump())
             clean_test_data['register_story'](story.id)
         except Exception as e:
             pytest.skip(f"Could not store story: {e}")
@@ -213,7 +213,7 @@ Provide a balanced, factual summary combining information from all sources."""
         )
         
         try:
-            await cosmos_client_for_tests.upsert_story(story.dict())
+            await cosmos_client_for_tests.upsert_story(story.model_dump())
             clean_test_data['register_story'](story.id)
         except Exception as e:
             pytest.skip(f"Could not store story: {e}")
@@ -275,7 +275,7 @@ class TestSummarizationWorkflow:
         )
         
         try:
-            await cosmos_client_for_tests.upsert_story(story.dict())
+            await cosmos_client_for_tests.upsert_story(story.model_dump())
             clean_test_data['register_story'](story.id)
         except Exception as e:
             pytest.skip(f"Could not store story: {e}")
@@ -344,7 +344,7 @@ class TestSummarizationWorkflow:
         )
         
         try:
-            await cosmos_client_for_tests.upsert_story(story.dict())
+            await cosmos_client_for_tests.upsert_story(story.model_dump())
             clean_test_data['register_story'](story.id)
         except Exception as e:
             pytest.skip(f"Could not store story: {e}")

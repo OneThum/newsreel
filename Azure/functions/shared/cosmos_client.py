@@ -127,6 +127,24 @@ class CosmosDBClient:
             logger.error(f"Failed to update article {article_id}: {e}")
             raise
     
+    async def update_article_embedding(self, article_id: str, partition_key: str, embedding: list):
+        """Update article with semantic embedding
+        
+        Args:
+            article_id: Article ID
+            partition_key: Partition key (published_date)
+            embedding: List of floats (1536 dimensions for text-embedding-3-small)
+        """
+        try:
+            container = self._get_container(config.CONTAINER_RAW_ARTICLES)
+            article = container.read_item(item=article_id, partition_key=partition_key)
+            article['embedding'] = embedding
+            container.replace_item(item=article_id, body=article)
+            logger.debug(f"Updated embedding for article: {article_id}")
+        except Exception as e:
+            logger.error(f"Failed to update embedding for {article_id}: {e}")
+            # Don't raise - embedding update is not critical for clustering to proceed
+    
     # Story Cluster Operations
     
     async def create_story_cluster(self, story: StoryCluster) -> Dict[str, Any]:
@@ -215,27 +233,39 @@ class CosmosDBClient:
     async def query_recent_stories(
         self, 
         category: Optional[str] = None,
-        limit: int = 20
+        limit: int = 20,
+        include_monitoring: bool = True  # Include MONITORING for semantic clustering
     ) -> List[Dict[str, Any]]:
         """Query recent stories, optionally filtered by category
         
         CRITICAL: NO ORDER BY to avoid Cosmos DB field omission bug!
         We sort in Python instead.
+        
+        Args:
+            category: Filter by category (optional)
+            limit: Maximum number of stories to return
+            include_monitoring: Whether to include MONITORING status stories (for clustering)
         """
         try:
             container = self._get_container(config.CONTAINER_STORY_CLUSTERS)
             
+            # For semantic clustering, we want ALL recent stories including MONITORING
+            # This ensures new articles can cluster with single-source stories
             if category:
-                # Query without ORDER BY, sort in Python
-                query = "SELECT * FROM c WHERE c.category = @category AND c.status != 'MONITORING'"
+                if include_monitoring:
+                    query = "SELECT * FROM c WHERE c.category = @category"
+                else:
+                    query = "SELECT * FROM c WHERE c.category = @category AND c.status != 'MONITORING'"
                 parameters = [{"name": "@category", "value": category}]
                 items = list(container.query_items(
                     query=query,
                     parameters=parameters
                 ))
             else:
-                # Query without ORDER BY, sort in Python
-                query = "SELECT * FROM c WHERE c.status != 'MONITORING'"
+                if include_monitoring:
+                    query = "SELECT * FROM c"
+                else:
+                    query = "SELECT * FROM c WHERE c.status != 'MONITORING'"
                 items = list(container.query_items(
                     query=query,
                     enable_cross_partition_query=True

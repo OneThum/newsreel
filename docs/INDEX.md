@@ -1,6 +1,6 @@
 # Newsreel Documentation Index
 
-**Last Updated**: October 18, 2025
+**Last Updated**: November 9, 2025
 
 Welcome to the Newsreel documentation hub! All documentation has been consolidated here for easy navigation.
 
@@ -28,6 +28,7 @@ Welcome to the Newsreel documentation hub! All documentation has been consolidat
 - **[PROJECT_STATUS.md](PROJECT_STATUS.md)** - Current status and metrics
 - **[Recent_Changes.md](Recent_Changes.md)** - Latest features and bug fixes
 - **[Development_Roadmap.md](Development_Roadmap.md)** - Development phases and timeline
+- **[DEVELOPMENT_HISTORY.md](DEVELOPMENT_HISTORY.md)** ⭐ - Complete development history and all session summaries
 
 ### 🛠️ Setup & Configuration
 - **[Azure_Setup_Guide.md](Azure_Setup_Guide.md)** - Complete Azure infrastructure deployment
@@ -48,6 +49,12 @@ Welcome to the Newsreel documentation hub! All documentation has been consolidat
 - **[Cost_Management.md](Cost_Management.md)** - Azure budget optimization
 - **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Commands and URLs
 
+### 🧪 Testing & Quality
+- **[TESTING_GUIDE.md](TESTING_GUIDE.md)** ⭐ - Complete testing guide (unit, integration, system tests)
+- **[TESTING_POLICY_NO_MOCKS.md](TESTING_POLICY_NO_MOCKS.md)** - Why we don't use mocks
+- **[TESTING_DECISION_TREE.md](TESTING_DECISION_TREE.md)** - When to use each test type
+- **[POLICY_NO_FAKE_DATA.md](POLICY_NO_FAKE_DATA.md)** - Why we use realistic data
+
 ### ☁️ Azure-Specific (docs/azure/)
 - **[QUICK_START.md](azure/QUICK_START.md)** - Azure quick start guide
 - **[DEPLOYMENT_SUMMARY.md](azure/DEPLOYMENT_SUMMARY.md)** - Infrastructure deployment details
@@ -57,11 +64,17 @@ Welcome to the Newsreel documentation hub! All documentation has been consolidat
 - **[AZURE_CLI_AUTH_REFERENCE.md](azure/AZURE_CLI_AUTH_REFERENCE.md)** - CLI authentication
 
 ### 📦 Historical Records (docs/archive/)
-Bug fixes, diagnostics, and system evolution from October 2025:
-- Complete diagnosis reports
+Bug fixes, diagnostics, and system evolution:
+- Complete diagnosis reports (October 2025)
 - Bug fix documentation (ORDER BY, clustering, summarization)
 - System test results
 - Work completion summaries
+
+**Session History** (docs/archive/sessions/):
+- All debug session summaries (Sessions 1-10)
+- Individual fix reports and status updates
+- Testing evolution and improvements
+- See [DEVELOPMENT_HISTORY.md](DEVELOPMENT_HISTORY.md) for consolidated summary
 
 ---
 
@@ -102,8 +115,9 @@ Monitor and maintain the production system:
 When helping with this project, prioritize these documents:
 1. [APP_STORE_READINESS.md](APP_STORE_READINESS.md) - Understand what needs to be done
 2. [PROJECT_STATUS.md](PROJECT_STATUS.md) - Understand current state
-3. [Product_Specification.md](Product_Specification.md) - Understand requirements
-4. This INDEX.md - Navigate to specific topics
+3. [DEVELOPMENT_HISTORY.md](DEVELOPMENT_HISTORY.md) - Understand what's been built and fixed
+4. [Product_Specification.md](Product_Specification.md) - Understand requirements
+5. This INDEX.md - Navigate to specific topics
 
 ---
 
@@ -115,6 +129,8 @@ When helping with this project, prioritize these documents:
 |-------|----------|
 | What's needed for launch? | [APP_STORE_READINESS.md](APP_STORE_READINESS.md) |
 | Current system status? | [PROJECT_STATUS.md](PROJECT_STATUS.md) |
+| Development history? | [DEVELOPMENT_HISTORY.md](DEVELOPMENT_HISTORY.md) |
+| How to test? | [TESTING_GUIDE.md](TESTING_GUIDE.md) |
 | How to deploy backend? | [Azure_Setup_Guide.md](Azure_Setup_Guide.md) |
 | How to set up iOS app? | [Xcode_Configuration.md](Xcode_Configuration.md) |
 | How RSS feeds work? | [RSS_FEED_STRATEGY.md](RSS_FEED_STRATEGY.md) |
@@ -124,6 +140,7 @@ When helping with this project, prioritize these documents:
 | Cost optimization? | [Cost_Management.md](Cost_Management.md) |
 | How to monitor? | [azure/MONITORING_GUIDE.md](azure/MONITORING_GUIDE.md) |
 | Bug fix history? | [archive/](archive/) folder |
+| Session summaries? | [archive/sessions/](archive/sessions/) folder |
 
 ---
 
@@ -134,6 +151,7 @@ When helping with this project, prioritize these documents:
 **Project Status & Planning**
 - APP_STORE_READINESS.md ⭐
 - PROJECT_STATUS.md
+- DEVELOPMENT_HISTORY.md ⭐
 - Recent_Changes.md
 - Development_Roadmap.md
 - Product_Specification.md
@@ -153,6 +171,12 @@ When helping with this project, prioritize these documents:
 - iOS18_Best_Practices.md
 - Cost_Management.md
 
+**Testing & Quality**
+- TESTING_GUIDE.md ⭐
+- TESTING_POLICY_NO_MOCKS.md
+- TESTING_DECISION_TREE.md
+- POLICY_NO_FAKE_DATA.md
+
 **Reference**
 - INDEX.md (this file)
 - QUICK_REFERENCE.md
@@ -166,6 +190,7 @@ When helping with this project, prioritize these documents:
 - AZURE_CLI_AUTH_REFERENCE.md
 
 ### Historical Archive (`/docs/archive`)
+**October 2025 Bug Fixes**:
 - COMPLETE_DIAGNOSIS_2025_10_18.md
 - ORDER_BY_BUG_FIX_ROUND3_CLUSTERING.md
 - ORDER_BY_BUG_FIX_ROUND2.md
@@ -191,6 +216,12 @@ When helping with this project, prioritize these documents:
 - Clustering_Precision_Fix.md
 - CLUSTERING_IMPROVEMENTS.md
 
+**Session History** (`/docs/archive/sessions/`):
+- ACTIVE_DEBUG_SESSION_1.md through SESSION_10B_SUMMARY.md
+- All individual fix and status reports
+- Testing evolution documentation
+- See DEVELOPMENT_HISTORY.md for consolidated summary
+
 ### Component READMEs (in their respective directories)
 - `/Azure/README.md` - Azure folder overview
 - `/Azure/api/README.md` - API documentation
@@ -213,6 +244,15 @@ When creating or updating documentation:
 ---
 
 ## 🔄 Recent Documentation Changes
+
+**November 9, 2025** - Major consolidation:
+- ✅ Created DEVELOPMENT_HISTORY.md (all session summaries consolidated)
+- ✅ Created TESTING_GUIDE.md (complete testing documentation)
+- ✅ Moved all root-level session docs to /docs/archive/sessions/
+- ✅ Moved policy docs to /docs (TESTING_POLICY_NO_MOCKS, TESTING_DECISION_TREE, POLICY_NO_FAKE_DATA)
+- ✅ Cleaned up root directory (48 files → 1 file: README.md)
+- ✅ Updated INDEX.md with new structure
+- ✅ All documentation now properly organized in /docs
 
 **October 18, 2025** - Major consolidation:
 - ✅ Created APP_STORE_READINESS.md (launch checklist)

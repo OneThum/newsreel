@@ -13,7 +13,8 @@ aiohttp>=3.9.0
 
 # AI/ML
 anthropic>=0.34.0  # Batch API support requires >=0.34.0
-# sentence-transformers>=2.3.0  # Too large for Azure Functions, not needed for MVP
+openai>=1.0.0  # For semantic embeddings (text-embedding-3-small)
+numpy>=1.24.0  # For embedding vector operations
 
 # Data Processing
 python-dateutil>=2.8.2

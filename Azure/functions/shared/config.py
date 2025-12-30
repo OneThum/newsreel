@@ -27,6 +27,10 @@ class Config:
     ANTHROPIC_MODEL: str = os.getenv("ANTHROPIC_MODEL", "claude-3-5-haiku-20241022")  # Claude 3.5 Haiku (fastest, cheapest)
     ANTHROPIC_MAX_TOKENS: int = 500
     
+    # OpenAI API (for semantic embeddings)
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-small"  # Best price/performance
+    
     # Twitter/X API
     TWITTER_BEARER_TOKEN: str = os.getenv("TWITTER_BEARER_TOKEN", "")
     
@@ -45,7 +49,13 @@ class Config:
     MIN_SOURCES_FOR_DEVELOPING: int = 2
     MIN_SOURCES_FOR_BREAKING: int = 3
     BREAKING_NEWS_WINDOW_MINUTES: int = 30
-    STORY_FINGERPRINT_SIMILARITY_THRESHOLD: float = 0.70
+    
+    # Semantic Clustering (2025 - OpenAI embeddings)
+    SEMANTIC_CLUSTER_THRESHOLD: float = 0.82  # Cosine similarity threshold for same story
+    SEMANTIC_MAYBE_THRESHOLD: float = 0.75  # Threshold for entity validation check
+    
+    # DEPRECATED: Legacy keyword-based threshold (kept for reference)
+    STORY_FINGERPRINT_SIMILARITY_THRESHOLD: float = 0.70  # Not used with semantic clustering
     
     # Summarization
     MIN_SOURCES_FOR_SUMMARY: int = 1  # Generate summaries for ALL stories (changed from 2)

@@ -125,6 +125,7 @@ class StoryCluster(BaseModel):
     first_seen: datetime
     last_updated: datetime
     source_articles: List[Dict[str, Any]] = Field(default_factory=list)
+    embedding: Optional[List[float]] = None  # Semantic embedding for clustering (centroid of article embeddings)
     summary: Optional[SummaryVersion] = None
     version_history: List[VersionHistory] = Field(default_factory=list)
     location: Optional[Location] = None
