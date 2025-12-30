@@ -1677,7 +1677,7 @@ struct BreakingNewsCarousel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Section header
+            // Section header with adequate top padding
             HStack(spacing: 8) {
                 Image(systemName: "flame.fill")
                     .font(.system(size: 14, weight: .semibold))
@@ -1687,7 +1687,9 @@ struct BreakingNewsCarousel: View {
                     .foregroundStyle(.red)
                     .tracking(0.5)
             }
+            .padding(.top, 8)
             .padding(.bottom, 10)
+            .padding(.horizontal, 16)
 
             // Horizontal scrolling carousel
             ScrollView(.horizontal, showsIndicators: false) {
@@ -1700,8 +1702,10 @@ struct BreakingNewsCarousel: View {
                             }
                     }
                 }
+                .padding(.horizontal, 16)
             }
         }
+        .padding(.bottom, 8)
     }
 }
 

@@ -42,9 +42,111 @@ except ImportError:
 
 # Import structured logger
 from shared.logger import get_logger
+import re
 
 logger = get_logger(__name__)
 app = func.FunctionApp()
+
+
+# ============================================================================
+# AI OUTPUT CLEANUP UTILITIES
+# ============================================================================
+
+def clean_ai_summary(text: str) -> str:
+    """
+    Remove common AI artifacts from summaries:
+    - Preambles like "Here's a concise summary:"
+    - Headers like "COMPREHENSIVE NEWS SUMMARY:"
+    - Meta-commentary about the summary itself
+    - Trailing explanations about the summary
+    """
+    if not text:
+        return text
+    
+    # Patterns to remove from the START of the summary
+    start_patterns = [
+        r'^Here\'?s?\s+(?:a\s+)?(?:concise|comprehensive|authoritative|brief|factual|neutral)[\s,]+(?:authoritative\s+)?summary[:\s]*',
+        r'^(?:COMPREHENSIVE\s+)?NEWS\s+SUMMARY[:\s]*(?:[A-Za-z\s]+[:\s]*)?',
+        r'^Summary[:\s]*',
+        r'^(?:Here\s+is\s+)?(?:The\s+)?(?:a\s+)?(?:news\s+)?summary[:\s]*',
+        r'^Based\s+on\s+(?:the\s+)?(?:provided\s+)?(?:articles?|sources?|information)[,:\s]*',
+        r'^(?:According\s+to\s+)?(?:the\s+)?(?:multiple\s+)?sources?[,:\s]*here\'?s?\s+(?:what\s+we\s+know|a\s+summary)[:\s]*',
+    ]
+    
+    # Patterns to remove from the END of the summary
+    end_patterns = [
+        r'[\.\s]+The\s+summary\s+(?:provides|offers|gives|presents)[\s\S]*$',
+        r'[\.\s]+This\s+(?:summary|overview)\s+(?:provides|offers|gives|presents|maintains|covers)[\s\S]*$',
+        r'[\.\s]+(?:I\'?ve\s+)?(?:maintained|ensured|kept)\s+(?:a\s+)?neutral\s+tone[\s\S]*$',
+        r'[\.\s]+(?:The\s+)?(?:above\s+)?summary\s+is\s+(?:factual|neutral|comprehensive)[\s\S]*$',
+    ]
+    
+    result = text.strip()
+    
+    # Remove start patterns (case-insensitive)
+    for pattern in start_patterns:
+        result = re.sub(pattern, '', result, flags=re.IGNORECASE).strip()
+    
+    # Remove end patterns (case-insensitive)
+    for pattern in end_patterns:
+        result = re.sub(pattern, '', result, flags=re.IGNORECASE).strip()
+    
+    return result
+
+
+def clean_ai_headline(text: str) -> str:
+    """
+    Remove common AI artifacts from headlines:
+    - Rationale explanations
+    - Surrounding quotes
+    - "Updated headline:" prefixes
+    - Source-specific tags
+    """
+    if not text:
+        return text
+    
+    result = text.strip()
+    
+    # If the response contains "Rationale:" or "Reason:", only keep the part before it
+    rationale_markers = ['Rationale:', 'Reason:', 'Explanation:', 'Note:', 'Update reason:']
+    for marker in rationale_markers:
+        if marker in result:
+            result = result.split(marker)[0].strip()
+        if marker.lower() in result.lower():
+            idx = result.lower().find(marker.lower())
+            result = result[:idx].strip()
+    
+    # Remove newlines and everything after
+    if '\n' in result:
+        result = result.split('\n')[0].strip()
+    
+    # Remove "Updated headline:" or similar prefixes
+    prefix_patterns = [
+        r'^Updated\s+headline[:\s]*',
+        r'^New\s+headline[:\s]*',
+        r'^Headline[:\s]*',
+        r'^Suggested[:\s]*',
+    ]
+    for pattern in prefix_patterns:
+        result = re.sub(pattern, '', result, flags=re.IGNORECASE).strip()
+    
+    # Strip surrounding quotes (but preserve internal quotes)
+    if (result.startswith('"') and result.endswith('"')) or \
+       (result.startswith("'") and result.endswith("'")):
+        result = result[1:-1].strip()
+    
+    # Remove trailing quote if orphaned
+    result = result.rstrip('"').rstrip("'").strip()
+    
+    # Remove source-specific tags that might have slipped through
+    tag_patterns = [
+        r'\s*\|\s*(?:Special\s+Report|BREAKING|Live|Update|Analysis|Opinion|Exclusive)$',
+        r'\s*-\s*(?:Live|Update|Breaking)$',
+    ]
+    for pattern in tag_patterns:
+        result = re.sub(pattern, '', result, flags=re.IGNORECASE).strip()
+    
+    return result
 
 # ============================================================================
 # PUSH NOTIFICATION SERVICE
@@ -245,8 +347,10 @@ CRITICAL: Always remove source-specific editorial tags like:
 Headlines should be FACTUAL, NEUTRAL, and FREE of source-specific formatting.
 
 RESPONSE FORMAT:
-If update needed: Write the improved headline (8-15 words, specific, clear, NO editorial tags)
+If update needed: Write ONLY the headline text (8-15 words, specific, clear, NO editorial tags)
 If no update needed: Write exactly "KEEP_CURRENT"
+
+CRITICAL: Output ONLY the headline or "KEEP_CURRENT". NO explanations, NO rationale, NO quotes around the headline.
 
 Your response:"""
 
@@ -261,7 +365,11 @@ Your response:"""
 
 CRITICAL: If current headline has source-specific artifacts (like "| Special Report"), you MUST update to remove them, even if the factual content is accurate.
 
-You always respond with either an improved headline OR "KEEP_CURRENT". Never explain or refuse."""
+OUTPUT RULES:
+- Respond with ONLY the headline text or "KEEP_CURRENT"
+- NO explanations, rationale, or reasoning
+- NO quotes around the headline
+- NO line breaks or additional text"""
 
         # Call Claude API with minimal tokens
         start_time = time.time()
@@ -291,8 +399,8 @@ You always respond with either an improved headline OR "KEEP_CURRENT". Never exp
             )
             return story['title']  # Return current headline (no change)
         
-        # Clean up new headline
-        updated_headline = ai_response.strip('"').strip("'").strip()
+        # Clean up new headline using comprehensive artifact removal
+        updated_headline = clean_ai_headline(ai_response)
         
         # Validate headline quality
         if len(updated_headline.split()) < 4 or len(updated_headline) < 20:
@@ -1203,7 +1311,7 @@ Article to summarize:
 
 {combined_articles}
 
-Write a clear, factual summary that gives readers confidence they understand this story:"""
+Write the summary now (start directly with the news, no preamble):"""
             
             else:
                 # Multi-source: Synthesize perspectives for comprehensive view
@@ -1233,7 +1341,7 @@ Articles to summarize:
 
 {combined_articles}
 
-Write a comprehensive summary that gives readers confidence they understand the full story from multiple angles:"""
+Write the summary now (start directly with the news, no preamble):"""
             
             # Enhanced system prompt emphasizing quality and trustworthiness
             system_prompt = """You are a senior news editor known for creating trustworthy, comprehensive summaries. Your summaries help readers understand complex events quickly while maintaining journalistic standards.
@@ -1244,6 +1352,11 @@ Core principles:
 - PERSPECTIVE: For multi-source stories, show how different sources frame the event
 - CLARITY: Write for intelligent readers using clear, direct language
 - TRUSTWORTHINESS: Readers rely on you to be their eyes and ears across multiple sources
+
+CRITICAL FORMAT RULES:
+- Start IMMEDIATELY with the news content. NO introductions like "Here's a summary:" or "COMPREHENSIVE NEWS SUMMARY:"
+- End with the last fact. NO meta-commentary like "This summary provides..." or "The above maintains neutral tone..."
+- Write ONLY the summary itself - nothing else before or after
 
 You ALWAYS provide a summary based on available information, even if limited. You never refuse or say you need more sources."""
             
@@ -1263,8 +1376,8 @@ You ALWAYS provide a summary based on available information, even if limited. Yo
                 }]
             )
             
-            # Extract summary
-            summary_text = response.content[0].text.strip()
+            # Extract summary and clean AI artifacts
+            summary_text = clean_ai_summary(response.content[0].text.strip())
             generation_time_ms = int((time.time() - start_time) * 1000)
             
             # CRITICAL: Validate - if Claude refused, generate fallback summary
@@ -1482,8 +1595,8 @@ Article to summarize:
 
 {combined_articles}
 
-Write a factual summary of the key information provided:"""
-                    system_msg = "You are a professional news summarizer. You ALWAYS provide a summary based on available information, even if limited. You never refuse."
+Write the summary now (start directly with the news, no preamble or header):"""
+                    system_msg = "You are a professional news summarizer. You ALWAYS provide a summary based on available information, even if limited. You never refuse. Start IMMEDIATELY with the news content - NO introductions like 'Here is a summary' or headers."
                 else:
                     prompt = f"""You are a news summarization AI. Create a factual, neutral summary synthesizing information from {len(articles)} news sources.
 
@@ -1500,8 +1613,8 @@ Articles to summarize:
 
 {combined_articles}
 
-Write a factual summary synthesizing these articles:"""
-                    system_msg = "You are a professional news summarizer. You create factual, neutral summaries from news articles. You ALWAYS provide a summary based on available information."
+Write the summary now (start directly with the news, no preamble or header):"""
+                    system_msg = "You are a professional news summarizer. You create factual, neutral summaries from news articles. You ALWAYS provide a summary based on available information. Start IMMEDIATELY with the news content - NO introductions or headers."
                 
                 # Call Claude API
                 start_time = time.time()
@@ -1512,7 +1625,8 @@ Write a factual summary synthesizing these articles:"""
                     messages=[{"role": "user", "content": prompt}]
                 )
                 
-                summary_text = response.content[0].text.strip()
+                # Clean AI artifacts from summary
+                summary_text = clean_ai_summary(response.content[0].text.strip())
                 
                 # CRITICAL: Validate - if Claude refused, generate fallback
                 refusal_indicators = [
