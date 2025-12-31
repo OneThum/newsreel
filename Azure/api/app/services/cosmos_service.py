@@ -214,32 +214,29 @@ class CosmosService:
             raise
     
     async def query_breaking_news(self, limit: int = 10) -> List[Dict[str, Any]]:
-        """Query recent stories - OPTIMIZED for fast response times
+        """Query ACTUAL breaking news stories - stories flagged as breaking_news=true
         
-        Excludes lifestyle/entertainment content as this is for "news" not product reviews.
-        CRITICAL: Filters by BOTH last_updated AND first_seen to exclude old articles.
+        If no breaking news available, falls back to high-importance recent stories.
+        This ensures the breaking news carousel shows DIFFERENT content than the main feed.
         """
         try:
             container = self._get_container("story_clusters")
             
-            # PERFORMANCE FIX: Select only needed fields, exclude large embedding vectors
-            # Query recent stories from the last 24 hours, sorted by last_updated
-            # EXCLUDE lifestyle/entertainment - these aren't breaking "news"
-            one_day_ago = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
-            # CRITICAL: Also filter by first_seen to exclude old articles (e.g., 2022 articles)
-            seven_days_ago = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+            # Date filters
+            three_days_ago = (datetime.now(timezone.utc) - timedelta(days=3)).isoformat()
             
-            # Select specific fields to avoid fetching huge embedding arrays
-            query = f"""
-                SELECT c.id, c.title, c.category, c.tags, c.status, c.verification_level,
+            select_fields = """c.id, c.title, c.category, c.tags, c.status, c.verification_level,
                        c.summary, c.source_count, c.first_seen, c.last_updated,
-                       c.importance_score, c.breaking_news, c.source_articles
+                       c.importance_score, c.breaking_news, c.source_articles"""
+            
+            # FIRST: Try to get actual breaking news stories
+            query = f"""
+                SELECT {select_fields}
                 FROM c
-                WHERE c.last_updated >= '{one_day_ago}'
-                AND c.first_seen >= '{seven_days_ago}'
-                AND c.category NOT IN ('lifestyle', 'entertainment')
+                WHERE c.breaking_news = true
+                AND c.first_seen >= '{three_days_ago}'
                 ORDER BY c.first_seen DESC
-                OFFSET 0 LIMIT {limit * 2}
+                OFFSET 0 LIMIT {limit}
             """
             
             items = list(container.query_items(
@@ -247,23 +244,22 @@ class CosmosService:
                 enable_cross_partition_query=True
             ))
             
-            logger.info(f"📊 [COSMOS] query_breaking_news returned {len(items)} items")
+            logger.info(f"📊 [COSMOS] query_breaking_news: {len(items)} actual breaking news stories")
             
-            # If insufficient recent stories, do a fallback query (still respecting first_seen limit)
+            # FALLBACK: If no breaking news, get high-importance stories from multiple sources
             if len(items) < limit:
-                logger.info(f"📊 [COSMOS] Insufficient recent stories ({len(items)}), adding older stories")
-                # Fallback: look at last 14 days but still filter by first_seen
-                fourteen_days_ago = (datetime.now(timezone.utc) - timedelta(days=14)).isoformat()
+                logger.info(f"📊 [COSMOS] Insufficient breaking news ({len(items)}), adding high-importance stories")
+                two_days_ago = (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
+                
+                # Get stories with high importance OR multiple sources (verified/developing)
                 fallback_query = f"""
-                    SELECT c.id, c.title, c.category, c.tags, c.status, c.verification_level,
-                           c.summary, c.source_count, c.first_seen, c.last_updated,
-                           c.importance_score, c.breaking_news, c.source_articles
+                    SELECT {select_fields}
                     FROM c
-                    WHERE c.status IN ('NEW', 'DEVELOPING', 'VERIFIED')
-                    AND c.first_seen >= '{fourteen_days_ago}'
+                    WHERE c.first_seen >= '{two_days_ago}'
                     AND c.category NOT IN ('lifestyle', 'entertainment')
-                    ORDER BY c.first_seen DESC
-                    OFFSET 0 LIMIT {limit}
+                    AND (c.importance_score >= 60 OR c.source_count >= 2 OR c.status IN ('VERIFIED', 'DEVELOPING'))
+                    ORDER BY c.importance_score DESC
+                    OFFSET 0 LIMIT {limit * 2}
                 """
                 fallback_items = list(container.query_items(
                     query=fallback_query,
@@ -275,6 +271,10 @@ class CosmosService:
                 for fallback in fallback_items:
                     if fallback['id'] not in existing_ids:
                         items.append(fallback)
+                        if len(items) >= limit:
+                            break
+                
+                logger.info(f"📊 [COSMOS] After fallback: {len(items)} total breaking/important stories")
                 
                 logger.info(f"📊 [COSMOS] After fallback: {len(items)} total items")
             
