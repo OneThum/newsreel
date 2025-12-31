@@ -106,31 +106,40 @@ struct FeedStatusIcon: View {
     }
     
     var body: some View {
-        Image("AppIconDisplay")
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .frame(width: 32, height: 32)
-            .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .stroke(glowColor, lineWidth: 2)
-                    .shadow(color: glowColor.opacity(0.8), radius: isAnimating ? 6 : 3)
-                    .shadow(color: glowColor.opacity(0.5), radius: isAnimating ? 10 : 5)
-            )
-            .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: isAnimating)
-            .onAppear {
-                // Only animate the glow for cached/loading states
-                if dataSource != .live {
-                    isAnimating = true
-                }
+        // Circular container with glow effect
+        ZStack {
+            // Glowing circle behind the icon
+            Circle()
+                .fill(Color(.systemBackground).opacity(0.01)) // Nearly invisible fill
+                .frame(width: 40, height: 40)
+                .overlay(
+                    Circle()
+                        .stroke(glowColor.opacity(0.6), lineWidth: 2)
+                )
+                .shadow(color: glowColor.opacity(isAnimating ? 0.9 : 0.6), radius: isAnimating ? 8 : 4)
+                .shadow(color: glowColor.opacity(isAnimating ? 0.6 : 0.3), radius: isAnimating ? 12 : 6)
+            
+            // App icon inside the circle
+            Image("AppIconDisplay")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 28, height: 28)
+                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+        }
+        .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: isAnimating)
+        .onAppear {
+            // Only animate the glow for cached/loading states
+            if dataSource != .live {
+                isAnimating = true
             }
-            .onChange(of: dataSource) { _, newValue in
-                // Start/stop pulsing animation based on status
-                withAnimation {
-                    isAnimating = newValue != .live
-                }
+        }
+        .onChange(of: dataSource) { _, newValue in
+            // Start/stop pulsing animation based on status
+            withAnimation {
+                isAnimating = newValue != .live
             }
-            .accessibilityLabel(statusTooltip)
+        }
+        .accessibilityLabel(statusTooltip)
     }
 }
 
