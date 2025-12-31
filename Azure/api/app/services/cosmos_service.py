@@ -119,32 +119,36 @@ class CosmosService:
         limit: int = 20,
         offset: int = 0
     ) -> List[Dict[str, Any]]:
-        """Query recent stories ordered by when news broke (first_seen)"""
+        """Query recent stories - OPTIMIZED: excludes embedding vectors for fast response"""
         try:
             container = self._get_container("story_clusters")
             
-            # Query without ORDER BY to avoid Cosmos DB limitations
-            # We'll sort in Python instead
-            # INCLUDE all stories including MONITORING - users want fresh news!
+            # PERFORMANCE: Select only needed fields, exclude huge embedding arrays
+            select_fields = """c.id, c.title, c.category, c.tags, c.status, c.verification_level,
+                              c.summary, c.source_count, c.first_seen, c.last_updated,
+                              c.importance_score, c.breaking_news, c.source_articles"""
             
-            # Special handling for "top_stories" category: show breaking news when available
+            # Special handling for "top_stories" category
             if category == "top_stories":
-                # For Top Stories, prioritize BREAKING and DEVELOPING stories
-                query = """
-                    SELECT * FROM c 
-                    WHERE c.status IN ('BREAKING', 'DEVELOPING', 'VERIFIED')
+                query = f"""
+                    SELECT {select_fields} FROM c 
+                    WHERE c.status IN ('NEW', 'DEVELOPING', 'VERIFIED')
+                    ORDER BY c.last_updated DESC
+                    OFFSET 0 LIMIT {limit + offset}
                 """
                 items = list(container.query_items(
                     query=query,
                     enable_cross_partition_query=True
                 ))
             elif category:
-                # Query only recent stories (last 7 days) for better performance
+                # Category-specific query with partition key
                 seven_days_ago = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
                 query = f"""
-                    SELECT * FROM c 
+                    SELECT {select_fields} FROM c 
                     WHERE c.category = @category
                     AND c.last_updated >= '{seven_days_ago}'
+                    ORDER BY c.last_updated DESC
+                    OFFSET 0 LIMIT {limit + offset}
                 """
                 parameters = [{"name": "@category", "value": category}]
                 items = list(container.query_items(
@@ -152,30 +156,23 @@ class CosmosService:
                     parameters=parameters
                 ))
             else:
-                # Query only recent stories (last 7 days) to avoid querying all 38,000+ stories
-                seven_days_ago = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+                # All categories - limited to 48 hours for faster queries
+                two_days_ago = (datetime.now(timezone.utc) - timedelta(hours=48)).isoformat()
                 query = f"""
-                    SELECT * FROM c
-                    WHERE c.last_updated >= '{seven_days_ago}'
+                    SELECT {select_fields} FROM c
+                    WHERE c.last_updated >= '{two_days_ago}'
+                    ORDER BY c.last_updated DESC
+                    OFFSET 0 LIMIT {limit + offset}
                 """
                 items = list(container.query_items(
                     query=query,
                     enable_cross_partition_query=True
                 ))
             
-            # 🔍 DIAGNOSTIC: Log query results
             logger.info(f"✅ Query returned {len(items)} stories")
             
-            # ✅ SORT IN PYTHON - Sort by last_updated DESC (newest first)
-            # This is required because Cosmos DB queries don't support ORDER BY without indexes
-            sorted_items = sorted(
-                items,
-                key=lambda s: s.get('last_updated', ''),
-                reverse=True  # Newest first
-            )
-            
-            logger.info(f"📊 After sorting: {len(sorted_items)} stories by last_updated DESC")
-            return sorted_items
+            # Apply offset and return (already sorted by query)
+            return items[offset:offset + limit]
         except exceptions.CosmosResourceNotFoundError as e:
             # Session token error - reset connection and retry
             logger.warning(f"Session token error, resetting connection: {e}")
@@ -205,32 +202,43 @@ class CosmosService:
             raise
     
     async def query_breaking_news(self, limit: int = 10) -> List[Dict[str, Any]]:
-        """Query recent stories - include all recent stories, prioritizing BREAKING/DEVELOPING/VERIFIED"""
+        """Query recent stories - OPTIMIZED for fast response times"""
         try:
             container = self._get_container("story_clusters")
             
-            # Query ALL stories from the last 24 hours to ensure fresh content shows up
-            # This includes MONITORING stories so users see fresh news even if single-source
+            # PERFORMANCE FIX: Select only needed fields, exclude large embedding vectors
+            # Query recent stories from the last 24 hours, sorted by last_updated
             one_day_ago = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
             
+            # Select specific fields to avoid fetching huge embedding arrays
             query = f"""
-                SELECT * FROM c
+                SELECT c.id, c.title, c.category, c.tags, c.status, c.verification_level,
+                       c.summary, c.source_count, c.first_seen, c.last_updated,
+                       c.importance_score, c.breaking_news, c.source_articles
+                FROM c
                 WHERE c.last_updated >= '{one_day_ago}'
+                ORDER BY c.last_updated DESC
+                OFFSET 0 LIMIT {limit * 2}
             """
+            
             items = list(container.query_items(
                 query=query,
                 enable_cross_partition_query=True
             ))
             
-            # 🔍 DIAGNOSTIC: Log query results
-            logger.info(f"📊 [COSMOS] query_breaking_news (24h) returned {len(items)} items")
+            logger.info(f"📊 [COSMOS] query_breaking_news returned {len(items)} items")
             
-            # If no recent stories, fallback to VERIFIED/DEVELOPING/BREAKING from any time
+            # If insufficient recent stories, do a fallback query
             if len(items) < limit:
-                logger.info(f"📊 [COSMOS] Insufficient recent stories ({len(items)}), adding verified stories")
-                fallback_query = """
-                    SELECT * FROM c
-                    WHERE c.status IN ('BREAKING', 'DEVELOPING', 'VERIFIED')
+                logger.info(f"📊 [COSMOS] Insufficient recent stories ({len(items)}), adding older stories")
+                fallback_query = f"""
+                    SELECT c.id, c.title, c.category, c.tags, c.status, c.verification_level,
+                           c.summary, c.source_count, c.first_seen, c.last_updated,
+                           c.importance_score, c.breaking_news, c.source_articles
+                    FROM c
+                    WHERE c.status IN ('NEW', 'DEVELOPING', 'VERIFIED')
+                    ORDER BY c.last_updated DESC
+                    OFFSET 0 LIMIT {limit}
                 """
                 fallback_items = list(container.query_items(
                     query=fallback_query,
@@ -245,19 +253,8 @@ class CosmosService:
                 
                 logger.info(f"📊 [COSMOS] After fallback: {len(items)} total items")
             
-            if items:
-                first_item = items[0]
-                logger.info(f"   [COSMOS] First item ID: {first_item.get('id')}")
-                logger.info(f"   [COSMOS] First item has 'summary': {'summary' in first_item}")
-                logger.info(f"   [COSMOS] First item has 'source_articles': {'source_articles' in first_item}")
-                if 'source_articles' in first_item:
-                    logger.info(f"   [COSMOS] First item source_articles length: {len(first_item['source_articles'])}")
-            
-            # Sort by last_updated in Python (newest first)
-            items_sorted = sorted(items, key=lambda x: x.get('last_updated', ''), reverse=True)
-            
-            # Apply limit
-            return items_sorted[:limit]
+            # Items already sorted by query, just apply limit
+            return items[:limit]
         except Exception as e:
             logger.error(f"Error querying recent stories: {e}")
             raise
