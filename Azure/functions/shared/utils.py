@@ -351,10 +351,54 @@ def calculate_text_similarity(text1: str, text2: str) -> float:
 
 
 def categorize_article(title: str, description: str, url: str) -> str:
-    """Categorize article based on content"""
-    text = f"{title} {description}".lower()
+    """
+    Categorize article based on content.
     
-    # Category keywords with weighted importance
+    Priority order:
+    1. LIFESTYLE detection (product reviews, guides, how-tos) - highest priority
+    2. URL-based categorization for dedicated sections
+    3. Keyword-based scoring
+    4. Default to 'general'
+    """
+    import re
+    text = f"{title} {description}".lower()
+    title_lower = title.lower()
+    
+    # ==========================================================================
+    # STEP 1: LIFESTYLE DETECTION (highest priority - prevents miscategorization)
+    # Product reviews, guides, how-tos should NEVER be in hard news categories
+    # ==========================================================================
+    
+    lifestyle_patterns = [
+        r'\bbest\b.*\b(?:for|of|to|in)\b',       # "best X for/of/to/in"
+        r'\btop\s+\d+\b',                         # "top 10", "top 5"
+        r'\b\d+\s+best\b',                        # "7 best", "10 best"
+        r'\breviewed?\b',                         # "review", "reviewed"
+        r'\btested\b',                            # "tested"
+        r'\bguide\s+to\b',                        # "guide to"
+        r'\bhow\s+to\b',                          # "how to"
+        r'\btips?\s+(?:for|on|to)\b',            # "tips for/on/to"
+        r'\badvice\b',                            # "advice"
+        r'\brecipes?\b',                          # "recipe", "recipes"
+        r'\bdeal[s]?\b.*\b(?:on|for)\b',         # "deals on/for"
+        r'\bbargain\b',                           # "bargain"
+        r'\b(?:our|my)\s+(?:top\s+)?picks?\b',   # "our picks", "my top picks"
+        r'\b(?:tried|we)\s+(?:and\s+)?tested\b', # "tried and tested"
+        r'\bbest\s+(?:buys?|picks?|choices?)\b', # "best buys", "best picks"
+        r'\bwhat\s+to\s+(?:buy|get|wear)\b',     # "what to buy/get/wear"
+        r'\bgift\s+(?:guide|ideas?)\b',          # "gift guide", "gift ideas"
+        r'\b(?:buyer|shopping)\s*(?:\'?s?)?\s+guide\b',  # "buyer's guide"
+    ]
+    
+    is_lifestyle = any(re.search(p, title_lower) for p in lifestyle_patterns)
+    
+    if is_lifestyle:
+        return 'lifestyle'
+    
+    # ==========================================================================
+    # STEP 2: Category keywords with weighted importance
+    # ==========================================================================
+    
     categories = {
         'politics': {
             'high': ['president', 'prime minister', 'parliament', 'congress', 'senate', 'white house', 
@@ -366,64 +410,85 @@ def categorize_article(title: str, description: str, url: str) -> str:
         },
         'sports': {
             'high': ['f1', 'formula 1', 'nba', 'nfl', 'mlb', 'nhl', 'soccer', 'football', 'basketball', 
-                     'baseball', 'hockey', 'tennis', 'golf', 'cricket', 'olympics', 'world cup'],
+                     'baseball', 'hockey', 'tennis', 'golf', 'cricket', 'olympics', 'world cup',
+                     'premier league', 'champions league', 'rugby', 'boxing', 'mma', 'ufc'],
             'medium': ['sport', 'game', 'team', 'player', 'coach', 'championship', 'league', 
-                      'match', 'tournament', 'season', 'playoff'],
-            'low': ['score', 'goal', 'point', 'defeat', 'victory']  # Removed 'win' - too generic
+                      'match', 'tournament', 'season', 'playoff', 'athlete', 'medal'],
+            'low': ['score', 'goal', 'point', 'defeat', 'victory']
         },
         'tech': {
             'high': ['apple', 'microsoft', 'google', 'facebook', 'amazon', 'netflix', 'tesla', 
                      'startup', 'silicon valley', 'artificial intelligence', 'machine learning',
-                     'openai', 'chatgpt', 'iphone', 'android'],
+                     'openai', 'chatgpt', 'iphone', 'android', 'cryptocurrency', 'bitcoin'],
             'medium': ['tech', 'software', 'app', 'digital', 'cyber', 'ai', 'computer', 'data',
-                      'internet', 'online', 'website', 'platform'],
+                      'internet', 'online', 'website', 'platform', 'gadget', 'smartphone'],
             'low': ['algorithm', 'code', 'programming', 'update']
         },
         'science': {
-            'high': ['nasa', 'nobel', 'research paper', 'scientific study', 'climate change'],
+            'high': ['nasa', 'nobel', 'research paper', 'scientific study', 'climate change',
+                     'spacex', 'mars', 'moon landing'],
             'medium': ['science', 'research', 'study', 'scientist', 'discovery', 'experiment', 
-                      'physics', 'chemistry', 'biology', 'space', 'astronomy'],
+                      'physics', 'chemistry', 'biology', 'space', 'astronomy', 'genetic'],
             'low': ['theory', 'hypothesis', 'laboratory']
         },
         'business': {
             'high': ['wall street', 'stock market', 'nasdaq', 'dow jones', 'federal reserve',
-                     'real estate', 'property market'],
+                     'real estate', 'property market', 'ipo', 'merger', 'acquisition'],
             'medium': ['business', 'economy', 'market', 'stock', 'finance', 'company', 'ceo', 
                       'revenue', 'profit', 'trade', 'investment', 'property', 'housing', 'mortgage'],
             'low': ['earnings', 'quarter', 'sales']
         },
         'world': {
+            # ONLY serious international news - NOT lifestyle content
             'high': ['united nations', 'nato', 'european union', 'g7', 'g20', 'war', 'conflict',
-                     'israel', 'gaza', 'ukraine', 'russia', 'china', 'immigration', 'refugee'],
-            'medium': ['international', 'global', 'country', 'nation', 'foreign', 'embassy', 'border',
-                      'peace deal', 'ceasefire', 'invasion', 'asylum', 'deportation', 'migrant'],
-            'low': ['diplomatic', 'treaty', 'ambassador', 'visa']
+                     'israel', 'gaza', 'ukraine', 'russia', 'china', 'immigration', 'refugee',
+                     'terrorism', 'attack', 'bombing', 'hostage', 'sanctions'],
+            'medium': ['international', 'foreign policy', 'embassy', 'border crisis',
+                      'peace deal', 'ceasefire', 'invasion', 'asylum', 'deportation', 'coup',
+                      'genocide', 'humanitarian crisis', 'peacekeeping'],
+            'low': ['diplomatic', 'treaty', 'ambassador']
         },
         'health': {
-            'high': ['covid', 'pandemic', 'fda', 'cdc', 'who', 'coronavirus', 'cancer', 'tumor', 'tumour'],
+            'high': ['covid', 'pandemic', 'fda', 'cdc', 'who', 'coronavirus', 'cancer', 'tumor', 'tumour',
+                     'outbreak', 'epidemic'],
             'medium': ['health', 'medical', 'doctor', 'hospital', 'disease', 'vaccine', 'patient', 
-                      'treatment', 'drug', 'medicine', 'epidemic', 'surgery', 'care'],
+                      'treatment', 'drug', 'medicine', 'surgery', 'mental health', 'obesity'],
             'low': ['symptom', 'diagnosis', 'healthcare', 'clinic']
         },
         'entertainment': {
             'high': ['oscar', 'grammy', 'emmy', 'tony award', 'golden globe', 'cannes', 'sundance',
-                     'hollywood', 'broadway', 'box office'],
+                     'hollywood', 'broadway', 'box office', 'bafta'],
             'medium': ['actor', 'actress', 'film', 'movie', 'director', 'celebrity', 'star', 
                       'album', 'concert', 'music', 'band', 'singer', 'artist', 'show', 'series',
-                      'netflix', 'disney', 'streaming', 'premiere', 'festival'],
-            'low': ['entertainment', 'celebrity', 'performance', 'role', 'cast']
+                      'netflix', 'disney', 'streaming', 'premiere', 'festival', 'tv show'],
+            'low': ['entertainment', 'performance', 'role', 'cast']
+        },
+        'environment': {
+            'high': ['climate crisis', 'global warming', 'greenhouse gas', 'carbon emissions',
+                     'renewable energy', 'deforestation', 'extinction', 'biodiversity'],
+            'medium': ['environment', 'pollution', 'sustainability', 'conservation', 'wildlife',
+                      'recycling', 'fossil fuel', 'solar', 'wind power', 'electric vehicle'],
+            'low': ['eco', 'green', 'organic']
         }
     }
     
-    # URL-based categorization (highest priority)
-    # Only use URL for categorization if it's clearly in a dedicated section
+    # ==========================================================================
+    # STEP 3: URL-based categorization (only for dedicated news sections)
+    # NOTE: Skip URL categorization if it would put lifestyle content in hard news
+    # ==========================================================================
+    
     url_lower = url.lower()
     
-    # Check for entertainment sections (stricter patterns)
-    if any(pattern in url_lower for pattern in ['/entertainment/', '/movies/', '/music/', '/celebrity/', '/film/', '/showbiz/']):
+    # Check for lifestyle/shopping sections first
+    if any(pattern in url_lower for pattern in ['/lifestyle/', '/living/', '/home/', '/food/', '/travel/',
+           '/shopping/', '/style/', '/fashion/', '/beauty/', '/wellness/', '/money/consumer/']):
+        return 'lifestyle'
+    
+    # Check for entertainment sections
+    if any(pattern in url_lower for pattern in ['/entertainment/', '/movies/', '/music/', '/celebrity/', '/film/', '/showbiz/', '/arts/']):
         return 'entertainment'
     
-    # Check for sports sections (stricter patterns - must be in path, not just anywhere)
+    # Check for sports sections
     if any(pattern in url_lower for pattern in ['/sports/', '/sport/', 'espn.com', '/nba/', '/nfl/', '/mlb/', '/cricket/', '/football/', '/soccer/']):
         return 'sports'
     
@@ -439,11 +504,21 @@ def categorize_article(title: str, description: str, url: str) -> str:
     if any(pattern in url_lower for pattern in ['/business/', '/markets/', '/finance/', '/economy/', 'bloomberg.com', 'wsj.com']):
         return 'business'
     
-    # Check for world/international sections
-    if any(pattern in url_lower for pattern in ['/world/', '/international/', '/global/']):
-        return 'world'
+    # Check for environment sections
+    if any(pattern in url_lower for pattern in ['/environment/', '/climate/', '/green/']):
+        return 'environment'
     
-    # Weighted keyword-based categorization
+    # Check for health sections
+    if any(pattern in url_lower for pattern in ['/health/', '/medical/', '/wellness/']):
+        return 'health'
+    
+    # NOTE: Removed automatic 'world' URL categorization - too many false positives
+    # World news should be determined by content (war, conflict, international policy)
+    
+    # ==========================================================================
+    # STEP 4: Weighted keyword-based categorization
+    # ==========================================================================
+    
     scores = {}
     for category, keyword_tiers in categories.items():
         score = 0

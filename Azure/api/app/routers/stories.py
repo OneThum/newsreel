@@ -475,9 +475,10 @@ async def get_story_detail(
     # For now, we'll query across partitions (less efficient but works)
     # In production, would include category in the request
     
-    # Try common categories
+    # Try all categories
     story = None
-    for category in ['world', 'tech', 'science', 'business', 'general', 'sports', 'health', 'politics']:
+    for category in ['world', 'politics', 'business', 'tech', 'science', 'health', 'sports', 
+                     'entertainment', 'lifestyle', 'environment', 'general']:
         story = await cosmos_service.get_story(story_id, category)
         if story:
             break

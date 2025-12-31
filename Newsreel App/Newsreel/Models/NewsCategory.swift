@@ -11,6 +11,7 @@ import SwiftUI
 /// News categories/topics
 enum NewsCategory: String, Codable, CaseIterable, Identifiable {
     case topStories = "top_stories"
+    case world = "world"
     case politics = "politics"
     case business = "business"
     case technology = "technology"
@@ -18,7 +19,7 @@ enum NewsCategory: String, Codable, CaseIterable, Identifiable {
     case health = "health"
     case sports = "sports"
     case entertainment = "entertainment"
-    case world = "world"
+    case lifestyle = "lifestyle"      // Product reviews, guides, how-tos
     case environment = "environment"
     
     var id: String { rawValue }
@@ -26,14 +27,15 @@ enum NewsCategory: String, Codable, CaseIterable, Identifiable {
     var displayName: String {
         switch self {
         case .topStories: return "Top Stories"
+        case .world: return "World"
         case .politics: return "Politics"
         case .business: return "Business"
-        case .technology: return "Technology"
+        case .technology: return "Tech"
         case .science: return "Science"
         case .health: return "Health"
         case .sports: return "Sports"
         case .entertainment: return "Entertainment"
-        case .world: return "World"
+        case .lifestyle: return "Lifestyle"
         case .environment: return "Environment"
         }
     }
@@ -41,6 +43,7 @@ enum NewsCategory: String, Codable, CaseIterable, Identifiable {
     var icon: String {
         switch self {
         case .topStories: return "flame.fill"
+        case .world: return "globe.americas.fill"
         case .politics: return "building.columns.fill"
         case .business: return "chart.line.uptrend.xyaxis"
         case .technology: return "laptopcomputer"
@@ -48,7 +51,7 @@ enum NewsCategory: String, Codable, CaseIterable, Identifiable {
         case .health: return "heart.fill"
         case .sports: return "sportscourt.fill"
         case .entertainment: return "film.fill"
-        case .world: return "globe.americas.fill"
+        case .lifestyle: return "house.fill"
         case .environment: return "leaf.fill"
         }
     }
@@ -56,6 +59,7 @@ enum NewsCategory: String, Codable, CaseIterable, Identifiable {
     var color: Color {
         switch self {
         case .topStories: return .orange
+        case .world: return .indigo
         case .politics: return .blue
         case .business: return .green
         case .technology: return .purple
@@ -63,7 +67,7 @@ enum NewsCategory: String, Codable, CaseIterable, Identifiable {
         case .health: return .red
         case .sports: return .yellow
         case .entertainment: return .pink
-        case .world: return .indigo
+        case .lifestyle: return .teal
         case .environment: return .mint
         }
     }
