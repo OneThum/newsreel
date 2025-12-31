@@ -152,7 +152,7 @@ class ClusteringABTest:
                 'use_time_window': config.CLUSTERING_USE_TIME_WINDOW,
                 'use_adaptive_threshold': config.CLUSTERING_USE_ADAPTIVE_THRESHOLD,
                 'embedding_model': config.EMBEDDINGS_MODEL,
-                'similarity_threshold': 0.75  # Higher threshold for embeddings
+                'similarity_threshold': 0.72  # Aligned with SEMANTIC_CLUSTER_THRESHOLD
             }
         }
 

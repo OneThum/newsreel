@@ -59,6 +59,7 @@
 		4A1000036 /* StatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A2000036 /* StatusBadge.swift */; };
 		4A1000037 /* LaunchScreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A2000037 /* LaunchScreenView.swift */; };
 		4A1000038 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A2000038 /* NotificationService.swift */; };
+		4A1000039 /* ReadStateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A2000039 /* ReadStateManager.swift */; };
 		AA2000001 /* StorySourcesView.swift in Frameworks */ = {isa = PBXBuildFile; fileRef = AA1000001 /* StorySourcesView.swift */; };
 /* End PBXBuildFile section */
 
@@ -109,6 +110,7 @@
 		4A2000036 /* StatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBadge.swift; sourceTree = "<group>"; };
 		4A2000037 /* LaunchScreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchScreenView.swift; sourceTree = "<group>"; };
 		4A2000038 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		4A2000039 /* ReadStateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadStateManager.swift; sourceTree = "<group>"; };
 		4A3000001 /* Newsreel.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Newsreel.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA1000001 /* StorySourcesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = StorySourcesView.swift; path = Views/Components/StorySourcesView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -224,6 +226,7 @@
 				4A2000030 /* Logger.swift */,
 				4A2000033 /* SourceNameMapper.swift */,
 				4A2000038 /* NotificationService.swift */,
+				4A2000039 /* ReadStateManager.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -407,6 +410,7 @@
 				4A1000035 /* NotificationsView.swift in Sources */,
 				4A1000037 /* LaunchScreenView.swift in Sources */,
 				4A1000038 /* NotificationService.swift in Sources */,
+				4A1000039 /* ReadStateManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -75,6 +75,65 @@ struct MainAppView: View {
     }
 }
 
+// MARK: - Feed Status Icon
+
+/// App icon with status glow indicating live/cached data
+struct FeedStatusIcon: View {
+    let dataSource: FeedDataSource
+    
+    @State private var isAnimating = false
+    
+    private var glowColor: Color {
+        switch dataSource {
+        case .live:
+            return .green
+        case .cached:
+            return .red
+        case .loading:
+            return .orange
+        }
+    }
+    
+    private var statusTooltip: String {
+        switch dataSource {
+        case .live:
+            return "Live feed"
+        case .cached:
+            return "Cached data - pull to refresh"
+        case .loading:
+            return "Loading..."
+        }
+    }
+    
+    var body: some View {
+        Image("AppIconDisplay")
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: 32, height: 32)
+            .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .stroke(glowColor, lineWidth: 2)
+                    .shadow(color: glowColor.opacity(0.8), radius: isAnimating ? 6 : 3)
+                    .shadow(color: glowColor.opacity(0.5), radius: isAnimating ? 10 : 5)
+            )
+            .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: isAnimating)
+            .onAppear {
+                // Only animate the glow for cached/loading states
+                if dataSource != .live {
+                    isAnimating = true
+                }
+            }
+            .onChange(of: dataSource) { _, newValue in
+                // Start/stop pulsing animation based on status
+                withAnimation {
+                    isAnimating = newValue != .live
+                }
+            }
+            .accessibilityLabel(statusTooltip)
+    }
+}
+
 // MARK: - Category Filter Bar
 
 struct CategoryFilterBar: View {
@@ -186,11 +245,7 @@ struct FeedView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Image("AppIconDisplay")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 32, height: 32)
-                        .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                    FeedStatusIcon(dataSource: viewModel.dataSource)
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -349,6 +404,7 @@ struct FeedView: View {
                                             selectedStory = story
                                         }
                                     )
+                                    .padding(.top, -8)  // Reduce gap between filter pills and carousel
                                 }
                                 
                                 // REMOVED: lastTimeUpdate trigger was causing full feed re-renders every 5 minutes!
@@ -462,6 +518,16 @@ struct FeedView: View {
 
 // MARK: - Feed View Model
 
+/// Indicates the source of feed data
+enum FeedDataSource {
+    case live       // Fresh data from API
+    case cached     // Loaded from local cache (offline or API failed)
+    case loading    // Currently fetching data
+    
+    var isLive: Bool { self == .live }
+    var isCached: Bool { self == .cached }
+}
+
 @MainActor
 class FeedViewModel: ObservableObject {
     @Published var stories: [Story] = []
@@ -475,6 +541,7 @@ class FeedViewModel: ObservableObject {
     @Published private(set) var lastTimeUpdate = Date() // Triggers UI refresh for timeAgo updates
     @Published var shouldScrollToTop = false // Triggers scroll animation
     @Published var scrollToStoryId: String? = nil // Scroll to specific story
+    @Published var dataSource: FeedDataSource = .loading // Track if data is live or cached
 
     private var pendingNewStories: [Story] = []
     private var currentPage = 0
@@ -517,6 +584,7 @@ class FeedViewModel: ObservableObject {
         // Always set loading state
         isLoading = true
         error = nil
+        dataSource = .loading
         
         do {
             log.log("📡 Calling API with category: \(selectedCategory?.rawValue ?? "nil")", category: .api, level: .info)
@@ -543,6 +611,7 @@ class FeedViewModel: ObservableObject {
             }
             currentPage += 1
             lastFetchDate = Date()
+            dataSource = .live // Successfully loaded from API
             log.log("✅ Stories loaded successfully: \(newStories.count) new stories, \(stories.count) total", category: .ui, level: .info)
             
             // Log status distribution for badge monitoring and accuracy verification
@@ -571,6 +640,9 @@ class FeedViewModel: ObservableObject {
             // If network fails and we have no stories, try loading from cache
             if stories.isEmpty {
                 loadFromCache()
+            } else {
+                // We still have stories but API failed - mark as cached (stale data)
+                dataSource = .cached
             }
         }
         
@@ -584,7 +656,8 @@ class FeedViewModel: ObservableObject {
             if !cachedStories.isEmpty {
                 // Trust cached ordering - stories were cached in server-provided order
                 self.stories = cachedStories
-                log.log("📱 Loaded \(cachedStories.count) stories from cache", category: .ui, level: .info)
+                self.dataSource = .cached // Showing cached data, not live
+                log.log("📱 Loaded \(cachedStories.count) stories from cache (offline mode)", category: .ui, level: .info)
             }
         } catch {
             log.log("❌ Failed to load cached stories: \(error.localizedDescription)", category: .error, level: .error)
@@ -1676,24 +1749,24 @@ struct BreakingNewsCarousel: View {
     let onStoryTap: (Story) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Section header with adequate top padding
-            HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: 8) {
+            // Section header - NO extra padding, parent LazyVStack provides .padding(.horizontal)
+            HStack(spacing: 6) {
                 Image(systemName: "flame.fill")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(.red)
                 Text("BREAKING NEWS")
-                    .font(.outfit(size: 13, weight: .bold))
+                    .font(.outfit(size: 12, weight: .bold))
                     .foregroundStyle(.red)
                     .tracking(0.5)
             }
-            .padding(.top, 8)
-            .padding(.bottom, 10)
-            .padding(.horizontal, 16)
+            // No .padding(.horizontal) here - parent provides it
 
             // Horizontal scrolling carousel
+            // Use negative horizontal margin to break out of parent padding,
+            // then add padding inside ScrollView for proper edge insets
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
+                HStack(spacing: 12) {
                     ForEach(stories) { story in
                         BreakingNewsCard(story: story)
                             .onTapGesture {
@@ -1702,10 +1775,12 @@ struct BreakingNewsCarousel: View {
                             }
                     }
                 }
-                .padding(.horizontal, 16)
+                .padding(.leading, 0)  // Left-aligned with header (no extra padding)
+                .padding(.trailing, 16) // Allow last card to have some spacing from edge
             }
+            .padding(.horizontal, -16)  // Break out of parent padding
+            .padding(.leading, 16)      // Re-add left padding to align with header
         }
-        .padding(.bottom, 8)
     }
 }
 

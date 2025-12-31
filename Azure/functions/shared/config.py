@@ -51,8 +51,10 @@ class Config:
     BREAKING_NEWS_WINDOW_MINUTES: int = 30
     
     # Semantic Clustering (2025 - OpenAI embeddings)
-    SEMANTIC_CLUSTER_THRESHOLD: float = 0.82  # Cosine similarity threshold for same story
-    SEMANTIC_MAYBE_THRESHOLD: float = 0.75  # Threshold for entity validation check
+    # Lowered from 0.82 to 0.72 - OpenAI embeddings work well at this threshold
+    # Previously 97% of stories had only 1 source due to overly strict matching
+    SEMANTIC_CLUSTER_THRESHOLD: float = 0.72  # Cosine similarity threshold for same story
+    SEMANTIC_MAYBE_THRESHOLD: float = 0.65  # Threshold for entity validation check
     
     # DEPRECATED: Legacy keyword-based threshold (kept for reference)
     STORY_FINGERPRINT_SIMILARITY_THRESHOLD: float = 0.70  # Not used with semantic clustering

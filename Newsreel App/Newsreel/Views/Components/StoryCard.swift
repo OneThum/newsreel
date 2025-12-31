@@ -9,11 +9,17 @@ import SwiftUI
 
 struct StoryCard: View {
     @EnvironmentObject var authService: AuthService
+    @ObservedObject private var readStateManager = ReadStateManager.shared
     let story: Story
     let onTap: () -> Void
     let onSave: () -> Void
     let onLike: () -> Void
     let onShare: () -> Void
+    
+    /// Whether this story has been read and not updated since
+    private var isRead: Bool {
+        readStateManager.isStoryRead(story)
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -34,17 +40,17 @@ struct StoryCard: View {
                         .foregroundStyle(.secondary)
                 }
                 
-                // Title
+                // Title - dims when read
                 Text(story.title)
                     .font(.outfit(size: 20, weight: .bold))
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(isRead ? .secondary : .primary)
                     .lineLimit(3)
                 
                 // Summary (only show if not empty and valid)
                 if !story.displaySummary.isEmpty {
                     Text(.init(story.displaySummary))  // Parse markdown
                         .font(.outfit(size: 15, weight: .regular))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(isRead ? .tertiary : .secondary)
                         .lineLimit(3)
                 }
                 
@@ -95,6 +101,9 @@ struct StoryCard: View {
             .padding(16)
         }
         .glassCard(cornerRadius: 16)
+        // Subtle opacity reduction for read stories
+        .opacity(isRead ? 0.7 : 1.0)
+        .animation(.easeInOut(duration: 0.3), value: isRead)
         .onTapGesture {
             HapticManager.selection()
             onTap()

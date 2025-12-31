@@ -119,7 +119,12 @@ class CosmosService:
         limit: int = 20,
         offset: int = 0
     ) -> List[Dict[str, Any]]:
-        """Query recent stories - OPTIMIZED: excludes embedding vectors for fast response"""
+        """Query recent stories - OPTIMIZED: excludes embedding vectors for fast response
+        
+        CRITICAL FIXES:
+        1. Filters by first_seen (article publish date) to exclude old articles
+        2. Sorts by first_seen DESC for proper chronological ordering (newest first)
+        """
         try:
             container = self._get_container("story_clusters")
             
@@ -128,12 +133,18 @@ class CosmosService:
                               c.summary, c.source_count, c.first_seen, c.last_updated,
                               c.importance_score, c.breaking_news, c.source_articles"""
             
+            # Date filter: exclude articles older than 7 days
+            seven_days_ago = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+            
             # Special handling for "top_stories" category
+            # Exclude lifestyle/entertainment - these aren't "top stories" in the news sense
             if category == "top_stories":
                 query = f"""
                     SELECT {select_fields} FROM c 
                     WHERE c.status IN ('NEW', 'DEVELOPING', 'VERIFIED')
-                    ORDER BY c.last_updated DESC
+                    AND c.first_seen >= '{seven_days_ago}'
+                    AND c.category NOT IN ('lifestyle', 'entertainment')
+                    ORDER BY c.first_seen DESC
                     OFFSET 0 LIMIT {limit + offset}
                 """
                 items = list(container.query_items(
@@ -142,12 +153,11 @@ class CosmosService:
                 ))
             elif category:
                 # Category-specific query with partition key
-                seven_days_ago = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
                 query = f"""
                     SELECT {select_fields} FROM c 
                     WHERE c.category = @category
-                    AND c.last_updated >= '{seven_days_ago}'
-                    ORDER BY c.last_updated DESC
+                    AND c.first_seen >= '{seven_days_ago}'
+                    ORDER BY c.first_seen DESC
                     OFFSET 0 LIMIT {limit + offset}
                 """
                 parameters = [{"name": "@category", "value": category}]
@@ -156,12 +166,14 @@ class CosmosService:
                     parameters=parameters
                 ))
             else:
-                # All categories - limited to 48 hours for faster queries
+                # All categories (default feed) - limited to 48 hours for faster queries
+                # Exclude lifestyle from the main news feed - users can filter to lifestyle if wanted
                 two_days_ago = (datetime.now(timezone.utc) - timedelta(hours=48)).isoformat()
                 query = f"""
                     SELECT {select_fields} FROM c
-                    WHERE c.last_updated >= '{two_days_ago}'
-                    ORDER BY c.last_updated DESC
+                    WHERE c.first_seen >= '{two_days_ago}'
+                    AND c.category NOT IN ('lifestyle')
+                    ORDER BY c.first_seen DESC
                     OFFSET 0 LIMIT {limit + offset}
                 """
                 items = list(container.query_items(
@@ -202,13 +214,20 @@ class CosmosService:
             raise
     
     async def query_breaking_news(self, limit: int = 10) -> List[Dict[str, Any]]:
-        """Query recent stories - OPTIMIZED for fast response times"""
+        """Query recent stories - OPTIMIZED for fast response times
+        
+        Excludes lifestyle/entertainment content as this is for "news" not product reviews.
+        CRITICAL: Filters by BOTH last_updated AND first_seen to exclude old articles.
+        """
         try:
             container = self._get_container("story_clusters")
             
             # PERFORMANCE FIX: Select only needed fields, exclude large embedding vectors
             # Query recent stories from the last 24 hours, sorted by last_updated
+            # EXCLUDE lifestyle/entertainment - these aren't breaking "news"
             one_day_ago = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+            # CRITICAL: Also filter by first_seen to exclude old articles (e.g., 2022 articles)
+            seven_days_ago = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
             
             # Select specific fields to avoid fetching huge embedding arrays
             query = f"""
@@ -217,7 +236,9 @@ class CosmosService:
                        c.importance_score, c.breaking_news, c.source_articles
                 FROM c
                 WHERE c.last_updated >= '{one_day_ago}'
-                ORDER BY c.last_updated DESC
+                AND c.first_seen >= '{seven_days_ago}'
+                AND c.category NOT IN ('lifestyle', 'entertainment')
+                ORDER BY c.first_seen DESC
                 OFFSET 0 LIMIT {limit * 2}
             """
             
@@ -228,16 +249,20 @@ class CosmosService:
             
             logger.info(f"📊 [COSMOS] query_breaking_news returned {len(items)} items")
             
-            # If insufficient recent stories, do a fallback query
+            # If insufficient recent stories, do a fallback query (still respecting first_seen limit)
             if len(items) < limit:
                 logger.info(f"📊 [COSMOS] Insufficient recent stories ({len(items)}), adding older stories")
+                # Fallback: look at last 14 days but still filter by first_seen
+                fourteen_days_ago = (datetime.now(timezone.utc) - timedelta(days=14)).isoformat()
                 fallback_query = f"""
                     SELECT c.id, c.title, c.category, c.tags, c.status, c.verification_level,
                            c.summary, c.source_count, c.first_seen, c.last_updated,
                            c.importance_score, c.breaking_news, c.source_articles
                     FROM c
                     WHERE c.status IN ('NEW', 'DEVELOPING', 'VERIFIED')
-                    ORDER BY c.last_updated DESC
+                    AND c.first_seen >= '{fourteen_days_ago}'
+                    AND c.category NOT IN ('lifestyle', 'entertainment')
+                    ORDER BY c.first_seen DESC
                     OFFSET 0 LIMIT {limit}
                 """
                 fallback_items = list(container.query_items(

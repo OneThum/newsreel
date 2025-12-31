@@ -49,66 +49,80 @@ class RecommendationService:
         preferences: Dict[str, Any],
         personalization: Dict[str, Any]
     ) -> float:
-        """Score a story for personalization"""
+        """Score a story for personalization
         
-        score = 50.0  # Base score
+        CRITICAL: Recency is now the PRIMARY factor (0-100 points) to ensure
+        chronological ordering (newest first). Other factors provide minor adjustments.
+        """
         
-        # Factor 1: Importance score (0-40 points)
+        score = 0.0
+        
+        # Factor 1: RECENCY IS PRIMARY (0-100 points)
+        # Use first_seen (article publish date) not last_updated (cluster update)
+        first_seen = story.get('first_seen')
+        if first_seen:
+            try:
+                from datetime import timezone
+                seen_dt = datetime.fromisoformat(first_seen.replace('Z', '+00:00'))
+                age_hours = (datetime.now(timezone.utc) - seen_dt).total_seconds() / 3600
+                
+                # Newer stories get MUCH higher scores (this dominates the ranking)
+                if age_hours < 1:
+                    score += 100
+                elif age_hours < 3:
+                    score += 95
+                elif age_hours < 6:
+                    score += 90
+                elif age_hours < 12:
+                    score += 80
+                elif age_hours < 24:
+                    score += 70
+                elif age_hours < 48:
+                    score += 50
+                else:
+                    score += max(0, 30 - age_hours)  # Decay for older stories
+            except Exception:
+                score += 50  # Default if parsing fails
+        else:
+            score += 50  # Default base score
+        
+        # Factor 2: Breaking news boost (0-15 points)
+        if story.get('breaking_news'):
+            score += 15
+        
+        # Factor 3: Importance score (0-10 points) - minor factor
         importance = story.get('importance_score', 50)
-        score += (importance / 100) * 40
+        score += (importance / 100) * 10
         
-        # Factor 2: Verification level (0-20 points)
+        # Factor 4: Verification level (0-5 points) - minor factor
         verification = story.get('verification_level', 1)
-        score += min(verification * 5, 20)
+        score += min(verification, 5)
         
-        # Factor 3: Category preference (0-30 points)
+        # Factor 5: Category preference (0-10 points) - minor factor
         category = story.get('category', 'general')
         category_scores = personalization.get('category_scores', {})
         if category in category_scores:
             category_preference = category_scores[category]
-            score += category_preference * 30
+            score += category_preference * 10
         else:
             # Default category score
             preferred_categories = preferences.get('categories', [])
             if category in preferred_categories:
-                score += 20
-        
-        # Factor 4: Recency (0-10 points)
-        last_updated = story.get('last_updated')
-        if last_updated:
-            try:
-                updated_dt = datetime.fromisoformat(last_updated.replace('Z', '+00:00'))
-                age_hours = (datetime.now(updated_dt.tzinfo) - updated_dt).total_seconds() / 3600
-                
-                # Newer stories get higher scores
-                if age_hours < 1:
-                    score += 10
-                elif age_hours < 6:
-                    score += 7
-                elif age_hours < 24:
-                    score += 4
-                else:
-                    score += 1
-            except Exception:
-                pass
-        
-        # Factor 5: Breaking news boost
-        if story.get('breaking_news'):
-            score += 20
-        
-        # Factor 6: Source boost/mute
-        # (Would need to check source articles)
+                score += 5
         
         return score
     
     def _rank_by_importance(self, stories: List[Dict[str, Any]], limit: int) -> List[Dict[str, Any]]:
-        """Rank stories by importance score"""
+        """Rank stories by recency (newest first), with breaking news at top
+        
+        CRITICAL: Primary sort is by first_seen (article publish date) for chronological order.
+        Breaking news gets priority, then sorted by recency.
+        """
         sorted_stories = sorted(
             stories,
             key=lambda s: (
-                s.get('breaking_news', False),
-                s.get('importance_score', 50),
-                s.get('verification_level', 1)
+                s.get('breaking_news', False),  # Breaking news first
+                s.get('first_seen', '1970-01-01')  # Then by publish date (newest first)
             ),
             reverse=True
         )

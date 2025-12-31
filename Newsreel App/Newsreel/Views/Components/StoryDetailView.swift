@@ -488,6 +488,9 @@ class StoryDetailViewModel: ObservableObject {
     }
     
     func markAsRead() async {
+        // Mark in local ReadStateManager for dimming effect in feed
+        ReadStateManager.shared.markAsRead(story)
+        
         guard !story.isRead else { return }
         
         do {
