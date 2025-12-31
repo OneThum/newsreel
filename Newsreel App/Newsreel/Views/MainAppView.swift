@@ -106,25 +106,26 @@ struct FeedStatusIcon: View {
     }
     
     var body: some View {
-        // Circular container with glow effect
+        // Circular container with OUTER glow effect
         ZStack {
-            // Glowing circle behind the icon
+            // Outer glow layer (behind everything)
             Circle()
-                .fill(Color(.systemBackground).opacity(0.01)) // Nearly invisible fill
-                .frame(width: 40, height: 40)
-                .overlay(
-                    Circle()
-                        .stroke(glowColor.opacity(0.6), lineWidth: 2)
-                )
-                .shadow(color: glowColor.opacity(isAnimating ? 0.9 : 0.6), radius: isAnimating ? 8 : 4)
-                .shadow(color: glowColor.opacity(isAnimating ? 0.6 : 0.3), radius: isAnimating ? 12 : 6)
+                .fill(glowColor)
+                .frame(width: 38, height: 38)
+                .blur(radius: isAnimating ? 10 : 6)
+                .opacity(isAnimating ? 0.7 : 0.5)
+            
+            // Circle border/ring
+            Circle()
+                .stroke(glowColor, lineWidth: 2)
+                .frame(width: 38, height: 38)
             
             // App icon inside the circle
             Image("AppIconDisplay")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 28, height: 28)
-                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .frame(width: 26, height: 26)
+                .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
         }
         .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: isAnimating)
         .onAppear {

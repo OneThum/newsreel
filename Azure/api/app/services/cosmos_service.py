@@ -214,22 +214,23 @@ class CosmosService:
             raise
     
     async def query_breaking_news(self, limit: int = 10) -> List[Dict[str, Any]]:
-        """Query ACTUAL breaking news stories - stories flagged as breaking_news=true
+        """Query ACTUAL breaking news stories - ONLY stories flagged as breaking_news=true
         
-        If no breaking news available, falls back to high-importance recent stories.
-        This ensures the breaking news carousel shows DIFFERENT content than the main feed.
+        Returns empty list if no breaking news exists.
+        The iOS app will hide the breaking news carousel when empty.
+        NO FALLBACK - only real breaking news.
         """
         try:
             container = self._get_container("story_clusters")
             
-            # Date filters
+            # Only show breaking news from the last 3 days
             three_days_ago = (datetime.now(timezone.utc) - timedelta(days=3)).isoformat()
             
             select_fields = """c.id, c.title, c.category, c.tags, c.status, c.verification_level,
                        c.summary, c.source_count, c.first_seen, c.last_updated,
                        c.importance_score, c.breaking_news, c.source_articles"""
             
-            # FIRST: Try to get actual breaking news stories
+            # ONLY get actual breaking news stories - no fallback
             query = f"""
                 SELECT {select_fields}
                 FROM c
@@ -244,44 +245,12 @@ class CosmosService:
                 enable_cross_partition_query=True
             ))
             
-            logger.info(f"📊 [COSMOS] query_breaking_news: {len(items)} actual breaking news stories")
+            logger.info(f"📊 [COSMOS] query_breaking_news: {len(items)} actual breaking news stories (no fallback)")
             
-            # FALLBACK: If no breaking news, get high-importance stories from multiple sources
-            if len(items) < limit:
-                logger.info(f"📊 [COSMOS] Insufficient breaking news ({len(items)}), adding high-importance stories")
-                two_days_ago = (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
-                
-                # Get stories with high importance OR multiple sources (verified/developing)
-                fallback_query = f"""
-                    SELECT {select_fields}
-                    FROM c
-                    WHERE c.first_seen >= '{two_days_ago}'
-                    AND c.category NOT IN ('lifestyle', 'entertainment')
-                    AND (c.importance_score >= 60 OR c.source_count >= 2 OR c.status IN ('VERIFIED', 'DEVELOPING'))
-                    ORDER BY c.importance_score DESC
-                    OFFSET 0 LIMIT {limit * 2}
-                """
-                fallback_items = list(container.query_items(
-                    query=fallback_query,
-                    enable_cross_partition_query=True
-                ))
-                
-                # Add fallback items that aren't already in items
-                existing_ids = {item['id'] for item in items}
-                for fallback in fallback_items:
-                    if fallback['id'] not in existing_ids:
-                        items.append(fallback)
-                        if len(items) >= limit:
-                            break
-                
-                logger.info(f"📊 [COSMOS] After fallback: {len(items)} total breaking/important stories")
-                
-                logger.info(f"📊 [COSMOS] After fallback: {len(items)} total items")
-            
-            # Items already sorted by query, just apply limit
+            # Return actual breaking news only - no fallback
             return items[:limit]
         except Exception as e:
-            logger.error(f"Error querying recent stories: {e}")
+            logger.error(f"Error querying breaking news: {e}")
             raise
 
     async def get_latest_cluster_update(self) -> Optional[datetime]:
