@@ -113,12 +113,23 @@ struct ClusteringStats: Codable {
     let avgSourcesPerStory: Double
     let storiesCreated24h: Int
     let storiesUpdated24h: Int
+    // Pipeline monitoring
+    let unprocessedArticles: Int
+    let processedArticles: Int
+    let processingRatePerHour: Int
+    let oldestUnprocessedAgeMinutes: Int
+    let clusteringHealth: String  // "healthy", "degraded", "stalled", "error"
     
     enum CodingKeys: String, CodingKey {
         case matchRate = "match_rate"
         case avgSourcesPerStory = "avg_sources_per_story"
         case storiesCreated24h = "stories_created_24h"
         case storiesUpdated24h = "stories_updated_24h"
+        case unprocessedArticles = "unprocessed_articles"
+        case processedArticles = "processed_articles"
+        case processingRatePerHour = "processing_rate_per_hour"
+        case oldestUnprocessedAgeMinutes = "oldest_unprocessed_age_minutes"
+        case clusteringHealth = "clustering_health"
     }
 }
 

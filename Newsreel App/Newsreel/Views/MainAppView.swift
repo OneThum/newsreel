@@ -105,20 +105,18 @@ struct FeedStatusIcon: View {
     
     var body: some View {
         // App icon in circular container with colored outline
-        ZStack {
-            // Thin colored circle outline
-            Circle()
-                .stroke(ringColor, lineWidth: 1.5)
-                .frame(width: 36, height: 36)
-            
-            // App icon inside
-            Image("AppIconDisplay")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 26, height: 26)
-                .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
-        }
-        .accessibilityLabel(statusTooltip)
+        Image("AppIconDisplay")
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: 28, height: 28)
+            .clipShape(Circle())
+            .overlay(
+                Circle()
+                    .strokeBorder(ringColor, lineWidth: 2)
+                    .frame(width: 34, height: 34)
+            )
+            .frame(width: 36, height: 36)
+            .accessibilityLabel(statusTooltip)
     }
 }
 

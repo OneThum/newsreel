@@ -261,7 +261,8 @@ async def get_personalized_feed(
     
     processed_stories = []
     for story in stories:
-        has_summary = bool(story.get('summary', {}).get('text'))
+        summary = story.get('summary') or {}
+        has_summary = bool(summary.get('text') if isinstance(summary, dict) else summary)
         
         # Include any story that has a summary - let users see all news
         if has_summary:

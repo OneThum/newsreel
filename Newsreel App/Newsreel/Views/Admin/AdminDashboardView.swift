@@ -299,13 +299,53 @@ struct AdminDashboardView: View {
     // MARK: - Story Clustering
     
     private func storyClusteringSection(metrics: AdminMetrics) -> some View {
-        DashboardCard(title: "Story Clustering", icon: "link.circle.fill", color: .blue) {
+        DashboardCard(title: "Story Clustering", icon: "link.circle.fill", color: clusteringHealthColor(metrics.clustering.clusteringHealth)) {
             VStack(spacing: 12) {
+                // Pipeline Health Status
+                HStack {
+                    Text("Pipeline Status")
+                        .font(.outfit(size: 13, weight: .medium))
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(clusteringHealthColor(metrics.clustering.clusteringHealth))
+                            .frame(width: 8, height: 8)
+                        Text(metrics.clustering.clusteringHealth.capitalized)
+                            .font(.outfit(size: 13, weight: .semibold))
+                            .foregroundColor(clusteringHealthColor(metrics.clustering.clusteringHealth))
+                    }
+                }
+                
+                Divider()
+                
+                // Article Processing Stats
+                MetricRow(label: "Unprocessed Articles", value: metrics.clustering.unprocessedArticles.formatted)
+                MetricRow(label: "Processed Articles", value: metrics.clustering.processedArticles.formatted)
+                MetricRow(label: "Processing Rate", value: "\(metrics.clustering.processingRatePerHour)/hour")
+                
+                if metrics.clustering.oldestUnprocessedAgeMinutes > 0 {
+                    MetricRow(label: "Oldest Backlog Age", value: "\(metrics.clustering.oldestUnprocessedAgeMinutes) min")
+                }
+                
+                Divider()
+                
+                // Clustering Quality Stats
                 MetricRow(label: "Match Rate", value: String(format: "%.1f%%", metrics.clustering.matchRate * 100))
                 MetricRow(label: "Avg Sources/Story", value: String(format: "%.1f", metrics.clustering.avgSourcesPerStory))
                 MetricRow(label: "Created (24h)", value: metrics.clustering.storiesCreated24h.formatted)
                 MetricRow(label: "Updated (24h)", value: metrics.clustering.storiesUpdated24h.formatted)
             }
+        }
+    }
+    
+    private func clusteringHealthColor(_ health: String) -> Color {
+        switch health.lowercased() {
+        case "healthy": return .green
+        case "degraded": return .orange
+        case "stalled": return .red
+        case "error": return .red
+        default: return .gray
         }
     }
     

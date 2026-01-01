@@ -84,6 +84,12 @@ class ClusteringStats(BaseModel):
     avg_sources_per_story: float
     stories_created_24h: int
     stories_updated_24h: int
+    # New clustering pipeline stats
+    unprocessed_articles: int = 0
+    processed_articles: int = 0
+    processing_rate_per_hour: int = 0
+    oldest_unprocessed_age_minutes: int = 0
+    clustering_health: str = "unknown"  # healthy, degraded, stalled
 
 
 class SummarizationStats(BaseModel):
@@ -252,12 +258,61 @@ async def get_admin_metrics(user: Dict[str, Any] = Depends(require_admin)):
         success_rate = min(unique_sources / total_feeds, 1.0) if total_feeds > 0 else 0.0
 
         # ==================================================================
-        # CLUSTERING STATS
+        # CLUSTERING STATS (Enhanced with pipeline monitoring)
         # ==================================================================
 
+        # Initialize clustering pipeline stats
+        unprocessed_articles = 0
+        processed_articles = 0
+        processing_rate_per_hour = 0
+        oldest_unprocessed_age_minutes = 0
+        clustering_health = "unknown"
+
         try:
+            # Get unprocessed articles count
+            unprocessed_query = list(raw_articles_container.query_items(
+                query="SELECT VALUE COUNT(1) FROM c WHERE c.processed = false OR NOT IS_DEFINED(c.processed)",
+                enable_cross_partition_query=True
+            ))
+            unprocessed_articles = unprocessed_query[0] if unprocessed_query else 0
+
+            # Get processed articles count
+            processed_query = list(raw_articles_container.query_items(
+                query="SELECT VALUE COUNT(1) FROM c WHERE c.processed = true",
+                enable_cross_partition_query=True
+            ))
+            processed_articles = processed_query[0] if processed_query else 0
+
+            # Calculate processing rate (articles processed in last hour)
+            one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
+            # Estimate from recent stories created
+            recent_processed = list(stories_container.query_items(
+                query=f"SELECT VALUE COUNT(1) FROM c WHERE c.first_seen >= '{one_hour_ago.isoformat()}'",
+                enable_cross_partition_query=True
+            ))
+            processing_rate_per_hour = recent_processed[0] if recent_processed else 0
+
+            # Get oldest unprocessed article age
+            oldest_unprocessed = list(raw_articles_container.query_items(
+                query="SELECT TOP 1 c.fetched_at FROM c WHERE c.processed = false OR NOT IS_DEFINED(c.processed) ORDER BY c.fetched_at ASC",
+                enable_cross_partition_query=True
+            ))
+            if oldest_unprocessed and oldest_unprocessed[0].get('fetched_at'):
+                try:
+                    oldest_time = datetime.fromisoformat(str(oldest_unprocessed[0]['fetched_at']).replace('Z', '+00:00'))
+                    oldest_unprocessed_age_minutes = int((datetime.now(timezone.utc) - oldest_time).total_seconds() / 60)
+                except:
+                    oldest_unprocessed_age_minutes = 0
+
+            # Determine clustering health
+            if unprocessed_articles < 100 and oldest_unprocessed_age_minutes < 30:
+                clustering_health = "healthy"
+            elif unprocessed_articles < 1000 and oldest_unprocessed_age_minutes < 120:
+                clustering_health = "degraded"
+            else:
+                clustering_health = "stalled"
+
             # Get sample of stories to calculate stats (avoid complex aggregations)
-            # Query up to 1000 stories to calculate averages
             sample_stories = list(stories_container.query_items(
                 query="SELECT c.verification_level, c.first_seen, c.last_updated FROM c",
                 enable_cross_partition_query=True,
@@ -305,6 +360,7 @@ async def get_admin_metrics(user: Dict[str, Any] = Depends(require_admin)):
             created_24h = 0
             updated_24h = 0
             match_rate = 0.0
+            clustering_health = "error"
         
         # ==================================================================
         # SUMMARIZATION STATS
@@ -447,7 +503,12 @@ async def get_admin_metrics(user: Dict[str, Any] = Depends(require_admin)):
                 match_rate=match_rate,
                 avg_sources_per_story=avg_sources,
                 stories_created_24h=created_24h,
-                stories_updated_24h=updated_24h
+                stories_updated_24h=updated_24h,
+                unprocessed_articles=unprocessed_articles,
+                processed_articles=processed_articles,
+                processing_rate_per_hour=processing_rate_per_hour,
+                oldest_unprocessed_age_minutes=oldest_unprocessed_age_minutes,
+                clustering_health=clustering_health
             ),
             summarization=SummarizationStats(
                 coverage=coverage,
