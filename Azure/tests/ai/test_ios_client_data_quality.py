@@ -100,8 +100,11 @@ class IOSClientDataQualityTester:
 
         # Validate category
         if 'category' in story:
-            valid_categories = ['world', 'politics', 'business', 'tech', 'sports',
-                              'entertainment', 'health', 'science', 'australia']
+            valid_categories = [
+                'world', 'politics', 'business', 'tech', 'technology', 'sports',
+                'entertainment', 'health', 'science', 'lifestyle', 'environment',
+                'us', 'europe', 'australia', 'general', 'top_stories'
+            ]
             if story['category'] not in valid_categories:
                 issues.append(f"Invalid category: {story['category']}")
 
