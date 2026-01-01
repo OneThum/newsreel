@@ -77,13 +77,11 @@ struct MainAppView: View {
 
 // MARK: - Feed Status Icon
 
-/// App icon with status glow indicating live/cached data
+/// App icon with colored ring indicating live/cached data status
 struct FeedStatusIcon: View {
     let dataSource: FeedDataSource
     
-    @State private var isAnimating = false
-    
-    private var glowColor: Color {
+    private var ringColor: Color {
         switch dataSource {
         case .live:
             return .green
@@ -106,39 +104,19 @@ struct FeedStatusIcon: View {
     }
     
     var body: some View {
-        // Circular container with OUTER glow effect
+        // App icon in circular container with colored outline
         ZStack {
-            // Outer glow layer (behind everything)
+            // Thin colored circle outline
             Circle()
-                .fill(glowColor)
-                .frame(width: 38, height: 38)
-                .blur(radius: isAnimating ? 10 : 6)
-                .opacity(isAnimating ? 0.7 : 0.5)
+                .stroke(ringColor, lineWidth: 1.5)
+                .frame(width: 36, height: 36)
             
-            // Circle border/ring
-            Circle()
-                .stroke(glowColor, lineWidth: 2)
-                .frame(width: 38, height: 38)
-            
-            // App icon inside the circle
+            // App icon inside
             Image("AppIconDisplay")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 26, height: 26)
                 .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
-        }
-        .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: isAnimating)
-        .onAppear {
-            // Only animate the glow for cached/loading states
-            if dataSource != .live {
-                isAnimating = true
-            }
-        }
-        .onChange(of: dataSource) { _, newValue in
-            // Start/stop pulsing animation based on status
-            withAnimation {
-                isAnimating = newValue != .live
-            }
         }
         .accessibilityLabel(statusTooltip)
     }
