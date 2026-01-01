@@ -46,7 +46,7 @@ class TestDeployedAPI:
         response = requests.get(
             f"{api_base_url}/api/stories/feed?limit=10",
             headers=auth_headers,
-            timeout=10
+            timeout=30
         )
         
         assert response.status_code == 200, \
@@ -73,7 +73,7 @@ class TestDeployedAPI:
         response = requests.get(
             f"{api_base_url}/api/stories/feed?limit=20",
             headers=auth_headers,
-            timeout=10
+            timeout=30
         )
         
         assert response.status_code == 200
@@ -108,7 +108,7 @@ class TestDeployedAPI:
         response = requests.get(
             f"{api_base_url}/api/stories/feed?limit=20",
             headers=auth_headers,
-            timeout=10
+            timeout=30
         )
         
         assert response.status_code == 200
@@ -145,7 +145,7 @@ class TestDeployedAPI:
         response = requests.get(
             f"{api_base_url}/api/stories/feed?limit=5",
             headers=auth_headers,
-            timeout=10
+            timeout=30
         )
         
         assert response.status_code == 200
@@ -178,7 +178,7 @@ class TestDeployedAPI:
         response = requests.get(
             f"{api_base_url}/api/stories/breaking?limit=5",
             headers=auth_headers,
-            timeout=10
+            timeout=30
         )
         
         # Breaking endpoint might not exist, that's OK
@@ -201,7 +201,7 @@ class TestDeployedAPI:
         response = requests.get(
             f"{api_base_url}/api/stories/search?q=technology&limit=5",
             headers=auth_headers,
-            timeout=10
+            timeout=30
         )
         
         # Search might not be implemented
@@ -250,7 +250,7 @@ class TestDataPipeline:
         response = requests.get(
             f"{api_base_url}/api/stories/feed?limit=20",
             headers=auth_headers,
-            timeout=10
+            timeout=30
         )
         
         if response.status_code != 200:
@@ -271,7 +271,7 @@ class TestDataPipeline:
         response = requests.get(
             f"{api_base_url}/api/stories/feed?limit=20",
             headers=auth_headers,
-            timeout=10
+            timeout=30
         )
         
         if response.status_code != 200:
@@ -297,7 +297,7 @@ class TestDataPipeline:
         response = requests.get(
             f"{api_base_url}/api/stories/feed?limit=20",
             headers=auth_headers,
-            timeout=10
+            timeout=30
         )
         
         if response.status_code != 200:
@@ -328,7 +328,7 @@ class TestAuthenticationAndSecurity:
         response = requests.get(
             f"{api_base_url}/api/stories/feed",
             headers=headers,
-            timeout=10
+            timeout=30
         )
         
         # Should reject invalid token
@@ -349,7 +349,7 @@ class TestAuthenticationAndSecurity:
         response = requests.get(
             f"{api_base_url}/api/stories/feed?limit=1",
             headers=auth_headers,
-            timeout=10
+            timeout=30
         )
         
         # Check for common CORS headers

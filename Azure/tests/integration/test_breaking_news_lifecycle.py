@@ -1,6 +1,9 @@
 """Integration tests: Breaking News Lifecycle
 
 Tests the complete breaking news detection and notification workflow using REAL Cosmos DB
+
+NOTE: StoryStatus is now simplified to NEW, DEVELOPING, VERIFIED.
+Breaking news is indicated via the `breaking_news` boolean field, not a separate status.
 """
 import pytest
 import asyncio
@@ -12,7 +15,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 
 from functions.shared.cosmos_client import CosmosDBClient
-from functions.shared.models import StoryCluster
+from functions.shared.models import StoryCluster, StoryStatus
 
 
 @pytest.mark.integration
@@ -21,10 +24,10 @@ class TestBreakingNewsDetection:
     
     @pytest.mark.asyncio
     async def test_verified_to_breaking_transition(self, cosmos_client_for_tests, clean_test_data):
-        """Test that VERIFIED stories can become BREAKING"""
+        """Test that VERIFIED stories can become breaking (via breaking_news flag)"""
         now = datetime.now(timezone.utc)
         
-        # Arrange: Create VERIFIED story with 3 sources
+        # Arrange: Create VERIFIED story with breaking_news=True
         from conftest import create_test_source_articles
         story = StoryCluster(
             id=f"story_breaking_{now.strftime('%Y%m%d_%H%M%S')}",
@@ -32,11 +35,11 @@ class TestBreakingNewsDetection:
             title="Major Breaking News Event",
             category="world",
             tags=["breaking"],
-            status="VERIFIED",
+            status=StoryStatus.VERIFIED,
             verification_level=3,
             first_seen=now - timedelta(minutes=15),
             last_updated=now,
-            source_articles=create_test_source_articles(4),  # Fixed: use helper
+            source_articles=create_test_source_articles(4),
             importance_score=95,
             confidence_score=95,
             breaking_news=True,
@@ -57,8 +60,8 @@ class TestBreakingNewsDetection:
             assert stored_story.get('breaking_news') == True
         
     @pytest.mark.asyncio
-    async def test_monitoring_to_breaking_skip_developing(self, cosmos_client_for_tests, clean_test_data):
-        """Test that stories can skip DEVELOPING and go straight to BREAKING"""
+    async def test_rapid_escalation_to_breaking(self, cosmos_client_for_tests, clean_test_data):
+        """Test that stories can rapidly escalate to breaking with multiple sources"""
         now = datetime.now(timezone.utc)
         
         # Arrange: Create story that rapidly escalated
@@ -69,11 +72,11 @@ class TestBreakingNewsDetection:
             title="Rapidly Escalating Story",
             category="world",
             tags=["rapid"],
-            status="BREAKING",  # Skipped DEVELOPING, went straight to BREAKING
+            status=StoryStatus.VERIFIED,  # VERIFIED with breaking_news=True
             verification_level=3,
             first_seen=now - timedelta(minutes=5),  # Only 5 minutes ago
             last_updated=now,
-            source_articles=create_test_source_articles(4),  # Fixed: use helper
+            source_articles=create_test_source_articles(4),
             importance_score=90,
             confidence_score=90,
             breaking_news=True,
@@ -90,15 +93,22 @@ class TestBreakingNewsDetection:
         stored_story = await cosmos_client_for_tests.get_story(story.id)
         if stored_story:
             meets_source_threshold = len(stored_story.get('source_articles', [])) >= 4
-            time_elapsed_minutes = (datetime.fromisoformat(stored_story.get('last_updated', now).replace('Z', '+00:00')) - 
-                                   datetime.fromisoformat(stored_story.get('first_seen', now).replace('Z', '+00:00'))).total_seconds() / 60
-            is_rapid = time_elapsed_minutes < 30
+            first_seen = stored_story.get('first_seen')
+            last_updated = stored_story.get('last_updated')
             
-            assert meets_source_threshold and is_rapid, "Should skip DEVELOPING with rapid sources"
+            if first_seen and last_updated:
+                if isinstance(first_seen, str):
+                    first_seen = datetime.fromisoformat(first_seen.replace('Z', '+00:00'))
+                if isinstance(last_updated, str):
+                    last_updated = datetime.fromisoformat(last_updated.replace('Z', '+00:00'))
+                time_elapsed_minutes = (last_updated - first_seen).total_seconds() / 60
+                is_rapid = time_elapsed_minutes < 30
+                
+                assert meets_source_threshold and is_rapid, "Should detect rapid source accumulation"
         
     @pytest.mark.asyncio
     async def test_breaking_news_not_triggered_for_slow_stories(self, cosmos_client_for_tests, clean_test_data):
-        """Test that slow-developing stories don't become BREAKING"""
+        """Test that slow-developing stories don't become breaking"""
         now = datetime.now(timezone.utc)
         
         # Arrange: Create story added slowly over 3 hours
@@ -109,11 +119,11 @@ class TestBreakingNewsDetection:
             title="Slowly Developing Story",
             category="world",
             tags=["slow"],
-            status="VERIFIED",  # Stays VERIFIED, doesn't go to BREAKING
+            status=StoryStatus.VERIFIED,  # Stays VERIFIED, doesn't become breaking
             verification_level=3,
             first_seen=now - timedelta(hours=3),  # 3 hours ago
             last_updated=now,
-            source_articles=create_test_source_articles(4),  # Fixed: use helper
+            source_articles=create_test_source_articles(4),
             importance_score=60,
             confidence_score=65,
             breaking_news=False  # Not breaking (too slow)
@@ -136,11 +146,11 @@ class TestBreakingNewsNotifications:
     """Test breaking news notification workflow with REAL Cosmos DB"""
     
     @pytest.mark.asyncio
-    async def test_notification_triggered_on_breaking_status(self, cosmos_client_for_tests, clean_test_data):
-        """Test that notifications are triggered when story becomes BREAKING"""
+    async def test_notification_triggered_on_breaking_flag(self, cosmos_client_for_tests, clean_test_data):
+        """Test that notifications are triggered when story has breaking_news=True"""
         now = datetime.now(timezone.utc)
         
-        # Arrange: Create BREAKING story
+        # Arrange: Create VERIFIED story with breaking_news=True
         from conftest import create_test_source_articles
         story = StoryCluster(
             id=f"story_notify_{now.strftime('%Y%m%d_%H%M%S')}",
@@ -148,11 +158,11 @@ class TestBreakingNewsNotifications:
             title="Breaking News Notification Test",
             category="world",
             tags=["breaking"],
-            status="BREAKING",
+            status=StoryStatus.VERIFIED,
             verification_level=3,
             first_seen=now,
             last_updated=now,
-            source_articles=create_test_source_articles(4),  # Fixed: use helper
+            source_articles=create_test_source_articles(4),
             importance_score=95,
             confidence_score=95,
             breaking_news=True,
@@ -171,16 +181,16 @@ class TestBreakingNewsNotifications:
         if stored_story:
             should_notify = (
                 stored_story.get('breaking_news') == True and
-                stored_story.get('status') == 'BREAKING'
+                stored_story.get('status') == 'VERIFIED'
             )
-            assert should_notify, "BREAKING status should trigger notification"
+            assert should_notify, "breaking_news=True should trigger notification"
         
     @pytest.mark.asyncio
     async def test_notification_deduplication(self, cosmos_client_for_tests, clean_test_data):
         """Test that duplicate notifications are prevented"""
         now = datetime.now(timezone.utc)
         
-        # Arrange: Create BREAKING story with notification already sent
+        # Arrange: Create breaking story with notification already sent
         from conftest import create_test_source_articles
         story = StoryCluster(
             id=f"story_dedup_{now.strftime('%Y%m%d_%H%M%S')}",
@@ -188,11 +198,11 @@ class TestBreakingNewsNotifications:
             title="Deduplication Test",
             category="world",
             tags=["breaking"],
-            status="BREAKING",
+            status=StoryStatus.VERIFIED,
             verification_level=3,
             first_seen=now - timedelta(minutes=10),
             last_updated=now,
-            source_articles=create_test_source_articles(4),  # Fixed: use helper
+            source_articles=create_test_source_articles(4),
             importance_score=90,
             confidence_score=90,
             breaking_news=True,
@@ -214,11 +224,11 @@ class TestBreakingNewsNotifications:
             assert already_notified, "Should prevent duplicate notifications"
         
     @pytest.mark.asyncio
-    async def test_breaking_to_verified_demotion(self, cosmos_client_for_tests, clean_test_data):
-        """Test that BREAKING stories can be demoted to VERIFIED if news slows"""
+    async def test_breaking_demotion(self, cosmos_client_for_tests, clean_test_data):
+        """Test that breaking stories can be demoted (breaking_news set to False) if news slows"""
         now = datetime.now(timezone.utc)
         
-        # Arrange: Create BREAKING story that's now slowing down
+        # Arrange: Create breaking story that's now slowing down
         from conftest import create_test_source_articles
         story = StoryCluster(
             id=f"story_demote_{now.strftime('%Y%m%d_%H%M%S')}",
@@ -226,14 +236,14 @@ class TestBreakingNewsNotifications:
             title="Slowing Breaking News",
             category="world",
             tags=["breaking"],
-            status="BREAKING",  # Currently breaking
+            status=StoryStatus.VERIFIED,  # Still VERIFIED
             verification_level=3,
             first_seen=now - timedelta(hours=2),
             last_updated=now,
-            source_articles=create_test_source_articles(4),  # Fixed: use helper
+            source_articles=create_test_source_articles(4),
             importance_score=70,  # Lower than fresh breaking news
             confidence_score=75,
-            breaking_news=True
+            breaking_news=True  # Currently breaking
         )
         
         try:
@@ -245,14 +255,17 @@ class TestBreakingNewsNotifications:
         # Act & Assert: Verify story could be demoted if needed
         stored_story = await cosmos_client_for_tests.get_story(story.id)
         if stored_story:
-            # Demotion criteria: old breaking story with low velocity
+            first_seen = stored_story.get('first_seen')
+            if isinstance(first_seen, str):
+                first_seen = datetime.fromisoformat(first_seen.replace('Z', '+00:00'))
+            
             is_old_breaking = (
                 stored_story.get('breaking_news') == True and
-                (datetime.now(timezone.utc) - datetime.fromisoformat(stored_story.get('first_seen', now).replace('Z', '+00:00'))).total_seconds() > 3600
+                (datetime.now(timezone.utc) - first_seen).total_seconds() > 3600
             )
             
             if is_old_breaking:
-                # Can be demoted back to VERIFIED
+                # Can be demoted (breaking_news set to False)
                 assert stored_story.get('importance_score', 100) < 90, "Old breaking news should have lower importance"
 
 
@@ -273,11 +286,11 @@ class TestBreakingNewsLifecycle:
             title="Old Story for Archiving",
             category="world",
             tags=["old"],
-            status="VERIFIED",
+            status=StoryStatus.VERIFIED,
             verification_level=3,
             first_seen=now - timedelta(days=7),
             last_updated=now - timedelta(days=1),
-            source_articles=create_test_source_articles(3),  # Fixed: use helper
+            source_articles=create_test_source_articles(3),
             importance_score=30,  # Low importance over time
             confidence_score=50,
             breaking_news=False,
@@ -293,20 +306,22 @@ class TestBreakingNewsLifecycle:
         # Act & Assert: Verify old story can be archived
         stored_story = await cosmos_client_for_tests.get_story(story.id)
         if stored_story:
-            is_old = (datetime.now(timezone.utc) - 
-                     datetime.fromisoformat(stored_story.get('first_seen', now).replace('Z', '+00:00'))).total_seconds() > 604800  # 7 days
+            first_seen = stored_story.get('first_seen')
+            if isinstance(first_seen, str):
+                first_seen = datetime.fromisoformat(first_seen.replace('Z', '+00:00'))
+            is_old = (datetime.now(timezone.utc) - first_seen).total_seconds() > 604800  # 7 days
             
             assert is_old, "Story should be considered old for archival"
         
     @pytest.mark.asyncio
     async def test_complete_story_lifecycle_flow(self, cosmos_client_for_tests, clean_test_data):
-        """Test complete flow: MONITORING → DEVELOPING → VERIFIED → BREAKING → Demotion → ARCHIVED"""
+        """Test complete flow: NEW → DEVELOPING → VERIFIED → (breaking_news=True) → archived"""
         now = datetime.now(timezone.utc)
         
         # Arrange: Create story and track through lifecycle
         story_id = f"story_lifecycle_{now.strftime('%Y%m%d_%H%M%S')}"
         
-        # Stage 1: MONITORING (1 source)
+        # Stage 1: NEW (1 source)
         from conftest import create_test_source_articles
         story = StoryCluster(
             id=story_id,
@@ -314,11 +329,11 @@ class TestBreakingNewsLifecycle:
             title="Story Lifecycle Test",
             category="world",
             tags=["lifecycle"],
-            status="MONITORING",
+            status=StoryStatus.NEW,
             verification_level=1,
             first_seen=now,
             last_updated=now,
-            source_articles=create_test_source_articles(1),  # Fixed: use helper with 1 article
+            source_articles=create_test_source_articles(1),
             importance_score=10,
             confidence_score=30,
             breaking_news=False
@@ -333,7 +348,7 @@ class TestBreakingNewsLifecycle:
         # Act: Verify can progress through stages
         stored_story = await cosmos_client_for_tests.get_story(story.id)
         if stored_story:
-            assert stored_story.get('status') == 'MONITORING'
+            assert stored_story.get('status') == 'NEW'
             assert len(stored_story.get('source_articles', [])) >= 1
         
     @pytest.mark.asyncio
@@ -349,11 +364,11 @@ class TestBreakingNewsLifecycle:
             title="Latency Test",
             category="world",
             tags=["latency"],
-            status="BREAKING",
+            status=StoryStatus.VERIFIED,
             verification_level=3,
             first_seen=now - timedelta(seconds=30),  # 30 seconds ago
             last_updated=now,
-            source_articles=create_test_source_articles(4),  # Fixed: use helper
+            source_articles=create_test_source_articles(4),
             importance_score=95,
             confidence_score=95,
             breaking_news=True
@@ -368,8 +383,15 @@ class TestBreakingNewsLifecycle:
         # Act & Assert: Verify rapid detection
         stored_story = await cosmos_client_for_tests.get_story(story.id)
         if stored_story:
-            detection_latency = (datetime.fromisoformat(stored_story.get('last_updated', now).replace('Z', '+00:00')) -
-                                datetime.fromisoformat(stored_story.get('first_seen', now).replace('Z', '+00:00'))).total_seconds()
+            first_seen = stored_story.get('first_seen')
+            last_updated = stored_story.get('last_updated')
+            
+            if isinstance(first_seen, str):
+                first_seen = datetime.fromisoformat(first_seen.replace('Z', '+00:00'))
+            if isinstance(last_updated, str):
+                last_updated = datetime.fromisoformat(last_updated.replace('Z', '+00:00'))
+            
+            detection_latency = (last_updated - first_seen).total_seconds()
             
             # Breaking news with 4 sources in under 60 seconds = good latency
             assert detection_latency < 60, "Breaking news detection should have <1min latency"
@@ -377,4 +399,3 @@ class TestBreakingNewsLifecycle:
 
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])
-

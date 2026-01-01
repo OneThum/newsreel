@@ -22,6 +22,11 @@ class Config:
     STORAGE_CONNECTION_STRING: str = os.getenv("STORAGE_CONNECTION_STRING", "")
     QUEUE_NAME_SUMMARIZATION: str = "summarization-queue"
     
+    # Azure Service Bus (for reliable RSS ingestion)
+    SERVICE_BUS_CONNECTION_STRING: str = os.getenv("SERVICE_BUS_CONNECTION_STRING", "")
+    SERVICE_BUS_QUEUE_NAME: str = os.getenv("SERVICE_BUS_QUEUE_NAME", "rss-feeds")
+    USE_QUEUE_BASED_RSS: bool = os.getenv("USE_QUEUE_BASED_RSS", "false").lower() == "true"
+    
     # Anthropic API
     ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
     ANTHROPIC_MODEL: str = os.getenv("ANTHROPIC_MODEL", "claude-3-5-haiku-20241022")  # Claude 3.5 Haiku (fastest, cheapest)

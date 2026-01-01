@@ -196,7 +196,7 @@ class TestRSSToClusteringFlow:
             title="Breaking News Event",
             category="world",
             tags=["test"],
-            status="MONITORING",
+            status="NEW",
             verification_level=1,
             first_seen=now,
             last_updated=now,
@@ -366,7 +366,7 @@ class TestRSSProcessingPipeline:
             title="Status Progression Test",
             category="world",
             tags=["test"],
-            status="MONITORING",
+            status="NEW",
             verification_level=1,
             first_seen=now,
             last_updated=now,
@@ -384,7 +384,7 @@ class TestRSSProcessingPipeline:
             pytest.skip(f"Could not store story: {e}")
         
         # Assert: Status logic verification
-        assert story.status == "MONITORING"
+        assert story.status == "NEW"
         assert len(story.source_articles) == 1
         
         # Simulate status progression
@@ -393,8 +393,8 @@ class TestRSSProcessingPipeline:
         if len(story.source_articles) >= 3:
             story.status = "VERIFIED"
         
-        # With 1 source, should still be MONITORING
-        assert story.status == "MONITORING"
+        # With 1 source, should still be NEW
+        assert story.status == "NEW"
 
 
 @pytest.mark.integration

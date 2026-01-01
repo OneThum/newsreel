@@ -838,6 +838,65 @@ async def rss_ingestion_timer(timer: func.TimerRequest) -> None:
 
 
 # ============================================================================
+# QUEUE-BASED RSS INGESTION (Reliable Alternative)
+# ============================================================================
+
+@app.function_name(name="RSSIngestionQueue")
+@app.schedule(schedule="*/10 * * * * *", arg_name="timer", run_on_startup=False)
+async def rss_ingestion_queue_timer(timer: func.TimerRequest) -> None:
+    """
+    Queue-Based RSS Ingestion - Runs every 10 seconds
+    
+    This is a lightweight alternative to direct RSS fetching.
+    Instead of fetching feeds directly (flaky), this function:
+    1. Determines which feeds need polling
+    2. Pushes feed URLs to Azure Service Bus queue
+    3. Container App worker handles actual fetching (reliable)
+    
+    Enable with: USE_QUEUE_BASED_RSS=true
+    
+    Benefits:
+    - No cold start impact on feed fetching
+    - Automatic retry with dead-letter queue
+    - Circuit breaker in worker prevents hammering failing feeds
+    - Always-on worker = bulletproof reliability
+    """
+    # Check if queue-based ingestion is enabled
+    if not config.USE_QUEUE_BASED_RSS:
+        return  # Disabled, use traditional RSS ingestion
+    
+    if not config.SERVICE_BUS_CONNECTION_STRING:
+        logger.warning("SERVICE_BUS_CONNECTION_STRING not configured, skipping queue-based ingestion")
+        return
+    
+    with logger.operation("rss_ingestion_queue"):
+        try:
+            cosmos_client.connect()
+            
+            # Import queue producer
+            from shared.queue_producer import get_queue_producer
+            
+            producer = get_queue_producer(cosmos_client)
+            
+            # Determine feeds to poll and push to queue
+            result = await producer.push_and_track(
+                use_all_feeds=config.RSS_USE_ALL_FEEDS,
+                max_feeds=10,  # 10 feeds per cycle for smooth distribution
+                cooldown_seconds=180  # 3 minute cooldown per feed
+            )
+            
+            if result['feeds_queued'] > 0:
+                logger.info(f"📤 Queued {result['feeds_queued']} feeds for processing")
+                logger.info(f"📊 Category distribution: {result.get('categories', {})}")
+            else:
+                logger.debug("No feeds ready for polling this cycle")
+                
+        except Exception as e:
+            logger.error(f"Queue-based RSS ingestion failed: {e}", error=e)
+            # Don't raise - this is a lightweight producer, let it retry next cycle
+
+
+# ============================================================================
 # STORY CLUSTERING FUNCTION
 # ============================================================================
 

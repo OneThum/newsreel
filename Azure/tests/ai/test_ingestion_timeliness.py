@@ -173,7 +173,11 @@ async def test_ingestion_pipeline_timeliness(ingestion_timeliness_monitor, api_c
             pytest.skip(f"Cannot get feed for timeliness testing: {response.status_code}")
 
         feed_data = response.json()
-        stories = feed_data.get('stories', [])
+        # Handle both list and dict response formats
+        if isinstance(feed_data, list):
+            stories = feed_data
+        else:
+            stories = feed_data.get('stories', [])
 
         if len(stories) < 5:
             pytest.skip("Not enough stories for timeliness analysis")
@@ -217,7 +221,11 @@ async def test_ingestion_pipeline_regression(ingestion_timeliness_monitor, api_c
             pytest.skip("Cannot get feed for regression testing")
 
         feed_data = response.json()
-        stories = feed_data.get('stories', [])
+        # Handle both list and dict response formats
+        if isinstance(feed_data, list):
+            stories = feed_data
+        else:
+            stories = feed_data.get('stories', [])
 
         if len(stories) < 5:
             pytest.skip("Not enough stories for regression analysis")

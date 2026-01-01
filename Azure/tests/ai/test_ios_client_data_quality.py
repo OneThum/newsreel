@@ -160,7 +160,11 @@ class IOSClientDataQualityTester:
         try:
             # Fetch data as iOS client would
             feed_data = self._fetch_stories_feed(limit=50)
-            stories = feed_data.get('stories', [])
+            # Handle both list and dict response formats
+            if isinstance(feed_data, list):
+                stories = feed_data
+            else:
+                stories = feed_data.get('stories', [])
 
             if len(stories) < 10:
                 pytest.fail(f"❌ Insufficient stories: Only {len(stories)} returned (need at least 10)")
