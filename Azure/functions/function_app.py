@@ -889,8 +889,9 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                     await cosmos_client.update_article_embedding(article.id, article.published_date, article_embedding)
             
             if article_embedding:
-                # Query recent stories in same category
-                recent_stories = await cosmos_client.query_recent_stories(category=article.category, limit=200)
+                # Query recent stories across ALL categories for cross-category clustering
+                # This ensures the same story isn't duplicated across world/tech/politics etc.
+                recent_stories = await cosmos_client.query_recent_stories(category=None, limit=200)
                 
                 logger.info(f"🧠 SEMANTIC CLUSTERING: '{article.title[:60]}...' vs {len(recent_stories)} stories")
                 
@@ -911,7 +912,7 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
             else:
                 # Fallback: No embedding available, query recent stories and create new story
                 logger.warning(f"⚠️ No embedding available for article {article.id}, creating new story")
-                recent_stories = await cosmos_client.query_recent_stories(category=article.category, limit=50)
+                recent_stories = await cosmos_client.query_recent_stories(category=None, limit=50)
             
             # Log article processing
             logger.log_article_processed(
@@ -1049,13 +1050,25 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                     status = StoryStatus.NEW.value
                     logger.info(f"   → NEW ({verification_level} source)")
                 
+                # Determine breaking news status based on:
+                # 1. Already flagged as breaking, OR
+                # 2. New tier 1 source added, OR  
+                # 3. 3+ sources (verified story = potential breaking)
+                is_breaking = (
+                    story.get('breaking_news', False) or 
+                    article.source_tier == 1 or
+                    verification_level >= 3
+                )
+                
                 updates = {
                     'source_articles': source_articles,
+                    'source_count': verification_level,  # Track source count explicitly
                     'verification_level': verification_level,
                     'status': status,
                     'last_updated': datetime.now(timezone.utc).isoformat(),
                     'update_count': story.get('update_count', 0) + 1,
-                    'embedding': story_embedding  # Updated story centroid embedding
+                    'embedding': story_embedding,  # Updated story centroid embedding
+                    'breaking_news': is_breaking  # Update breaking news flag
                 }
                 
                 # RE-EVALUATE HEADLINE on EVERY source addition
@@ -1108,6 +1121,10 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                     'embedding': article_embedding  # Store embedding for clustering
                 }
                 
+                # Determine if this is breaking news based on tier and recency
+                # Tier 1 sources (wire services) are more likely to be breaking news
+                is_breaking = article.source_tier == 1
+                
                 story = StoryCluster(
                     id=story_id,
                     event_fingerprint=article.story_fingerprint,
@@ -1119,10 +1136,11 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                     first_seen=article.published_at,
                     last_updated=datetime.now(timezone.utc),
                     source_articles=[embedded_article],
+                    source_count=1,  # Track source count explicitly for API queries
                     embedding=article_embedding,  # Story embedding = first article's embedding
                     importance_score=50 + (20 if article.source_tier == 1 else 0),
                     confidence_score=40,
-                    breaking_news=False
+                    breaking_news=is_breaking  # Flag as breaking if from tier 1 source
                 )
                 
                 await cosmos_client.create_story_cluster(story)

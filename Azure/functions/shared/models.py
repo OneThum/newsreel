@@ -123,6 +123,7 @@ class StoryCluster(BaseModel):
     tags: List[str] = Field(default_factory=list)
     status: StoryStatus
     verification_level: int  # Number of sources
+    source_count: int = 1  # Explicit source count for API queries (mirrors verification_level)
     first_seen: datetime
     last_updated: datetime
     source_articles: List[Dict[str, Any]] = Field(default_factory=list)
@@ -137,7 +138,7 @@ class StoryCluster(BaseModel):
     like_count: int = 0
     save_count: int = 0
     share_count: int = 0
-    breaking_news: bool = False
+    breaking_news: bool = True  # Default to True, will be set based on tier/sources
     breaking_detected_at: Optional[datetime] = None
     push_notification_sent: bool = False
     push_notification_sent_at: Optional[datetime] = None

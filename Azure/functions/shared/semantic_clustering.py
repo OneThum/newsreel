@@ -24,8 +24,10 @@ EMBEDDING_MODEL = "text-embedding-3-small"  # 1536 dimensions, best price/perfor
 EMBEDDING_DIMENSIONS = 1536
 
 # Clustering thresholds (cosine similarity)
-CLUSTER_MATCH_THRESHOLD = 0.82  # Stories above this are same event
-CLUSTER_MAYBE_THRESHOLD = 0.75  # Stories between maybe and match need entity validation
+# Lowered from 0.82 to 0.75 to improve story matching
+# This allows related stories from different sources to be grouped together
+CLUSTER_MATCH_THRESHOLD = 0.75  # Stories above this are same event
+CLUSTER_MAYBE_THRESHOLD = 0.68  # Stories between maybe and match need entity validation
 
 
 def get_openai_client() -> Optional[OpenAI]:
