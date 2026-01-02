@@ -226,14 +226,14 @@ async def get_personalized_feed(
     # Initialize Cosmos DB connection
     cosmos_service.connect()
     
-    # Query stories - get enough for filtering + personalization + pagination
-    # We need: offset + limit + buffer for filtering
-    # Get 3x more than needed to account for filtering out stories without summaries
-    fetch_count = (offset + limit) * 3
+    # PAGINATION FIX: Fetch a large pool of stories for filtering, then paginate
+    # We fetch extra to account for stories that get filtered out (no summaries)
+    # Use a fixed large fetch to ensure consistent pagination across pages
+    MAX_FEED_POOL = 200  # Large enough pool for deep pagination
     stories = await cosmos_service.query_recent_stories(
         category=category,
-        limit=fetch_count,
-        offset=0  # Always start from 0, apply offset after personalization
+        limit=MAX_FEED_POOL,
+        offset=0
     )
     
     # 🔍 DIAGNOSTIC: Log stories from database
@@ -279,15 +279,25 @@ async def get_personalized_feed(
         processed_stories = sorted(stories, key=lambda s: s.get('last_updated', ''), reverse=True)[:20]
         logger.info(f"⚠️  [FEED] Fallback: showing {len(processed_stories)} recent stories")
     
-    # Personalize feed - get enough stories to apply offset + limit
-    personalized_stories = await recommendation_service.personalize_feed(
-        stories=processed_stories,
-        user_profile=user,
-        limit=offset + limit  # Get enough for pagination
+    # PAGINATION FIX: Sort ALL filtered stories first for consistent ordering
+    # This ensures page 2 always starts where page 1 ended
+    # Sort by first_seen DESC (newest first) - this is the stable sort key
+    all_sorted_stories = sorted(
+        processed_stories,
+        key=lambda s: s.get('first_seen', '1970-01-01'),
+        reverse=True
     )
     
-    # Apply pagination offset AFTER personalization
-    personalized_stories = personalized_stories[offset:offset + limit]
+    # Apply pagination BEFORE personalization to get the correct slice
+    page_stories = all_sorted_stories[offset:offset + limit * 2]  # Get 2x for diversity filtering
+    
+    # Light personalization within the page (breaks ties, adds diversity)
+    # But the base order is already determined by the slice above
+    personalized_stories = await recommendation_service.personalize_feed(
+        stories=page_stories,
+        user_profile=user,
+        limit=limit
+    )
     
     # 🔍 DIAGNOSTIC: Log after personalization
     if personalized_stories:
