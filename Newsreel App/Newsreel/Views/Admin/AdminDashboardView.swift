@@ -312,7 +312,7 @@ struct AdminDashboardView: View {
                             .fill(clusteringHealthColor(metrics.clustering.clusteringHealth))
                             .frame(width: 8, height: 8)
                         Text(metrics.clustering.clusteringHealth.capitalized)
-                            .font(.outfit(size: 13, weight: .semibold))
+                            .font(.outfit(size: 13, weight: .semiBold))
                             .foregroundColor(clusteringHealthColor(metrics.clustering.clusteringHealth))
                     }
                 }
