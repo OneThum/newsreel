@@ -9,7 +9,8 @@ class StoryStatus(str, Enum):
     """Story verification status - indicates source count confidence level"""
     NEW = "NEW"                # 1 source - fresh report, unverified
     DEVELOPING = "DEVELOPING"  # 2 sources - story gaining traction
-    VERIFIED = "VERIFIED"      # 3+ sources - confirmed by multiple outlets
+    VERIFIED = "VERIFIED"      # 3-4 sources - confirmed by multiple outlets
+    TOP_STORY = "TOP_STORY"    # 5+ sources - major story with wide coverage
     # Note: BREAKING removed as display status - now only used for push notification triggers
     # Legacy MONITORING maps to NEW, legacy BREAKING maps to VERIFIED
 

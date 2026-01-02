@@ -1094,12 +1094,16 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                 # Status indicates verification confidence level, not urgency
                 # - NEW: 1 source (unverified)
                 # - DEVELOPING: 2 sources (gaining traction)
-                # - VERIFIED: 3+ sources (confirmed by multiple outlets)
+                # - VERIFIED: 3-4 sources (confirmed by multiple outlets)
+                # - TOP_STORY: 5+ sources (major story with wide coverage)
                 # 
                 # Note: Push notifications for breaking news are handled separately
                 # by BreakingNewsMonitor based on recency + source count
                 
-                if verification_level >= 3:
+                if verification_level >= 5:
+                    status = StoryStatus.TOP_STORY.value
+                    logger.info(f"   → TOP_STORY ({verification_level} sources) ⭐")
+                elif verification_level >= 3:
                     status = StoryStatus.VERIFIED.value
                     logger.info(f"   → VERIFIED ({verification_level} sources)")
                 elif verification_level == 2:

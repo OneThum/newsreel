@@ -144,7 +144,7 @@ class CosmosService:
             if category == "top_stories":
                 query = f"""
                     SELECT {select_fields} FROM c 
-                    WHERE c.status IN ('NEW', 'DEVELOPING', 'VERIFIED')
+                    WHERE c.status IN ('NEW', 'DEVELOPING', 'VERIFIED', 'TOP_STORY')
                     AND c.first_seen >= '{seven_days_ago}'
                     AND c.category NOT IN ('lifestyle', 'entertainment')
                     ORDER BY c.first_seen DESC
