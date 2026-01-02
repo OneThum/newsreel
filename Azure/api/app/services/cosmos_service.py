@@ -124,6 +124,9 @@ class CosmosService:
         CRITICAL FIXES:
         1. Filters by first_seen (article publish date) to exclude old articles
         2. Sorts by first_seen DESC for proper chronological ordering (newest first)
+        
+        Note: offset is ignored here - pagination should be applied after personalization
+        in the router to ensure consistent results.
         """
         try:
             container = self._get_container("story_clusters")
@@ -145,7 +148,7 @@ class CosmosService:
                     AND c.first_seen >= '{seven_days_ago}'
                     AND c.category NOT IN ('lifestyle', 'entertainment')
                     ORDER BY c.first_seen DESC
-                    OFFSET 0 LIMIT {limit + offset}
+                    OFFSET 0 LIMIT {limit}
                 """
                 items = list(container.query_items(
                     query=query,
@@ -158,7 +161,7 @@ class CosmosService:
                     WHERE c.category = @category
                     AND c.first_seen >= '{seven_days_ago}'
                     ORDER BY c.first_seen DESC
-                    OFFSET 0 LIMIT {limit + offset}
+                    OFFSET 0 LIMIT {limit}
                 """
                 parameters = [{"name": "@category", "value": category}]
                 items = list(container.query_items(
@@ -174,7 +177,7 @@ class CosmosService:
                     WHERE c.first_seen >= '{two_days_ago}'
                     AND c.category NOT IN ('lifestyle')
                     ORDER BY c.first_seen DESC
-                    OFFSET 0 LIMIT {limit + offset}
+                    OFFSET 0 LIMIT {limit}
                 """
                 items = list(container.query_items(
                     query=query,
@@ -183,8 +186,7 @@ class CosmosService:
             
             logger.info(f"✅ Query returned {len(items)} stories")
             
-            # Apply offset and return (already sorted by query)
-            return items[offset:offset + limit]
+            return items
         except exceptions.CosmosResourceNotFoundError as e:
             # Session token error - reset connection and retry
             logger.warning(f"Session token error, resetting connection: {e}")

@@ -226,11 +226,14 @@ async def get_personalized_feed(
     # Initialize Cosmos DB connection
     cosmos_service.connect()
     
-    # Query stories
+    # Query stories - get enough for filtering + personalization + pagination
+    # We need: offset + limit + buffer for filtering
+    # Get 3x more than needed to account for filtering out stories without summaries
+    fetch_count = (offset + limit) * 3
     stories = await cosmos_service.query_recent_stories(
         category=category,
-        limit=limit * 3,  # Get extra for personalization filtering
-        offset=offset
+        limit=fetch_count,
+        offset=0  # Always start from 0, apply offset after personalization
     )
     
     # 🔍 DIAGNOSTIC: Log stories from database
@@ -276,12 +279,15 @@ async def get_personalized_feed(
         processed_stories = sorted(stories, key=lambda s: s.get('last_updated', ''), reverse=True)[:20]
         logger.info(f"⚠️  [FEED] Fallback: showing {len(processed_stories)} recent stories")
     
-    # Personalize feed
+    # Personalize feed - get enough stories to apply offset + limit
     personalized_stories = await recommendation_service.personalize_feed(
         stories=processed_stories,
         user_profile=user,
-        limit=limit
+        limit=offset + limit  # Get enough for pagination
     )
+    
+    # Apply pagination offset AFTER personalization
+    personalized_stories = personalized_stories[offset:offset + limit]
     
     # 🔍 DIAGNOSTIC: Log after personalization
     if personalized_stories:
