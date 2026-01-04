@@ -218,10 +218,18 @@ async def get_admin_metrics(user: Dict[str, Any] = Depends(require_admin)):
         # RSS INGESTION STATS
         # ==================================================================
 
+        # Import Counter at module level would be better, but doing it here for safety
+        from collections import Counter
+        
+        twenty_four_hours_ago = datetime.now(timezone.utc) - timedelta(hours=24)
+        one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
+        
+        # Initialize with defaults
+        articles_per_hour = 0
+        top_sources = []
+        last_run = datetime.now(timezone.utc)
+        
         try:
-            twenty_four_hours_ago = datetime.now(timezone.utc) - timedelta(hours=24)
-            one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
-            
             # Calculate articles per hour using fetched_at (ingestion time, not publication time)
             recent_articles_query = list(raw_articles_container.query_items(
                 query=f"SELECT VALUE COUNT(1) FROM c WHERE c.fetched_at >= '{twenty_four_hours_ago.isoformat()}'",
@@ -229,6 +237,7 @@ async def get_admin_metrics(user: Dict[str, Any] = Depends(require_admin)):
             ))
             articles_24h = recent_articles_query[0] if recent_articles_query else 0
             articles_per_hour = articles_24h // 24 if articles_24h > 0 else 0
+            logger.info(f"RSS stats: articles_24h={articles_24h}, articles_per_hour={articles_per_hour}")
             
             # Get current hour rate for more accurate real-time metric
             current_hour_query = list(raw_articles_container.query_items(
@@ -238,19 +247,26 @@ async def get_admin_metrics(user: Dict[str, Any] = Depends(require_admin)):
             articles_current_hour = current_hour_query[0] if current_hour_query else 0
             # Use higher of avg or current for better representation
             articles_per_hour = max(articles_per_hour, articles_current_hour)
+            logger.info(f"RSS stats: articles_current_hour={articles_current_hour}, final articles_per_hour={articles_per_hour}")
             
+        except Exception as rss_count_error:
+            logger.error(f"RSS count error: {rss_count_error}")
+            
+        try:
             # Get top sources (manual count to avoid GROUP BY issues)
             all_sources = list(raw_articles_container.query_items(
                 query="SELECT c.source FROM c",
                 enable_cross_partition_query=True
             ))
-            from collections import Counter
             source_counts = Counter(s.get('source', 'Unknown') for s in all_sources)
             top_sources = [
                 SourceCount(source=source, count=count)
                 for source, count in source_counts.most_common(5)
             ]
+        except Exception as sources_error:
+            logger.error(f"Top sources error: {sources_error}")
             
+        try:
             # Get actual last run time from most recent article
             latest_article = list(raw_articles_container.query_items(
                 query="SELECT TOP 1 c.fetched_at FROM c ORDER BY c.fetched_at DESC",
@@ -258,14 +274,11 @@ async def get_admin_metrics(user: Dict[str, Any] = Depends(require_admin)):
             ))
             if latest_article and latest_article[0].get('fetched_at'):
                 last_run = datetime.fromisoformat(str(latest_article[0]['fetched_at']).replace('Z', '+00:00'))
+                logger.info(f"RSS last_run from DB: {last_run}")
             else:
-                last_run = datetime.now(timezone.utc)
-                
-        except Exception as rss_error:
-            logger.warning(f"RSS stats error: {rss_error}")
-            articles_per_hour = 0
-            top_sources = []
-            last_run = datetime.now(timezone.utc)
+                logger.warning("No articles found with fetched_at, using now()")
+        except Exception as last_run_error:
+            logger.error(f"Last run error: {last_run_error}")
 
         # Determine RSS feed count based on configuration
         # RSS_USE_ALL_FEEDS environment variable determines which set is active
@@ -312,12 +325,13 @@ async def get_admin_metrics(user: Dict[str, Any] = Depends(require_admin)):
 
             # Calculate processing rate from stories UPDATED in last hour (not just created)
             # This better reflects clustering activity - stories being updated with new sources
-            one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
-            recent_updated = list(stories_container.query_items(
-                query=f"SELECT VALUE COUNT(1) FROM c WHERE c.last_updated >= '{one_hour_ago.isoformat()}'",
+            clustering_one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
+            recent_updated_query = list(stories_container.query_items(
+                query=f"SELECT VALUE COUNT(1) FROM c WHERE c.last_updated >= '{clustering_one_hour_ago.isoformat()}'",
                 enable_cross_partition_query=True
             ))
-            processing_rate_per_hour = recent_updated[0] if recent_updated else 0
+            processing_rate_per_hour = recent_updated_query[0] if recent_updated_query else 0
+            logger.info(f"Clustering rate: {processing_rate_per_hour} stories/hour (query time: {clustering_one_hour_ago})")
 
             # Get oldest unprocessed article age
             oldest_unprocessed = list(raw_articles_container.query_items(
@@ -332,12 +346,8 @@ async def get_admin_metrics(user: Dict[str, Any] = Depends(require_admin)):
                     oldest_unprocessed_age_minutes = 0
 
             # Determine clustering health based on RECENT activity, not just backlog
-            # The key metric is: are we actively processing? Recent story updates indicate health.
-            recent_updated = list(stories_container.query_items(
-                query=f"SELECT VALUE COUNT(1) FROM c WHERE c.last_updated >= '{one_hour_ago.isoformat()}'",
-                enable_cross_partition_query=True
-            ))
-            stories_updated_hour = recent_updated[0] if recent_updated else 0
+            # Use the processing_rate_per_hour we already calculated
+            stories_updated_hour = processing_rate_per_hour
             
             # Health calculation:
             # - HEALTHY: Active processing (>10 stories/hour) AND low backlog (<100)
@@ -444,20 +454,68 @@ async def get_admin_metrics(user: Dict[str, Any] = Depends(require_admin)):
             total_cost_24h = 0.0
         
         # ==================================================================
-        # BATCH PROCESSING STATS
+        # BATCH PROCESSING STATS - Query actual data from batch_tracking
         # ==================================================================
 
-        # Read from environment (these are the actual config values)
         batch_enabled = os.getenv("BATCH_PROCESSING_ENABLED", "true").lower() == "true"
-
-        # Would need batch_tracking container to get real stats
-        # For now, provide estimates based on configuration
         batches_submitted_24h = 0
         batches_completed_24h = 0
-        batch_success_rate = 0.95 if batch_enabled else 0.0
+        batch_success_rate = 0.0
         stories_in_queue = 0
-        avg_batch_size = 50 if batch_enabled else 0
-        batch_cost_24h = summaries_24h * 0.0005 if batch_enabled else 0.0  # 50% savings with batch API
+        avg_batch_size = 0
+        batch_cost_24h = 0.0
+        
+        try:
+            batch_container = cosmos_service._get_container("batch_tracking")
+            
+            # Get batches submitted in last 24h
+            submitted_query = list(batch_container.query_items(
+                query=f"SELECT VALUE COUNT(1) FROM c WHERE c.created_at >= '{twenty_four_hours_ago.isoformat()}'",
+                enable_cross_partition_query=True
+            ))
+            batches_submitted_24h = submitted_query[0] if submitted_query else 0
+            
+            # Get completed batches
+            completed_query = list(batch_container.query_items(
+                query=f"SELECT VALUE COUNT(1) FROM c WHERE c.status = 'completed' AND c.created_at >= '{twenty_four_hours_ago.isoformat()}'",
+                enable_cross_partition_query=True
+            ))
+            batches_completed_24h = completed_query[0] if completed_query else 0
+            
+            # Calculate success rate
+            if batches_submitted_24h > 0:
+                batch_success_rate = batches_completed_24h / batches_submitted_24h
+            
+            # Get stories waiting in queue (pending batches)
+            pending_query = list(batch_container.query_items(
+                query="SELECT VALUE COUNT(1) FROM c WHERE c.status = 'pending'",
+                enable_cross_partition_query=True
+            ))
+            stories_in_queue = pending_query[0] if pending_query else 0
+            
+            # Calculate average batch size from recent batches
+            recent_batches = list(batch_container.query_items(
+                query="SELECT c.story_count FROM c WHERE IS_DEFINED(c.story_count)",
+                enable_cross_partition_query=True,
+                max_item_count=100
+            ))
+            if recent_batches:
+                batch_sizes = [b.get('story_count', 0) for b in recent_batches if b.get('story_count')]
+                avg_batch_size = sum(batch_sizes) // len(batch_sizes) if batch_sizes else 50
+            else:
+                avg_batch_size = 50  # Default
+            
+            # Estimate cost based on completed batches (batch API is ~50% cheaper)
+            batch_cost_24h = batches_completed_24h * avg_batch_size * 0.0005
+            
+            logger.info(f"Batch stats: submitted={batches_submitted_24h}, completed={batches_completed_24h}, queue={stories_in_queue}")
+            
+        except Exception as batch_error:
+            logger.warning(f"Batch stats error (container may not exist): {batch_error}")
+            # Use defaults - batch tracking may not be set up
+            if batch_enabled:
+                batch_success_rate = 0.95
+                avg_batch_size = 50
         
         # ==================================================================
         # FEED QUALITY STATS
@@ -497,10 +555,18 @@ async def get_admin_metrics(user: Dict[str, Any] = Depends(require_admin)):
         
         # Determine functions health from recent activity
         # If we have recent articles and stories, functions are working
-        if articles_per_hour > 0 and processing_rate_per_hour > 0:
+        # Also check processed_articles count as additional signal
+        has_recent_ingestion = articles_per_hour > 0
+        has_recent_clustering = processing_rate_per_hour > 0
+        has_processed_articles = processed_articles > 0
+        
+        logger.info(f"Functions health check: articles_per_hour={articles_per_hour}, processing_rate={processing_rate_per_hour}, processed={processed_articles}")
+        
+        if has_recent_ingestion and has_recent_clustering:
             functions_health = "healthy"
-        elif articles_per_hour > 0 or processing_rate_per_hour > 0:
-            functions_health = "degraded"
+        elif has_recent_ingestion or has_recent_clustering or has_processed_articles:
+            # If we have ANY evidence of function activity, mark as degraded not unknown
+            functions_health = "degraded" if not (has_recent_ingestion and has_recent_clustering) else "healthy"
         else:
             functions_health = "unknown"
         
