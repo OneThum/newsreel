@@ -55,7 +55,7 @@ These test the actual deployed API/Functions:
 
 ```python
 def test_api_is_reachable():
-    response = requests.get("https://newsreel-api.azurewebsites.net/health")
+    response = requests.get("https://newsreel-api.thankfulpebble-0dde6120.centralus.azurecontainerapps.io/health")
     assert response.status_code == 200
 ```
 

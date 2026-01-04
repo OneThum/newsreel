@@ -64,7 +64,7 @@ struct NewsreelApp: App {
         _apiService = StateObject(wrappedValue: api)
 
         log.log("✅ App initialization complete", category: .ui, level: .info)
-        log.log("   Backend: https://newsreel-api.azurewebsites.net", category: .api, level: .info)
+        log.log("   Backend: https://newsreel-api.thankfulpebble-0dde6120.centralus.azurecontainerapps.io", category: .api, level: .info)
         log.log("   Mock Mode: DISABLED (using live Azure backend)", category: .api, level: .info)
         log.separator()
     }

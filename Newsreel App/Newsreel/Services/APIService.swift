@@ -59,8 +59,8 @@ class APIService: ObservableObject {
     
     // MARK: - Configuration
     
-    /// Base URL for the Story API (Azure App Service)
-    private let baseURL = "https://newsreel-api.azurewebsites.net"
+    /// Base URL for the Story API (Azure Container App)
+    private let baseURL = "https://newsreel-api.thankfulpebble-0dde6120.centralus.azurecontainerapps.io"
     
     /// Enable mock data mode for development
     /// Set to false to use live Azure backend

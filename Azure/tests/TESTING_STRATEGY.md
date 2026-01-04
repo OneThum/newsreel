@@ -100,7 +100,7 @@ def test_articles_are_being_ingested():
 def test_stories_are_recent():
     """Are stories fresh or stale?"""
     
-    response = requests.get("https://newsreel-api.azurewebsites.net/api/v1/stories")
+    response = requests.get("https://newsreel-api.thankfulpebble-0dde6120.centralus.azurecontainerapps.io/api/v1/stories")
     most_recent_story = response.json()['stories'][0]
     age_hours = calculate_age(most_recent_story)
     
@@ -264,7 +264,7 @@ cd Azure/tests
 # Set environment variables
 export COSMOS_ENDPOINT="https://newsreel-cosmos.documents.azure.com:443/"
 export COSMOS_KEY="your-cosmos-key"
-export API_BASE_URL="https://newsreel-api.azurewebsites.net"
+export API_BASE_URL="https://newsreel-api.thankfulpebble-0dde6120.centralus.azurecontainerapps.io"
 
 # Run system tests
 pytest system/test_deployed_api.py -v
