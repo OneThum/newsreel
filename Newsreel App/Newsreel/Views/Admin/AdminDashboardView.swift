@@ -619,6 +619,15 @@ struct ServiceRow: View {
     let name: String
     let status: String
     
+    var statusColor: Color {
+        switch status.lowercased() {
+        case "running", "healthy": return .green
+        case "degraded", "unknown": return .orange
+        case "down", "stopped", "error": return .red
+        default: return .orange
+        }
+    }
+    
     var body: some View {
         HStack {
             Text(name)
@@ -626,7 +635,7 @@ struct ServiceRow: View {
             Spacer()
             Text(status.capitalized)
                 .font(.outfit(size: 13, weight: .semiBold))
-                .foregroundStyle(status == "running" ? .green : .orange)
+                .foregroundStyle(statusColor)
         }
     }
 }
