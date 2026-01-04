@@ -158,19 +158,19 @@ struct AdminDashboardView: View {
                 
                 StatusRow(
                     label: "API Health",
-                    value: metrics.systemHealth.apiHealth,
+                    value: metrics.systemHealth.apiHealth.capitalized,
                     status: metrics.systemHealth.apiHealth == "healthy" ? .healthy : .error
                 )
                 
                 StatusRow(
                     label: "Functions Health",
-                    value: metrics.systemHealth.functionsHealth,
+                    value: metrics.systemHealth.functionsHealth.capitalized,
                     status: metrics.systemHealth.functionsHealth == "healthy" ? .healthy : .error
                 )
                 
                 StatusRow(
                     label: "Database Health",
-                    value: metrics.systemHealth.databaseHealth,
+                    value: metrics.systemHealth.databaseHealth.capitalized,
                     status: metrics.systemHealth.databaseHealth == "healthy" ? .healthy : .error
                 )
             }
