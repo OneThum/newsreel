@@ -907,23 +907,44 @@ async def rss_ingestion_queue_timer(timer: func.TimerRequest) -> None:
     container_name="raw_articles",
     connection="COSMOS_CONNECTION_STRING",
     lease_container_name="leases",
-    create_lease_container_if_not_exists=True
+    create_lease_container_if_not_exists=True,
+    max_items_per_invocation=20  # Limit batch size to prevent timeouts
 )
 async def story_clustering_changefeed(documents: func.DocumentList) -> None:
-    """Story Clustering - Triggered by new articles"""
+    """Story Clustering - Triggered by new articles
+    
+    PERFORMANCE: Processes max 20 documents per invocation to prevent timeouts.
+    Change feed will continue with remaining documents in subsequent invocations.
+    """
     if not documents:
         return
     
-    logger.info(f"Processing {len(documents)} documents for clustering")
+    # Limit processing to prevent timeouts (10 min limit on consumption plan)
+    MAX_DOCS_PER_RUN = 20
+    docs_to_process = list(documents)[:MAX_DOCS_PER_RUN]
+    
+    logger.info(f"Processing {len(docs_to_process)}/{len(documents)} documents for clustering")
     cosmos_client.connect()
     
-    for doc in documents:
+    # Cache recent stories to avoid querying for each article
+    cached_stories = None
+    
+    for doc in docs_to_process:
         try:
             article_data = json.loads(doc.to_json())
             logger.info(f"Processing article from raw_articles, keys: {list(article_data.keys())[:10]}")
             article = RawArticle(**article_data)
             
             if article.processed:
+                continue
+            
+            # CRITICAL: Skip articles older than 7 days to prioritize recent news
+            # Old articles won't appear in the feed anyway (48h filter)
+            article_age = (datetime.now(timezone.utc) - article.published_at).days if article.published_at else 999
+            if article_age > 7:
+                logger.info(f"⏭️ Skipping old article ({article_age} days old): {article.title[:50]}...")
+                # Mark as processed to prevent re-processing
+                await cosmos_client.update_article_processed(article.id, article.published_date, None)
                 continue
             
             # =================================================================
@@ -948,10 +969,13 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                     await cosmos_client.update_article_embedding(article.id, article.published_date, article_embedding)
             
             if article_embedding:
-                # Query recent stories across ALL categories for cross-category clustering
-                # This ensures the same story isn't duplicated across world/tech/politics etc.
-                recent_stories = await cosmos_client.query_recent_stories(category=None, limit=200)
+                # PERFORMANCE: Cache recent stories across articles in this batch
+                # Only re-query if cache is empty (first article in batch)
+                if cached_stories is None:
+                    cached_stories = await cosmos_client.query_recent_stories(category=None, limit=200)
+                    logger.info(f"📚 Cached {len(cached_stories)} recent stories for batch")
                 
+                recent_stories = cached_stories
                 logger.info(f"🧠 SEMANTIC CLUSTERING: '{article.title[:60]}...' vs {len(recent_stories)} stories")
                 
                 # Use semantic similarity to find matching story
@@ -969,9 +993,11 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                 else:
                     logger.info(f"🆕 NO SEMANTIC MATCH: Creating new story (best: {best_similarity:.3f})")
             else:
-                # Fallback: No embedding available, query recent stories and create new story
+                # Fallback: No embedding available, use cached stories if available
                 logger.warning(f"⚠️ No embedding available for article {article.id}, creating new story")
-                recent_stories = await cosmos_client.query_recent_stories(category=None, limit=50)
+                if cached_stories is None:
+                    cached_stories = await cosmos_client.query_recent_stories(category=None, limit=200)
+                recent_stories = cached_stories
             
             # Log article processing
             logger.log_article_processed(
@@ -1226,7 +1252,7 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
             logger.error(f"Error clustering document: {e}", exc_info=True)
             logger.error(f"Traceback: {traceback.format_exc()}")
     
-    logger.info(f"Completed clustering {len(documents)} documents")
+    logger.info(f"Completed clustering {len(docs_to_process)} documents (received {len(documents)} total)")
 
 
 # ============================================================================

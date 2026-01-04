@@ -299,7 +299,7 @@ class TestStatusContract:
         stories = response.json()
         
         # Valid statuses in iOS app
-        valid_statuses = {'NEW', 'DEVELOPING', 'VERIFIED', 'ARCHIVED'}
+        valid_statuses = {'NEW', 'DEVELOPING', 'VERIFIED', 'TOP_STORY', 'ARCHIVED'}
         
         statuses_found = set()
         
