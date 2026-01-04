@@ -358,61 +358,24 @@ def categorize_article(title: str, description: str, url: str) -> str:
     1. LIFESTYLE detection (product reviews, guides, how-tos) - highest priority
     2. URL-based categorization for dedicated sections
     3. Keyword-based scoring
-    4. Default to 'general'
+    4. Default to 'world' (generic news)
+    
+    NOTE: Category values MUST match iOS NewsCategory enum.
+    See categories.py for the single source of truth.
     """
     import re
+    from .categories import LIFESTYLE_PATTERNS, DEFAULT_CATEGORY, normalize_category
+    
     text = f"{title} {description}".lower()
     title_lower = title.lower()
     
     # ==========================================================================
     # STEP 1: LIFESTYLE DETECTION (highest priority - prevents miscategorization)
     # Product reviews, guides, how-tos should NEVER be in hard news categories
+    # Uses patterns from shared categories.py
     # ==========================================================================
     
-    lifestyle_patterns = [
-        # Product reviews & recommendations
-        r'\bbest\b.*\b(?:for|of|to|in)\b',       # "best X for/of/to/in"
-        r'\btop\s+\d+\b',                         # "top 10", "top 5"
-        r'\b\d+\s+best\b',                        # "7 best", "10 best"
-        r'\bhere\s+(?:are|is)\s+\d+\+?\b',       # "Here are 50+", "Here is 10"
-        r'\breviewed?\b',                         # "review", "reviewed"
-        r'\btested\b',                            # "tested"
-        r'\b(?:tried|we)\s+(?:and\s+)?tested\b', # "tried and tested"
-        r'\bbest\s+(?:buys?|picks?|choices?)\b', # "best buys", "best picks"
-        r'\b(?:our|my)\s+(?:top\s+)?picks?\b',   # "our picks", "my top picks"
-        r'\bwhat\s+to\s+(?:buy|get|wear|use)\b', # "what to buy/get/wear/use"
-        r'\b(?:buyer|shopping)\s*(?:\'?s?)?\s+guide\b',  # "buyer's guide"
-        
-        # How-to & advice content
-        r'\bguide\s+to\b',                        # "guide to"
-        r'\bhow\s+to\b',                          # "how to"
-        r'\btips?\s+(?:for|on|to)\b',            # "tips for/on/to"
-        r'\badvice\b',                            # "advice"
-        r'\bhere\'?s?\s+(?:what|how|why)\b',     # "Here's what to use", "Here's how"
-        r'\byou\s+should\s+(?:too|also)\b',      # "you should too"
-        r'\bwe\s+stopped\s+using\b',             # "We stopped using X"
-        r'\bwhy\s+(?:i|we)\s+(?:stopped|switched|quit)\b',  # "why I stopped X"
-        
-        # Cooking & kitchen content
-        r'\brecipes?\b',                          # "recipe", "recipes"
-        r'\bcooking\s+(?:tip|hack|trick)\b',     # cooking tips
-        r'\bkitchen\s+(?:tip|hack|trick)\b',     # kitchen tips
-        r'\b(?:aluminum\s+)?foil\s+(?:for|in)\s+cooking\b',  # foil for cooking
-        
-        # Shopping & deals
-        r'\bdeal[s]?\b.*\b(?:on|for)\b',         # "deals on/for"
-        r'\bbargain\b',                           # "bargain"
-        
-        # Gift guides & holidays (NOT hard news)
-        r'\bgift\s+(?:guide|ideas?)\b',          # "gift guide", "gift ideas"
-        r'\b\d+\+?\s+(?:thoughtful\s+)?gifts?\b', # "50+ gifts", "10 thoughtful gifts"
-        r'\bmother\'?s?\s+day\b',                # Mother's Day
-        r'\bfather\'?s?\s+day\b',                # Father's Day
-        r'\bvalentine\'?s?\b',                   # Valentine's
-        r'\bholiday\s+(?:gift|idea|tip)\b',      # holiday gifts/ideas/tips
-        r'\bshe\'?ll\s+love\b',                  # "gifts she'll love"
-        r'\bhe\'?ll\s+love\b',                   # "gifts he'll love"
-    ]
+    lifestyle_patterns = LIFESTYLE_PATTERNS
     
     is_lifestyle = any(re.search(p, title_lower) for p in lifestyle_patterns)
     
@@ -440,7 +403,7 @@ def categorize_article(title: str, description: str, url: str) -> str:
                       'match', 'tournament', 'season', 'playoff', 'athlete', 'medal'],
             'low': ['score', 'goal', 'point', 'defeat', 'victory']
         },
-        'tech': {
+        'technology': {  # Must match iOS NewsCategory.technology
             'high': ['apple', 'microsoft', 'google', 'facebook', 'amazon', 'netflix', 'tesla', 
                      'startup', 'silicon valley', 'artificial intelligence', 'machine learning',
                      'openai', 'chatgpt', 'iphone', 'android', 'cryptocurrency', 'bitcoin'],
@@ -522,7 +485,7 @@ def categorize_article(title: str, description: str, url: str) -> str:
     
     # Check for tech sections
     if any(pattern in url_lower for pattern in ['/tech/', '/technology/', 'techcrunch.com', 'wired.com', '/gadgets/']):
-        return 'tech'
+        return 'technology'
     
     # Check for business sections
     if any(pattern in url_lower for pattern in ['/business/', '/markets/', '/finance/', '/economy/', 'bloomberg.com', 'wsj.com']):
@@ -556,7 +519,8 @@ def categorize_article(title: str, description: str, url: str) -> str:
     if scores:
         return max(scores, key=scores.get)
     
-    return 'general'
+    # Default to 'world' - matches iOS NewsCategory and is safer than 'top_stories'
+    return DEFAULT_CATEGORY
 
 
 def clean_html(text: str) -> str:

@@ -1402,7 +1402,7 @@ Evaluate if the current category is correct. Categories are:
 - politics: Government, elections, legislation, political leaders
 - world: International conflicts, diplomacy, global events
 - business: Markets, economy, companies, finance
-- tech: Technology, AI, software, startups
+- technology: Technology, AI, software, startups
 - science: Research, space, discoveries
 - health: Medical, diseases, healthcare
 - sports: Sports events, athletes, leagues
@@ -1454,7 +1454,7 @@ Evaluate if the current category is correct. Categories are:
 - politics: Government, elections, legislation, political leaders
 - world: International conflicts, diplomacy, global events
 - business: Markets, economy, companies, finance
-- tech: Technology, AI, software, startups
+- technology: Technology, AI, software, startups
 - science: Research, space, discoveries
 - health: Medical, diseases, healthcare
 - sports: Sports events, athletes, leagues
@@ -1608,17 +1608,20 @@ You ALWAYS provide a summary based on available information. Never refuse or say
             updates = {'summary': summary}
             
             # Check if AI suggested a different category (and it's valid)
-            valid_categories = {'politics', 'world', 'business', 'tech', 'science', 'health', 
-                               'sports', 'entertainment', 'environment', 'lifestyle'}
-            current_category = story_data.get('category', 'general')
+            # Import from shared categories module - single source of truth
+            from shared.categories import VALID_CATEGORIES, normalize_category
+            current_category = story_data.get('category', 'world')
             
-            if ai_category and ai_category in valid_categories and ai_category != current_category:
-                logger.info(f"📊 Recategorizing story from '{current_category}' to '{ai_category}' (AI recommendation)")
+            # Normalize AI category (e.g., 'tech' -> 'technology') to match iOS
+            normalized_ai_category = normalize_category(ai_category) if ai_category else None
+            
+            if normalized_ai_category and normalized_ai_category in VALID_CATEGORIES and normalized_ai_category != current_category:
+                logger.info(f"📊 Recategorizing story from '{current_category}' to '{normalized_ai_category}' (AI recommendation)")
                 # For category changes, we need to delete from old partition and create in new
                 # This is a Cosmos DB limitation with partition keys
                 # For now, just update the category field - it won't move partitions but 
                 # queries will find it with the new category
-                updates['category'] = ai_category
+                updates['category'] = normalized_ai_category
             
             await cosmos_client.update_story_cluster(
                 story_data['id'],

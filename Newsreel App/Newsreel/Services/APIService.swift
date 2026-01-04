@@ -677,21 +677,24 @@ extension AzureStoryResponse {
         // Map category
         let newsCategory: NewsCategory = {
             switch category.lowercased() {
-            case "tech", "technology": return .technology
-            case "business", "finance": return .business
-            case "politics", "government": return .politics
+            // Direct mapping from API category - server is source of truth
+            // No client-side "smart" remapping - just display what server sends
+            case "top_stories": return .topStories
+            case "world": return .world
+            case "politics": return .politics
+            case "business": return .business
+            case "technology", "tech": return .technology
             case "science": return .science
-            case "health", "medical": return .health
+            case "health": return .health
             case "sports": return .sports
             case "entertainment": return .entertainment
-            case "world", "international": return .world
-            case "environment", "climate": return .environment
             case "lifestyle": return .lifestyle
-            case "top_stories": return .topStories
-            // Regional categories -> world (they're still news, just not lifestyle)
-            case "us", "uk", "europe", "australia", "asia": return .world
-            // General/unknown -> world (safer default than topStories)
-            default: return .world
+            case "environment": return .environment
+            // Unknown category from server - default to world (generic news)
+            // If this happens often, the server categorization needs fixing
+            default:
+                log.log("⚠️ Unknown category from API: '\(category)' - defaulting to .world", category: .api, level: .warning)
+                return .world
             }
         }()
         

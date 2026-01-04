@@ -22,9 +22,10 @@ logger = logging.getLogger(__name__)
 class AICategorizationTester:
     """Uses AI to verify article categories are appropriate"""
 
+    # Must match iOS NewsCategory enum - see functions/shared/categories.py
     VALID_CATEGORIES = [
-        "technology", "business", "sports", "health", "science",
-        "entertainment", "politics", "world", "general"
+        "world", "politics", "business", "technology", "science", 
+        "health", "sports", "entertainment", "lifestyle", "environment"
     ]
 
     def __init__(self, budget):

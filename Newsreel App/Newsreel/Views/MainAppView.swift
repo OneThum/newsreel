@@ -78,8 +78,13 @@ struct MainAppView: View {
 // MARK: - Feed Status Icon
 
 /// App icon with colored ring indicating live/cached data status
+/// Tappable to show server status popup
 struct FeedStatusIcon: View {
     let dataSource: FeedDataSource
+    @EnvironmentObject var apiService: APIService
+    @State private var showingStatusPopup = false
+    @State private var serverStatus: ServerStatusInfo?
+    @State private var isLoadingStatus = false
     
     private var ringColor: Color {
         switch dataSource {
@@ -104,19 +109,202 @@ struct FeedStatusIcon: View {
     }
     
     var body: some View {
-        // App icon in circular container with colored outline
-        Image("AppIconDisplay")
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .frame(width: 28, height: 28)
-            .clipShape(Circle())
-            .overlay(
-                Circle()
-                    .strokeBorder(ringColor, lineWidth: 2)
-                    .frame(width: 34, height: 34)
+        Button(action: {
+            HapticManager.selection()
+            showingStatusPopup = true
+            fetchServerStatus()
+        }) {
+            // App icon in circular container with colored outline
+            Image("AppIconDisplay")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 28, height: 28)
+                .clipShape(Circle())
+                .overlay(
+                    Circle()
+                        .strokeBorder(ringColor, lineWidth: 2)
+                        .frame(width: 34, height: 34)
+                )
+                .frame(width: 36, height: 36)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(statusTooltip)
+        .popover(isPresented: $showingStatusPopup) {
+            ServerStatusPopupView(
+                dataSource: dataSource,
+                serverStatus: serverStatus,
+                isLoading: isLoadingStatus
             )
-            .frame(width: 36, height: 36)
-            .accessibilityLabel(statusTooltip)
+        }
+    }
+    
+    private func fetchServerStatus() {
+        isLoadingStatus = true
+        Task {
+            do {
+                let isHealthy = try await apiService.checkHealth()
+                await MainActor.run {
+                    serverStatus = ServerStatusInfo(
+                        isHealthy: isHealthy,
+                        lastChecked: Date(),
+                        errorMessage: nil
+                    )
+                    isLoadingStatus = false
+                }
+            } catch {
+                await MainActor.run {
+                    serverStatus = ServerStatusInfo(
+                        isHealthy: false,
+                        lastChecked: Date(),
+                        errorMessage: "Unable to reach server"
+                    )
+                    isLoadingStatus = false
+                }
+            }
+        }
+    }
+}
+
+/// Server status information
+struct ServerStatusInfo {
+    let isHealthy: Bool
+    let lastChecked: Date
+    let errorMessage: String?
+}
+
+/// Popup view showing server status in a user-friendly way
+struct ServerStatusPopupView: View {
+    let dataSource: FeedDataSource
+    let serverStatus: ServerStatusInfo?
+    let isLoading: Bool
+    
+    private var feedStatusMessage: String {
+        switch dataSource {
+        case .live:
+            return "You're viewing live news"
+        case .cached:
+            return "Showing saved stories"
+        case .loading:
+            return "Fetching latest news..."
+        }
+    }
+    
+    private var feedStatusIcon: String {
+        switch dataSource {
+        case .live:
+            return "antenna.radiowaves.left.and.right"
+        case .cached:
+            return "archivebox.fill"
+        case .loading:
+            return "arrow.clockwise"
+        }
+    }
+    
+    private var feedStatusColor: Color {
+        switch dataSource {
+        case .live:
+            return .green
+        case .cached:
+            return .orange
+        case .loading:
+            return .blue
+        }
+    }
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            // Header
+            HStack {
+                Image("AppIconDisplay")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 40, height: 40)
+                    .clipShape(Circle())
+                
+                Text("Newsreel Status")
+                    .font(.outfit(size: 18, weight: .semiBold))
+            }
+            .padding(.top, 8)
+            
+            Divider()
+            
+            // Feed Status
+            HStack(spacing: 12) {
+                Image(systemName: feedStatusIcon)
+                    .font(.system(size: 20))
+                    .foregroundStyle(feedStatusColor)
+                    .frame(width: 28)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Feed Status")
+                        .font(.outfit(size: 12, weight: .medium))
+                        .foregroundStyle(.secondary)
+                    Text(feedStatusMessage)
+                        .font(.outfit(size: 14, weight: .regular))
+                }
+                
+                Spacer()
+                
+                Circle()
+                    .fill(feedStatusColor)
+                    .frame(width: 10, height: 10)
+            }
+            
+            // Server Status
+            HStack(spacing: 12) {
+                if isLoading {
+                    ProgressView()
+                        .frame(width: 28, height: 28)
+                } else {
+                    Image(systemName: serverStatus?.isHealthy == true ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                        .font(.system(size: 20))
+                        .foregroundStyle(serverStatus?.isHealthy == true ? .green : .orange)
+                        .frame(width: 28)
+                }
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Server Connection")
+                        .font(.outfit(size: 12, weight: .medium))
+                        .foregroundStyle(.secondary)
+                    
+                    if isLoading {
+                        Text("Checking...")
+                            .font(.outfit(size: 14, weight: .regular))
+                    } else if let status = serverStatus {
+                        Text(status.isHealthy ? "All systems operational" : (status.errorMessage ?? "Connection issues"))
+                            .font(.outfit(size: 14, weight: .regular))
+                    }
+                }
+                
+                Spacer()
+                
+                if !isLoading {
+                    Circle()
+                        .fill(serverStatus?.isHealthy == true ? .green : .orange)
+                        .frame(width: 10, height: 10)
+                }
+            }
+            
+            // Last updated info
+            if let status = serverStatus {
+                Text("Last checked: \(status.lastChecked.formatted(.relative(presentation: .named)))")
+                    .font(.outfit(size: 11, weight: .regular))
+                    .foregroundStyle(.tertiary)
+            }
+            
+            Divider()
+            
+            // Helpful tip
+            Text(dataSource == .cached ? "Pull down to refresh for latest news" : "News updates automatically")
+                .font(.outfit(size: 12, weight: .regular))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.bottom, 8)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .frame(width: 280)
+        .presentationCompactAdaptation(.popover)
     }
 }
 

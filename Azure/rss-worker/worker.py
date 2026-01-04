@@ -358,36 +358,57 @@ class ArticleProcessor:
         
         Lifestyle includes: how-to guides, product reviews, recipes, gift ideas,
         personal advice, "best X for Y" lists, cooking tips, holiday ideas.
+        
+        NOTE: These patterns should match Azure/functions/shared/categories.py
+        Keep in sync when updating either file!
         """
         import re
         title_lower = title.lower()
-        text = f'{title} {description}'.lower()
         
+        # Patterns synced with functions/shared/categories.py LIFESTYLE_PATTERNS
         lifestyle_patterns = [
+            # Product reviews & recommendations
             r'\bbest\b.*\b(?:for|of|to|in)\b',       # "best X for/of/to/in"
             r'\btop\s+\d+\b',                         # "top 10", "top 5"
             r'\b\d+\s+best\b',                        # "7 best", "10 best"
+            r'\bhere\s+(?:are|is)\s+\d+\+?\b',       # "Here are 50+", "Here is 10"
             r'\breviewed?\b',                         # "review", "reviewed"
             r'\btested\b',                            # "tested"
+            r'\b(?:tried|we)\s+(?:and\s+)?tested\b', # "tried and tested"
+            r'\bbest\s+(?:buys?|picks?|choices?)\b', # "best buys", "best picks"
+            r'\b(?:our|my)\s+(?:top\s+)?picks?\b',   # "our picks", "my top picks"
+            r'\bwhat\s+to\s+(?:buy|get|wear|use)\b', # "what to buy/get/wear/use"
+            r'\b(?:buyer|shopping)\s*(?:\'?s?)?\s+guide\b',  # "buyer's guide"
+            
+            # How-to & advice content
             r'\bguide\s+to\b',                        # "guide to"
             r'\bhow\s+to\b',                          # "how to"
             r'\btips?\s+(?:for|on|to)\b',            # "tips for/on/to"
             r'\badvice\b',                            # "advice"
+            r'\bhere\'?s?\s+(?:what|how|why)\b',     # "Here's what to use", "Here's how"
+            r'\byou\s+should\s+(?:too|also)\b',      # "you should too"
+            r'\bwe\s+stopped\s+using\b',             # "We stopped using X"
+            r'\bwhy\s+(?:i|we)\s+(?:stopped|switched|quit)\b',  # "why I stopped X"
+            
+            # Cooking & kitchen content
             r'\brecipes?\b',                          # "recipe", "recipes"
+            r'\bcooking\s+(?:tip|hack|trick)\b',     # cooking tips
+            r'\bkitchen\s+(?:tip|hack|trick)\b',     # kitchen tips
+            r'\b(?:aluminum\s+)?foil\s+(?:for|in)\s+cooking\b',  # foil for cooking
+            
+            # Shopping & deals
             r'\bdeal[s]?\b.*\b(?:on|for)\b',         # "deals on/for"
+            r'\bbargain\b',                           # "bargain"
+            
+            # Gift guides & holidays (NOT hard news)
             r'\bgift\s+(?:guide|ideas?)\b',          # "gift guide", "gift ideas"
-            r'\bwe\s+stopped\s+using\b',             # "we stopped using X"
-            r'\bwhy\s+(?:i|we)\s+(?:stopped|switched)\b',  # "why I stopped X"
+            r'\b\d+\+?\s+(?:thoughtful\s+)?gifts?\b', # "50+ gifts", "10 thoughtful gifts"
             r'\bmother\'?s?\s+day\b',                # Mother's Day
             r'\bfather\'?s?\s+day\b',                # Father's Day
             r'\bvalentine\'?s?\b',                   # Valentine's
             r'\bholiday\s+(?:gift|idea|tip)\b',      # holiday gifts/ideas/tips
-            r'\bcooking\s+(?:tip|hack|trick)\b',    # cooking tips
-            r'\bkitchen\s+(?:tip|hack|trick)\b',    # kitchen tips
-            r'\bfoil\s+(?:for|in)\s+cooking\b',     # foil for cooking
-            r'\b(?:our|my)\s+(?:top\s+)?picks?\b',  # "our picks"
-            r'\bbest\s+(?:buys?|picks?|choices?)\b', # "best buys"
-            r'\bwhat\s+to\s+(?:buy|get|wear)\b',    # "what to buy"
+            r'\bshe\'?ll\s+love\b',                  # "gifts she'll love"
+            r'\bhe\'?ll\s+love\b',                   # "gifts he'll love"
         ]
         
         return any(re.search(p, title_lower) for p in lifestyle_patterns)
@@ -397,6 +418,10 @@ class ArticleProcessor:
         
         IMPORTANT: Lifestyle detection takes priority over feed category.
         This prevents "Top Stories" from CNN/ABC from including lifestyle content.
+        
+        NOTE: Category values MUST match iOS NewsCategory enum.
+        Valid categories: world, politics, business, technology, science, health,
+                          sports, entertainment, lifestyle, environment
         """
         # ALWAYS check for lifestyle first - this overrides feed category
         if self.is_lifestyle_content(title, description):
@@ -404,13 +429,16 @@ class ArticleProcessor:
             return 'lifestyle'
         
         # Use feed category if provided (for hard news feeds)
+        # Normalize legacy 'tech' to 'technology' to match iOS
         if feed_category and feed_category not in ('general', 'unknown'):
+            if feed_category == 'tech':
+                return 'technology'
             return feed_category
         
         # Fallback to keyword-based detection
         text = f'{title} {description} {url}'.lower()
         if any(w in text for w in ['tech', 'software', 'app', 'ai', 'crypto', 'startup']):
-            return 'tech'
+            return 'technology'  # NOT 'tech' - must match iOS
         if any(w in text for w in ['business', 'market', 'stock', 'economy', 'trade']):
             return 'business'
         if any(w in text for w in ['sport', 'football', 'basketball', 'soccer', 'nfl', 'nba']):
@@ -419,7 +447,7 @@ class ArticleProcessor:
             return 'science'
         if any(w in text for w in ['health', 'medical', 'vaccine', 'disease', 'hospital']):
             return 'health'
-        return 'world'
+        return 'world'  # Default - safer than 'top_stories'
     
     async def process_entry(self, entry, feed_config: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Process a single feed entry into an article"""
