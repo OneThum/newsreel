@@ -663,9 +663,20 @@ private struct EmptyResponse: Decodable {}
 extension AzureStoryResponse {
     /// Convert Azure API response to app Story model
     func toStory() -> Story {
-        // Parse dates
+        // Parse dates - need to handle both with and without fractional seconds
+        // API returns: "2026-01-04T03:09:11Z" or "2026-01-04T04:42:14.901474Z"
         let dateFormatter = ISO8601DateFormatter()
-        let publishedDate = dateFormatter.date(from: first_seen) ?? Date()
+        dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        
+        // Try with fractional seconds first, then without
+        let publishedDate: Date
+        if let date = dateFormatter.date(from: first_seen) {
+            publishedDate = date
+        } else {
+            // Try without fractional seconds
+            dateFormatter.formatOptions = [.withInternetDateTime]
+            publishedDate = dateFormatter.date(from: first_seen) ?? Date()
+        }
         
         // Map category
         let newsCategory: NewsCategory = {
@@ -776,8 +787,16 @@ extension AzureStoryResponse {
             }
         }()
         
-        // Parse last updated date
-        let lastUpdatedDate = dateFormatter.date(from: last_updated)
+        // Parse last updated date - also handle both formats
+        let lastUpdatedDate: Date?
+        let lastUpdatedFormatter = ISO8601DateFormatter()
+        lastUpdatedFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = lastUpdatedFormatter.date(from: last_updated) {
+            lastUpdatedDate = date
+        } else {
+            lastUpdatedFormatter.formatOptions = [.withInternetDateTime]
+            lastUpdatedDate = lastUpdatedFormatter.date(from: last_updated)
+        }
         
         // 🔍 FINAL LOGGING before Story creation
         log.log("📦 [API DECODE] Creating Story object with \(deduplicatedSources.count) deduplicated sources (was \(sourceArticles.count) raw)", category: .api, level: .debug)
