@@ -302,8 +302,10 @@ class ArticleProcessor:
     
     def generate_article_id(self, source_id: str, url: str, published_at: datetime) -> str:
         """Generate unique article ID"""
+        # Article ID must be STABLE across ingestion cycles to prevent duplicates
+        # Use only URL hash (the unique identifier) + date (not time) for partitioning
         url_hash = hashlib.md5(url.encode()).hexdigest()[:8]
-        date_str = published_at.strftime('%Y%m%d_%H%M%S')
+        date_str = published_at.strftime('%Y%m%d')  # Date only, no time - prevents duplicate IDs
         return f'{source_id}_{date_str}_{url_hash}'
     
     def clean_html(self, text: str) -> str:

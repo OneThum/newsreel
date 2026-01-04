@@ -48,11 +48,15 @@ class Logger {
         #endif
     }
     
-    /// Enable detailed network logging
-    var logNetworkDetails: Bool = true
+    /// Enable detailed network logging (API request/response bodies)
+    var logNetworkDetails: Bool = false
     
     /// Enable timing logs
     var logTiming: Bool = true
+    
+    /// Enable verbose decode logging (per-story decode details)
+    /// WARNING: Very verbose - produces 80+ log lines per feed load
+    var logVerboseDecode: Bool = false
     
     // MARK: - OSLog Loggers
     

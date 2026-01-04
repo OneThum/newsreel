@@ -47,17 +47,10 @@ struct Source: Identifiable, Codable, Hashable {
         // Otherwise, use the mapper to fix it based on the ID
         if name.contains(" ") || name.uppercased() == name {
             // Name looks proper (has spaces or is all caps like "BBC")
-            #if DEBUG
-            print("🔍 Source.displayName: '\(name)' -> USED AS-IS (has spaces or all caps)")
-            #endif
             return name
         }
         // Name looks like it needs mapping (e.g., "bbc", "smh", "theage")
-        let result = SourceNameMapper.displayName(for: name.isEmpty ? id : name)
-        #if DEBUG
-        print("🔍 Source.displayName: name='\(name)', id='\(id)' -> '\(result)'")
-        #endif
-        return result
+        return SourceNameMapper.displayName(for: name.isEmpty ? id : name)
     }
 }
 

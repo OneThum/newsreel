@@ -370,24 +370,48 @@ def categorize_article(title: str, description: str, url: str) -> str:
     # ==========================================================================
     
     lifestyle_patterns = [
+        # Product reviews & recommendations
         r'\bbest\b.*\b(?:for|of|to|in)\b',       # "best X for/of/to/in"
         r'\btop\s+\d+\b',                         # "top 10", "top 5"
         r'\b\d+\s+best\b',                        # "7 best", "10 best"
+        r'\bhere\s+(?:are|is)\s+\d+\+?\b',       # "Here are 50+", "Here is 10"
         r'\breviewed?\b',                         # "review", "reviewed"
         r'\btested\b',                            # "tested"
+        r'\b(?:tried|we)\s+(?:and\s+)?tested\b', # "tried and tested"
+        r'\bbest\s+(?:buys?|picks?|choices?)\b', # "best buys", "best picks"
+        r'\b(?:our|my)\s+(?:top\s+)?picks?\b',   # "our picks", "my top picks"
+        r'\bwhat\s+to\s+(?:buy|get|wear|use)\b', # "what to buy/get/wear/use"
+        r'\b(?:buyer|shopping)\s*(?:\'?s?)?\s+guide\b',  # "buyer's guide"
+        
+        # How-to & advice content
         r'\bguide\s+to\b',                        # "guide to"
         r'\bhow\s+to\b',                          # "how to"
         r'\btips?\s+(?:for|on|to)\b',            # "tips for/on/to"
         r'\badvice\b',                            # "advice"
+        r'\bhere\'?s?\s+(?:what|how|why)\b',     # "Here's what to use", "Here's how"
+        r'\byou\s+should\s+(?:too|also)\b',      # "you should too"
+        r'\bwe\s+stopped\s+using\b',             # "We stopped using X"
+        r'\bwhy\s+(?:i|we)\s+(?:stopped|switched|quit)\b',  # "why I stopped X"
+        
+        # Cooking & kitchen content
         r'\brecipes?\b',                          # "recipe", "recipes"
+        r'\bcooking\s+(?:tip|hack|trick)\b',     # cooking tips
+        r'\bkitchen\s+(?:tip|hack|trick)\b',     # kitchen tips
+        r'\b(?:aluminum\s+)?foil\s+(?:for|in)\s+cooking\b',  # foil for cooking
+        
+        # Shopping & deals
         r'\bdeal[s]?\b.*\b(?:on|for)\b',         # "deals on/for"
         r'\bbargain\b',                           # "bargain"
-        r'\b(?:our|my)\s+(?:top\s+)?picks?\b',   # "our picks", "my top picks"
-        r'\b(?:tried|we)\s+(?:and\s+)?tested\b', # "tried and tested"
-        r'\bbest\s+(?:buys?|picks?|choices?)\b', # "best buys", "best picks"
-        r'\bwhat\s+to\s+(?:buy|get|wear)\b',     # "what to buy/get/wear"
+        
+        # Gift guides & holidays (NOT hard news)
         r'\bgift\s+(?:guide|ideas?)\b',          # "gift guide", "gift ideas"
-        r'\b(?:buyer|shopping)\s*(?:\'?s?)?\s+guide\b',  # "buyer's guide"
+        r'\b\d+\+?\s+(?:thoughtful\s+)?gifts?\b', # "50+ gifts", "10 thoughtful gifts"
+        r'\bmother\'?s?\s+day\b',                # Mother's Day
+        r'\bfather\'?s?\s+day\b',                # Father's Day
+        r'\bvalentine\'?s?\b',                   # Valentine's
+        r'\bholiday\s+(?:gift|idea|tip)\b',      # holiday gifts/ideas/tips
+        r'\bshe\'?ll\s+love\b',                  # "gifts she'll love"
+        r'\bhe\'?ll\s+love\b',                   # "gifts he'll love"
     ]
     
     is_lifestyle = any(re.search(p, title_lower) for p in lifestyle_patterns)

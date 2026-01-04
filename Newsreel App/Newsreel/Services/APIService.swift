@@ -484,16 +484,12 @@ class APIService: ObservableObject {
         if requiresAuth {
             do {
                 let token = try await authService.getIDToken(forceRefresh: retryCount > 0)
-                let tokenPreview = String(token.prefix(20)) + "..." + String(token.suffix(10))
-                log.logAuth("Firebase JWT token obtained (preview: \(tokenPreview))", level: .debug)
                 urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
                 headers["Authorization"] = "Bearer [TOKEN]"
             } catch {
                 log.logAuth("❌ Failed to get Firebase token: \(error.localizedDescription)", level: .error)
                 throw APIError.unauthorized
             }
-        } else {
-            log.log("Request does not require authentication", category: .api, level: .debug)
         }
         
         // Add body if provided
@@ -724,36 +720,28 @@ extension AzureStoryResponse {
                 // Removed client-side deduplication that was causing CPU overhead
                 let deduplicatedSources = sourceArticles
         
-        // PERFORMANCE FIX: Diagnostic logging disabled in production builds
-        // This eliminates 200+ log calls per page load causing CPU overhead
+        // PERFORMANCE FIX: Verbose decode logging disabled by default
+        // Enable via log.logVerboseDecode = true for debugging source issues
         #if DEBUG
-        // 🔍 DEDUPLICATION DIAGNOSTIC LOGGING (DEBUG ONLY)
-        if let sources = sources {
-            log.log("📦 [API DECODE] Story: \(id)", category: .api, level: .debug)
-            log.log("   API returned \(sources.count) source objects", category: .api, level: .debug)
-            log.log("   Converted to \(sourceArticles.count) SourceArticle objects", category: .api, level: .debug)
-
-            // Check for duplicates in API response
-            let sourceNames = sources.map { $0.source }
-            let uniqueNames = Set(sourceNames)
-            if uniqueNames.count != sourceNames.count {
-                log.log("⚠️ [API DECODE] API RETURNED DUPLICATES!", category: .api, level: .warning)
-                log.log("   Unique: \(uniqueNames.count), Total: \(sourceNames.count)", category: .api, level: .warning)
-
-                // Log counts
-                let counts = Dictionary(grouping: sourceNames, by: { $0 }).mapValues { $0.count }
-                let duplicates = counts.filter { $0.value > 1 }
-                for (name, count) in duplicates {
-                    log.log("   '\(name)' appears \(count) times in API response", category: .api, level: .warning)
+        if log.logVerboseDecode {
+            if let sources = sources {
+                log.log("📦 [API DECODE] Story: \(id)", category: .api, level: .debug)
+                log.log("   API returned \(sources.count) source objects", category: .api, level: .debug)
+                
+                // Only log duplicates (actual issues)
+                let sourceNames = sources.map { $0.source }
+                let uniqueNames = Set(sourceNames)
+                if uniqueNames.count != sourceNames.count {
+                    log.log("⚠️ [API DECODE] API RETURNED DUPLICATES!", category: .api, level: .warning)
+                    let counts = Dictionary(grouping: sourceNames, by: { $0 }).mapValues { $0.count }
+                    let duplicates = counts.filter { $0.value > 1 }
+                    for (name, count) in duplicates {
+                        log.log("   '\(name)' appears \(count) times", category: .api, level: .warning)
+                    }
                 }
+            } else {
+                log.log("⚠️ [API DECODE] Story: \(id) - sources field is nil", category: .api, level: .warning)
             }
-
-            // Log first 3 source names for inspection
-            for (index, source) in sources.prefix(3).enumerated() {
-                log.log("   [\(index+1)] \(source.source) - ID: \(source.id)", category: .api, level: .debug)
-            }
-        } else {
-            log.log("⚠️ [API DECODE] Story: \(id) - sources field is nil", category: .api, level: .warning)
         }
         #endif
         
@@ -798,8 +786,12 @@ extension AzureStoryResponse {
             lastUpdatedDate = lastUpdatedFormatter.date(from: last_updated)
         }
         
-        // 🔍 FINAL LOGGING before Story creation
-        log.log("📦 [API DECODE] Creating Story object with \(deduplicatedSources.count) deduplicated sources (was \(sourceArticles.count) raw)", category: .api, level: .debug)
+        // Verbose decode logging (disabled by default)
+        #if DEBUG
+        if log.logVerboseDecode {
+            log.log("📦 [API DECODE] Creating Story object with \(deduplicatedSources.count) sources", category: .api, level: .debug)
+        }
+        #endif
         
         return Story(
             id: id,

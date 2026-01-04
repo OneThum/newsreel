@@ -837,6 +837,11 @@ class FeedViewModel: ObservableObject {
     }
     
     func changeCategory(to category: NewsCategory?, apiService: APIService) async {
+        // Guard against duplicate calls (SwiftUI state updates can fire multiple times)
+        guard selectedCategory != category else { return }
+        
+        log.log("📂 Category changed to: \(category?.displayName ?? "All")", category: .ui, level: .info)
+        
         // Clear current state
         stories.removeAll()
         pendingNewStories.removeAll()
@@ -847,8 +852,6 @@ class FeedViewModel: ObservableObject {
         
         // Load stories for new category
         await loadStories(apiService: apiService, refresh: true)
-        
-        log.log("📂 Category changed to: \(category?.displayName ?? "All")", category: .ui, level: .info)
     }
     
     func toggleSave(story: Story, apiService: APIService) async {
