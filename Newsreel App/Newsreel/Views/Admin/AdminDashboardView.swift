@@ -267,10 +267,36 @@ struct AdminDashboardView: View {
     // MARK: - RSS Ingestion
     
     private func rssIngestionSection(metrics: AdminMetrics) -> some View {
-        DashboardCard(title: "RSS Ingestion", icon: "antenna.radiowaves.left.and.right", color: .orange) {
+        DashboardCard(title: "RSS Worker", icon: "antenna.radiowaves.left.and.right", color: workerStatusColor(metrics.rssIngestion.workerStatus)) {
             VStack(spacing: 12) {
+                // Worker Status Header
+                HStack {
+                    Text("Worker Status")
+                        .font(.outfit(size: 13, weight: .medium))
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(workerStatusColor(metrics.rssIngestion.workerStatus))
+                            .frame(width: 8, height: 8)
+                        Text(metrics.rssIngestion.workerStatus.capitalized)
+                            .font(.outfit(size: 13, weight: .semiBold))
+                            .foregroundColor(workerStatusColor(metrics.rssIngestion.workerStatus))
+                    }
+                }
+                
+                Divider()
+                
+                // Worker Stats
+                MetricRow(label: "Uptime", value: formatUptime(metrics.rssIngestion.workerUptimeSeconds))
+                MetricRow(label: "Feeds Processed", value: metrics.rssIngestion.feedsProcessed.formatted)
+                MetricRow(label: "Circuit Breakers", value: "\(metrics.rssIngestion.circuitBreakersOpen) open")
+                
+                Divider()
+                
+                // Database Stats
                 MetricRow(label: "Total Feeds", value: metrics.rssIngestion.totalFeeds.formatted)
-                MetricRow(label: "Last Run", value: metrics.rssIngestion.lastRun.formatted(.relative(presentation: .named)))
+                MetricRow(label: "Last Article", value: metrics.rssIngestion.lastRun.formatted(.relative(presentation: .named)))
                 MetricRow(label: "Articles/Hour", value: metrics.rssIngestion.articlesPerHour.formatted)
                 MetricRow(label: "Success Rate", value: String(format: "%.1f%%", metrics.rssIngestion.successRate * 100))
                 
@@ -293,6 +319,27 @@ struct AdminDashboardView: View {
                     }
                 }
             }
+        }
+    }
+    
+    // Helper for worker status color
+    private func workerStatusColor(_ status: String) -> Color {
+        switch status.lowercased() {
+        case "healthy": return .green
+        case "degraded": return .orange
+        case "down": return .red
+        default: return .gray
+        }
+    }
+    
+    // Helper for formatting uptime
+    private func formatUptime(_ seconds: Double) -> String {
+        let hours = Int(seconds) / 3600
+        let minutes = (Int(seconds) % 3600) / 60
+        if hours > 0 {
+            return "\(hours)h \(minutes)m"
+        } else {
+            return "\(minutes)m"
         }
     }
     

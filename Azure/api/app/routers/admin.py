@@ -5,9 +5,13 @@ from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 import os
+import httpx
 
 from ..services.cosmos_service import cosmos_service
 from ..middleware.auth import get_current_user
+
+# RSS Worker Container App URL
+RSS_WORKER_URL = os.getenv("RSS_WORKER_URL", "https://newsreel-rss-worker.thankfulpebble-0dde6120.centralus.azurecontainerapps.io")
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +81,11 @@ class RSSIngestionStats(BaseModel):
     articles_per_hour: int
     success_rate: float
     top_sources: List[SourceCount]
+    # RSS Worker Container App stats
+    worker_status: str = "unknown"  # healthy, degraded, down
+    worker_uptime_seconds: float = 0
+    feeds_processed: int = 0
+    circuit_breakers_open: int = 0
 
 
 class ClusteringStats(BaseModel):
@@ -213,6 +222,38 @@ async def get_admin_metrics(user: Dict[str, Any] = Depends(require_admin)):
         except Exception as db_error:
             logger.warning(f"Database query error, using defaults: {db_error}")
             # Continue with defaults rather than failing
+        
+        # ==================================================================
+        # RSS WORKER CONTAINER APP HEALTH CHECK
+        # ==================================================================
+        
+        rss_worker_status = "unknown"
+        rss_worker_uptime = 0.0
+        rss_worker_feeds_processed = 0
+        rss_worker_articles_stored = 0
+        rss_worker_circuit_breakers = 0
+        rss_worker_errors = 0
+        
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(f"{RSS_WORKER_URL}/health")
+                if response.status_code == 200:
+                    worker_data = response.json()
+                    rss_worker_status = worker_data.get("status", "unknown")
+                    rss_worker_uptime = worker_data.get("uptime_seconds", 0)
+                    stats = worker_data.get("stats", {})
+                    rss_worker_feeds_processed = stats.get("feeds_processed", 0)
+                    rss_worker_articles_stored = stats.get("articles_stored", 0)
+                    rss_worker_errors = stats.get("errors", 0)
+                    circuit_breaker = stats.get("circuit_breaker", {})
+                    rss_worker_circuit_breakers = circuit_breaker.get("open_circuits", 0)
+                    logger.info(f"RSS Worker health: {rss_worker_status}, uptime={rss_worker_uptime}s, feeds={rss_worker_feeds_processed}")
+                else:
+                    rss_worker_status = "down"
+                    logger.warning(f"RSS Worker returned status {response.status_code}")
+        except Exception as worker_error:
+            rss_worker_status = "down"
+            logger.warning(f"RSS Worker health check failed: {worker_error}")
         
         # ==================================================================
         # RSS INGESTION STATS
@@ -553,20 +594,22 @@ async def get_admin_metrics(user: Dict[str, Any] = Depends(require_admin)):
         database_health = "healthy" if total_stories > 0 else "degraded"
         api_health = "healthy"  # If we got here, API is working
         
-        # Determine functions health from recent activity
-        # If we have recent articles and stories, functions are working
-        # Also check processed_articles count as additional signal
-        has_recent_ingestion = articles_per_hour > 0
+        # Determine functions health from RSS Worker + clustering activity
+        # RSS Worker is now the primary ingestion mechanism (Container App)
+        # Azure Functions only handle clustering now
+        has_rss_worker_healthy = rss_worker_status == "healthy"
         has_recent_clustering = processing_rate_per_hour > 0
         has_processed_articles = processed_articles > 0
         
-        logger.info(f"Functions health check: articles_per_hour={articles_per_hour}, processing_rate={processing_rate_per_hour}, processed={processed_articles}")
+        logger.info(f"Functions health check: rss_worker={rss_worker_status}, clustering_rate={processing_rate_per_hour}, processed={processed_articles}")
         
-        if has_recent_ingestion and has_recent_clustering:
+        # Functions health now based on RSS Worker (Container App) and clustering functions
+        if has_rss_worker_healthy and has_recent_clustering:
             functions_health = "healthy"
-        elif has_recent_ingestion or has_recent_clustering or has_processed_articles:
-            # If we have ANY evidence of function activity, mark as degraded not unknown
-            functions_health = "degraded" if not (has_recent_ingestion and has_recent_clustering) else "healthy"
+        elif has_rss_worker_healthy or has_recent_clustering or has_processed_articles:
+            functions_health = "degraded"
+        elif rss_worker_status == "down":
+            functions_health = "down"
         else:
             functions_health = "unknown"
         
@@ -575,21 +618,23 @@ async def get_admin_metrics(user: Dict[str, Any] = Depends(require_admin)):
             overall_status = "healthy"
         elif database_health == "degraded" or functions_health == "degraded":
             overall_status = "degraded"
+        elif functions_health == "down":
+            overall_status = "degraded"
         else:
             overall_status = database_health
             
         # Component Health objects
-        # RSS Ingestion health
+        # RSS Ingestion health - now from Container App worker
         rss_age_minutes = (now - last_run).total_seconds() / 60 if last_run else 999
-        if rss_age_minutes < 30 and articles_per_hour > 0:
+        if rss_worker_status == "healthy":
             rss_status = "healthy"
-            rss_message = f"Active: {articles_per_hour} articles/hour, last {int(rss_age_minutes)} min ago"
-        elif rss_age_minutes < 60:
+            rss_message = f"RSS Worker: {rss_worker_feeds_processed} feeds processed, {rss_worker_circuit_breakers} circuit breakers open"
+        elif rss_worker_status == "degraded":
             rss_status = "degraded"
-            rss_message = f"Slow: last article {int(rss_age_minutes)} min ago"
+            rss_message = f"RSS Worker degraded: {rss_worker_errors} errors, {rss_worker_circuit_breakers} circuit breakers"
         else:
             rss_status = "down"
-            rss_message = f"Stale: last article {int(rss_age_minutes)} min ago"
+            rss_message = f"RSS Worker down or unreachable"
         
         rss_ingestion_health = ComponentHealth(
             status=rss_status,
@@ -675,7 +720,12 @@ async def get_admin_metrics(user: Dict[str, Any] = Depends(require_admin)):
                 last_run=last_run,  # Actual time of most recent article fetch
                 articles_per_hour=articles_per_hour,
                 success_rate=success_rate,
-                top_sources=top_sources
+                top_sources=top_sources,
+                # RSS Worker Container App stats
+                worker_status=rss_worker_status,
+                worker_uptime_seconds=rss_worker_uptime,
+                feeds_processed=rss_worker_feeds_processed,
+                circuit_breakers_open=rss_worker_circuit_breakers
             ),
             clustering=ClusteringStats(
                 match_rate=match_rate,

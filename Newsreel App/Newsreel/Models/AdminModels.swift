@@ -93,6 +93,11 @@ struct RSSIngestionStats: Codable {
     let articlesPerHour: Int
     let successRate: Double
     let topSources: [SourceCount]
+    // RSS Worker Container App stats
+    let workerStatus: String
+    let workerUptimeSeconds: Double
+    let feedsProcessed: Int
+    let circuitBreakersOpen: Int
     
     enum CodingKeys: String, CodingKey {
         case totalFeeds = "total_feeds"
@@ -100,6 +105,10 @@ struct RSSIngestionStats: Codable {
         case articlesPerHour = "articles_per_hour"
         case successRate = "success_rate"
         case topSources = "top_sources"
+        case workerStatus = "worker_status"
+        case workerUptimeSeconds = "worker_uptime_seconds"
+        case feedsProcessed = "feeds_processed"
+        case circuitBreakersOpen = "circuit_breakers_open"
     }
 }
 
