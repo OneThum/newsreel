@@ -392,10 +392,14 @@ struct StoryDetailView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: { dismiss() }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 28))
+                        Image(systemName: "xmark")
+                            .font(.system(size: 14, weight: .bold))
                             .foregroundStyle(.secondary)
-                            .symbolRenderingMode(.hierarchical)
+                            .frame(width: 30, height: 30)
+                            .background(
+                                Circle()
+                                    .fill(.ultraThinMaterial)
+                            )
                     }
                 }
             }
