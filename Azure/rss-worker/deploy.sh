@@ -6,9 +6,9 @@ set -e
 
 # Configuration
 RESOURCE_GROUP="Newsreel-RG"
-LOCATION="australiaeast"
+LOCATION="centralus"
 CONTAINER_APP_NAME="newsreel-rss-worker"
-CONTAINER_APP_ENV="newsreel-container-env"
+CONTAINER_APP_ENV="newsreel-env"
 ACR_NAME="newsreelacr"
 IMAGE_NAME="rss-worker"
 IMAGE_TAG="latest"
@@ -19,7 +19,7 @@ echo "=========================================="
 
 # Get existing secrets from Azure
 echo "Fetching configuration from Azure..."
-COSMOS_CONNECTION=$(az cosmosdb keys list --name newsreel-cosmos --resource-group $RESOURCE_GROUP --type connection-strings --query "connectionStrings[0].connectionString" -o tsv)
+COSMOS_CONNECTION=$(az cosmosdb keys list --name newsreel-db-1759951135 --resource-group $RESOURCE_GROUP --type connection-strings --query "connectionStrings[0].connectionString" -o tsv)
 OPENAI_KEY=$(az keyvault secret show --vault-name newsreel-kv --name openai-api-key --query value -o tsv 2>/dev/null || echo "")
 
 if [ -z "$COSMOS_CONNECTION" ]; then
