@@ -304,13 +304,26 @@ async def get_admin_metrics(user: Dict[str, Any] = Depends(require_admin)):
                 except:
                     oldest_unprocessed_age_minutes = 0
 
-            # Determine clustering health
-            if unprocessed_articles < 100 and oldest_unprocessed_age_minutes < 30:
+            # Determine clustering health based on RECENT activity, not just backlog
+            # The key metric is: are we actively processing? Recent story updates indicate health.
+            recent_updated = list(stories_container.query_items(
+                query=f"SELECT VALUE COUNT(1) FROM c WHERE c.last_updated >= '{one_hour_ago.isoformat()}'",
+                enable_cross_partition_query=True
+            ))
+            stories_updated_hour = recent_updated[0] if recent_updated else 0
+            
+            # Health calculation:
+            # - HEALTHY: Active processing (>10 stories/hour) AND low backlog (<100)
+            # - DEGRADED: Some activity but backlog growing, OR moderate backlog
+            # - STALLED: No recent activity (<5 stories/hour) regardless of backlog
+            if stories_updated_hour >= 10 and unprocessed_articles < 100:
                 clustering_health = "healthy"
-            elif unprocessed_articles < 1000 and oldest_unprocessed_age_minutes < 120:
-                clustering_health = "degraded"
+            elif stories_updated_hour >= 5:
+                clustering_health = "degraded"  # Active but backlog exists
+            elif stories_updated_hour > 0:
+                clustering_health = "degraded"  # Minimal activity
             else:
-                clustering_health = "stalled"
+                clustering_health = "stalled"  # No activity at all
 
             # Get sample of stories to calculate stats (avoid complex aggregations)
             sample_stories = list(stories_container.query_items(

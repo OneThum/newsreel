@@ -98,7 +98,8 @@ struct Story: Identifiable, Codable, Hashable {
 enum StoryStatus: String, Codable {
     case new = "NEW"                // 1 source - fresh report
     case developing = "DEVELOPING"  // 2 sources - gaining traction
-    case verified = "VERIFIED"      // 3+ sources - confirmed
+    case verified = "VERIFIED"      // 3-4 sources - confirmed
+    case topStory = "TOP_STORY"     // 5+ sources - major story
     
     // Legacy status mappings for backward compatibility
     case monitoring = "MONITORING"  // Legacy: maps to NEW
@@ -109,6 +110,7 @@ enum StoryStatus: String, Codable {
         case .new, .monitoring: return "NEW"
         case .developing: return "DEVELOPING"
         case .verified, .breaking: return "VERIFIED"
+        case .topStory: return "TOP STORY"
         }
     }
     

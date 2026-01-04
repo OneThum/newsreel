@@ -15,6 +15,7 @@ extension StoryStatus {
         case .new: return .blue         // Fresh/unverified - blue dot
         case .developing: return .orange // Gaining traction - orange
         case .verified: return .green    // Confirmed - green
+        case .topStory: return .purple   // Major story - purple star
         default: return .gray
         }
     }
@@ -25,6 +26,7 @@ extension StoryStatus {
         case .new: return "circle.fill"
         case .developing: return "circle.fill"
         case .verified: return "checkmark.circle.fill"
+        case .topStory: return "star.circle.fill"
         default: return "circle.fill"
         }
     }
@@ -49,7 +51,11 @@ struct StatusBadge: View {
         // Users want to know verification level at a glance
         HStack(spacing: 4) {
             // Status indicator
-            if normalizedStatus == .verified {
+            if normalizedStatus == .topStory {
+                Image(systemName: "star.circle.fill")
+                    .font(.system(size: 10))
+                    .foregroundStyle(badgeColor)
+            } else if normalizedStatus == .verified {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 10))
                     .foregroundStyle(badgeColor)
