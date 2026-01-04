@@ -1374,9 +1374,11 @@ async def summarization_changefeed(documents: func.DocumentList) -> None:
             if len(articles) == 1:
                 # Single-source: Extract maximum value from available content
                 story_title = story_data.get('title', '')
+                current_category = story_data.get('category', 'general')
                 prompt = f"""You are a senior news editor creating a summary from a news report. Extract and present the key information clearly.
 
 HEADLINE (already shown to readers): "{story_title}"
+CURRENT CATEGORY: "{current_category}"
 
 ESSENTIAL FACTS TO INCLUDE:
 - What happened (the core event)
@@ -1395,18 +1397,36 @@ QUALITY STANDARDS:
 
 YOU MUST provide a summary based on what IS available. Never refuse or say you need more sources.
 
+CATEGORY VALIDATION:
+Evaluate if the current category is correct. Categories are:
+- politics: Government, elections, legislation, political leaders
+- world: International conflicts, diplomacy, global events
+- business: Markets, economy, companies, finance
+- tech: Technology, AI, software, startups
+- science: Research, space, discoveries
+- health: Medical, diseases, healthcare
+- sports: Sports events, athletes, leagues
+- entertainment: Movies, music, celebrities, TV
+- environment: Climate, conservation, pollution
+- lifestyle: How-to guides, product reviews, recipes, personal advice, holiday tips, gift guides, "best X for Y" lists
+
+CRITICAL: If this is a lifestyle article (cooking tips, gift ideas, product recommendations, how-to guides, personal advice), categorize as "lifestyle" regardless of source.
+
 Article to summarize:
 
 {combined_articles}
 
-Write the summary now (start directly with new details, don't repeat the headline):"""
+Respond in this exact JSON format:
+{{"summary": "your summary here", "category": "correct_category"}}"""
             
             else:
                 # Multi-source: Synthesize perspectives for comprehensive view
                 story_title = story_data.get('title', '')
+                current_category = story_data.get('category', 'general')
                 prompt = f"""You are a senior news editor synthesizing {len(articles)} reports about the same event. Create a comprehensive summary that shows readers the full picture from multiple perspectives.
 
 HEADLINE (already shown to readers): "{story_title}"
+CURRENT CATEGORY: "{current_category}"
 
 ESSENTIAL FACTS TO INCLUDE:
 - What happened (the core event)  
@@ -1429,11 +1449,27 @@ QUALITY STANDARDS:
 - Lead with the most important NEW information not in the headline
 - Present multiple perspectives fairly
 
+CATEGORY VALIDATION:
+Evaluate if the current category is correct. Categories are:
+- politics: Government, elections, legislation, political leaders
+- world: International conflicts, diplomacy, global events
+- business: Markets, economy, companies, finance
+- tech: Technology, AI, software, startups
+- science: Research, space, discoveries
+- health: Medical, diseases, healthcare
+- sports: Sports events, athletes, leagues
+- entertainment: Movies, music, celebrities, TV
+- environment: Climate, conservation, pollution
+- lifestyle: How-to guides, product reviews, recipes, personal advice, holiday tips, gift guides, "best X for Y" lists
+
+CRITICAL: If this is a lifestyle article (cooking tips, gift ideas, product recommendations, how-to guides, personal advice), categorize as "lifestyle" regardless of source.
+
 Articles to summarize:
 
 {combined_articles}
 
-Write the summary now (start directly with new details, don't repeat the headline):"""
+Respond in this exact JSON format:
+{{"summary": "your summary here", "category": "correct_category"}}"""
             
             # Enhanced system prompt emphasizing quality and trustworthiness
             system_prompt = """You are a senior news editor known for creating trustworthy, comprehensive summaries. Your summaries help readers understand complex events quickly while maintaining journalistic standards.
@@ -1445,13 +1481,20 @@ Core principles:
 - CLARITY: Write for intelligent readers using clear, direct language
 - TRUSTWORTHINESS: Readers rely on you to be their eyes and ears across multiple sources
 
-CRITICAL FORMAT RULES:
-- Start IMMEDIATELY with the news content. NO introductions like "Here's a summary:" or "COMPREHENSIVE NEWS SUMMARY:"
-- Do NOT repeat or paraphrase the headline in your opening sentence - readers already see the headline, so add NEW information
-- End with the last fact. NO meta-commentary like "This summary provides..." or "The above maintains neutral tone..."
-- Write ONLY the summary itself - nothing else before or after
+SUMMARY FORMAT RULES:
+- Start IMMEDIATELY with news content. NO introductions like "Here's a summary:"
+- Do NOT repeat the headline - readers already see it, add NEW information
+- End with facts, NO meta-commentary like "This summary provides..."
 
-You ALWAYS provide a summary based on available information, even if limited. You never refuse or say you need more sources."""
+CATEGORIZATION:
+- You MUST also validate/correct the story's category
+- "lifestyle" = how-to guides, product reviews, recipes, gift ideas, personal advice, "best X" lists, cooking tips, holiday ideas
+- Lifestyle content should NEVER be categorized as politics, world, business, etc.
+
+OUTPUT FORMAT: You MUST respond with valid JSON only:
+{"summary": "your summary text here", "category": "correct_category"}
+
+You ALWAYS provide a summary based on available information. Never refuse or say you need more sources."""
             
             # Call Claude API
             start_time = time.time()
@@ -1469,9 +1512,28 @@ You ALWAYS provide a summary based on available information, even if limited. Yo
                 }]
             )
             
-            # Extract summary and clean AI artifacts
-            summary_text = clean_ai_summary(response.content[0].text.strip())
+            # Extract response and parse JSON
+            raw_response = response.content[0].text.strip()
             generation_time_ms = int((time.time() - start_time) * 1000)
+            
+            # Try to parse JSON response for summary and category
+            ai_category = None
+            try:
+                # Handle potential markdown code blocks around JSON
+                json_text = raw_response
+                if '```json' in json_text:
+                    json_text = json_text.split('```json')[1].split('```')[0].strip()
+                elif '```' in json_text:
+                    json_text = json_text.split('```')[1].split('```')[0].strip()
+                
+                parsed = json.loads(json_text)
+                summary_text = clean_ai_summary(parsed.get('summary', raw_response))
+                ai_category = parsed.get('category', '').lower()
+                logger.info(f"📊 AI categorized story as '{ai_category}' (was '{story_data.get('category', 'unknown')}')")
+            except (json.JSONDecodeError, KeyError, IndexError):
+                # Fallback: treat entire response as summary if JSON parsing fails
+                logger.warning(f"Could not parse JSON response, using raw text as summary")
+                summary_text = clean_ai_summary(raw_response)
             
             # CRITICAL: Validate - if Claude refused, generate fallback summary
             refusal_indicators = [
@@ -1542,10 +1604,26 @@ You ALWAYS provide a summary based on available information, even if limited. Yo
             # Update story with summary
             # NOTE: Do NOT update last_updated - that should only change when sources are added!
             # Updating last_updated here makes old stories appear as "Just now"
+            # Build update with summary
+            updates = {'summary': summary}
+            
+            # Check if AI suggested a different category (and it's valid)
+            valid_categories = {'politics', 'world', 'business', 'tech', 'science', 'health', 
+                               'sports', 'entertainment', 'environment', 'lifestyle'}
+            current_category = story_data.get('category', 'general')
+            
+            if ai_category and ai_category in valid_categories and ai_category != current_category:
+                logger.info(f"📊 Recategorizing story from '{current_category}' to '{ai_category}' (AI recommendation)")
+                # For category changes, we need to delete from old partition and create in new
+                # This is a Cosmos DB limitation with partition keys
+                # For now, just update the category field - it won't move partitions but 
+                # queries will find it with the new category
+                updates['category'] = ai_category
+            
             await cosmos_client.update_story_cluster(
                 story_data['id'],
-                story_data['category'],
-                {'summary': summary}
+                story_data['category'],  # Use original category for partition key lookup
+                updates
             )
             
             # Log summary generation with structured data
@@ -1556,7 +1634,8 @@ You ALWAYS provide a summary based on available information, even if limited. Yo
                 duration_ms=generation_time_ms,
                 model=config.ANTHROPIC_MODEL
             )
-            logger.info(f"Generated summary v{version}: {word_count} words, {generation_time_ms}ms, ${total_cost:.4f}, cached={cached_tokens} tokens")
+            category_note = f" (recategorized to {ai_category})" if ai_category and ai_category != current_category else ""
+            logger.info(f"Generated summary v{version}: {word_count} words, {generation_time_ms}ms, ${total_cost:.4f}, cached={cached_tokens} tokens{category_note}")
             
         except Exception as e:
             logger.error(f"Error summarizing story: {e}")

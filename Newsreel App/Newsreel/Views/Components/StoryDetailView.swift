@@ -136,10 +136,10 @@ struct StoryDetailView: View {
                                 VStack(spacing: 4) {
                                     Image(systemName: viewModel.story.isLiked ? "heart.fill" : "heart")
                                         .font(.system(size: 24))
-                                        .foregroundStyle(viewModel.story.isLiked ? .red : .primary)
+                                        .foregroundStyle(viewModel.story.isLiked ? .red : .white)
                                     Text("Like")
                                         .font(.outfit(size: 11, weight: .medium))
-                                        .foregroundStyle(.secondary)
+                                        .foregroundStyle(.blue)
                                 }
                             }
                             .disabled(authService.isAnonymous)
@@ -153,10 +153,10 @@ struct StoryDetailView: View {
                                 VStack(spacing: 4) {
                                     Image(systemName: authService.isAnonymous ? "lock.fill" : (viewModel.story.isSaved ? "bookmark.fill" : "bookmark"))
                                         .font(.system(size: 24))
-                                        .foregroundStyle(viewModel.story.isSaved ? .blue : .primary)
+                                        .foregroundStyle(.white)
                                     Text("Save")
                                         .font(.outfit(size: 11, weight: .medium))
-                                        .foregroundStyle(.secondary)
+                                        .foregroundStyle(.blue)
                                 }
                             }
                             .disabled(authService.isAnonymous)
@@ -170,10 +170,10 @@ struct StoryDetailView: View {
                                 VStack(spacing: 4) {
                                     Image(systemName: "square.and.arrow.up")
                                         .font(.system(size: 24))
-                                        .foregroundStyle(.primary)
+                                        .foregroundStyle(.white)
                                     Text("Share")
                                         .font(.outfit(size: 11, weight: .medium))
-                                        .foregroundStyle(.secondary)
+                                        .foregroundStyle(.blue)
                                 }
                             }
                             

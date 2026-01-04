@@ -351,8 +351,61 @@ class ArticleProcessor:
             logger.warning(f'EMBEDDING_FAILED error={e}')
             return None
     
-    def categorize(self, title: str, description: str, url: str) -> str:
-        """Simple category detection"""
+    def is_lifestyle_content(self, title: str, description: str) -> bool:
+        """Detect lifestyle content that should never be in Top Stories.
+        
+        Lifestyle includes: how-to guides, product reviews, recipes, gift ideas,
+        personal advice, "best X for Y" lists, cooking tips, holiday ideas.
+        """
+        import re
+        title_lower = title.lower()
+        text = f'{title} {description}'.lower()
+        
+        lifestyle_patterns = [
+            r'\bbest\b.*\b(?:for|of|to|in)\b',       # "best X for/of/to/in"
+            r'\btop\s+\d+\b',                         # "top 10", "top 5"
+            r'\b\d+\s+best\b',                        # "7 best", "10 best"
+            r'\breviewed?\b',                         # "review", "reviewed"
+            r'\btested\b',                            # "tested"
+            r'\bguide\s+to\b',                        # "guide to"
+            r'\bhow\s+to\b',                          # "how to"
+            r'\btips?\s+(?:for|on|to)\b',            # "tips for/on/to"
+            r'\badvice\b',                            # "advice"
+            r'\brecipes?\b',                          # "recipe", "recipes"
+            r'\bdeal[s]?\b.*\b(?:on|for)\b',         # "deals on/for"
+            r'\bgift\s+(?:guide|ideas?)\b',          # "gift guide", "gift ideas"
+            r'\bwe\s+stopped\s+using\b',             # "we stopped using X"
+            r'\bwhy\s+(?:i|we)\s+(?:stopped|switched)\b',  # "why I stopped X"
+            r'\bmother\'?s?\s+day\b',                # Mother's Day
+            r'\bfather\'?s?\s+day\b',                # Father's Day
+            r'\bvalentine\'?s?\b',                   # Valentine's
+            r'\bholiday\s+(?:gift|idea|tip)\b',      # holiday gifts/ideas/tips
+            r'\bcooking\s+(?:tip|hack|trick)\b',    # cooking tips
+            r'\bkitchen\s+(?:tip|hack|trick)\b',    # kitchen tips
+            r'\bfoil\s+(?:for|in)\s+cooking\b',     # foil for cooking
+            r'\b(?:our|my)\s+(?:top\s+)?picks?\b',  # "our picks"
+            r'\bbest\s+(?:buys?|picks?|choices?)\b', # "best buys"
+            r'\bwhat\s+to\s+(?:buy|get|wear)\b',    # "what to buy"
+        ]
+        
+        return any(re.search(p, title_lower) for p in lifestyle_patterns)
+    
+    def categorize(self, title: str, description: str, url: str, feed_category: str = None) -> str:
+        """Category detection with lifestyle override.
+        
+        IMPORTANT: Lifestyle detection takes priority over feed category.
+        This prevents "Top Stories" from CNN/ABC from including lifestyle content.
+        """
+        # ALWAYS check for lifestyle first - this overrides feed category
+        if self.is_lifestyle_content(title, description):
+            logger.debug(f'Lifestyle detected: {title[:50]}...')
+            return 'lifestyle'
+        
+        # Use feed category if provided (for hard news feeds)
+        if feed_category and feed_category not in ('general', 'unknown'):
+            return feed_category
+        
+        # Fallback to keyword-based detection
         text = f'{title} {description} {url}'.lower()
         if any(w in text for w in ['tech', 'software', 'app', 'ai', 'crypto', 'startup']):
             return 'tech'
@@ -399,7 +452,7 @@ class ArticleProcessor:
                 'published_date': published_at.strftime('%Y-%m-%d'),
                 'fetched_at': format_iso_date(datetime.now(timezone.utc)),
                 'updated_at': format_iso_date(datetime.now(timezone.utc)),
-                'category': feed_config.get('category') or self.categorize(title, description, url),
+                'category': self.categorize(title, description, url, feed_config.get('category')),
                 'embedding': embedding,
                 'processed': False,
                 'processing_attempts': 0
