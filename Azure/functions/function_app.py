@@ -48,6 +48,17 @@ logger = get_logger(__name__)
 app = func.FunctionApp()
 
 
+def format_iso_date(dt: datetime) -> str:
+    """Format datetime to ISO8601 with seconds precision (no microseconds).
+    
+    Standardizes all dates to: 2026-01-04T12:30:45Z
+    This ensures consistent parsing across all clients.
+    """
+    if dt.tzinfo:
+        return dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+    return dt.strftime('%Y-%m-%dT%H:%M:%S')
+
+
 # ============================================================================
 # AI OUTPUT CLEANUP UTILITIES
 # ============================================================================
@@ -1059,7 +1070,7 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                     'source': article.source,
                     'title': article.title,
                     'url': article.article_url,
-                    'published_at': article.published_at.isoformat() if isinstance(article.published_at, datetime) else str(article.published_at),
+                    'published_at': format_iso_date(article.published_at) if isinstance(article.published_at, datetime) else str(article.published_at),
                     'content': article.description or '',
                     'embedding': article_embedding  # Store embedding for clustering
                 }
@@ -1154,7 +1165,7 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                     'source_count': verification_level,  # Track source count explicitly
                     'verification_level': verification_level,
                     'status': status,
-                    'last_updated': datetime.now(timezone.utc).isoformat(),
+                    'last_updated': format_iso_date(datetime.now(timezone.utc)),
                     'update_count': story.get('update_count', 0) + 1,
                     'embedding': story_embedding,  # Updated story centroid embedding
                     'breaking_news': is_breaking  # Update breaking news flag
@@ -1205,7 +1216,7 @@ async def story_clustering_changefeed(documents: func.DocumentList) -> None:
                     'source': article.source,
                     'title': article.title,
                     'url': article.article_url,
-                    'published_at': article.published_at.isoformat() if isinstance(article.published_at, datetime) else str(article.published_at),
+                    'published_at': format_iso_date(article.published_at) if isinstance(article.published_at, datetime) else str(article.published_at),
                     'content': article.description or '',
                     'embedding': article_embedding  # Store embedding for clustering
                 }
@@ -1517,7 +1528,7 @@ You ALWAYS provide a summary based on available information, even if limited. Yo
             summary = {
                 'version': version,
                 'text': summary_text,
-                'generated_at': datetime.now(timezone.utc).isoformat(),
+                'generated_at': format_iso_date(datetime.now(timezone.utc)),
                 'model': config.ANTHROPIC_MODEL,
                 'word_count': word_count,
                 'generation_time_ms': generation_time_ms,
@@ -1743,7 +1754,7 @@ Write the summary now (start directly with the news, no preamble or header):"""
                 summary = {
                     'version': 1,
                     'text': summary_text,
-                    'generated_at': datetime.now(timezone.utc).isoformat(),
+                    'generated_at': format_iso_date(datetime.now(timezone.utc)),
                     'model': config.ANTHROPIC_MODEL,
                     'word_count': word_count,
                     'generation_time_ms': generation_time_ms,
@@ -1851,7 +1862,7 @@ async def breaking_news_monitor_timer(timer: func.TimerRequest) -> None:
                     story['category'],
                     {
                         'push_notification_sent': True,
-                        'push_notification_sent_at': now.isoformat(),
+                        'push_notification_sent_at': format_iso_date(now),
                         'push_notification_recipients': len(fcm_tokens) if fcm_tokens else 0
                     }
                 )
@@ -1994,7 +2005,7 @@ async def process_completed_batches(anthropic_client) -> None:
                             summary = {
                                 'version': 1,
                                 'text': summary_text,
-                                'generated_at': datetime.now(timezone.utc).isoformat(),
+                                'generated_at': format_iso_date(datetime.now(timezone.utc)),
                                 'model': config.ANTHROPIC_MODEL,
                                 'word_count': word_count,
                                 'generation_time_ms': 0,  # Batch processing, no timing
@@ -2030,7 +2041,7 @@ async def process_completed_batches(anthropic_client) -> None:
                 # Update batch tracking
                 await cosmos_client.update_batch_tracking(batch_id, {
                     'status': 'completed',
-                    'ended_at': datetime.now(timezone.utc).isoformat(),
+                    'ended_at': format_iso_date(datetime.now(timezone.utc)),
                     'succeeded_count': succeeded_count,
                     'errored_count': errored_count
                 })
@@ -2138,7 +2149,7 @@ async def submit_new_batch(anthropic_client) -> None:
             'id': message_batch.id,
             'batch_id': message_batch.id,  # Also use as partition key
             'status': 'in_progress',
-            'created_at': datetime.now(timezone.utc).isoformat(),
+            'created_at': format_iso_date(datetime.now(timezone.utc)),
             'request_count': len(batch_requests),
             'story_ids': [req['custom_id'] for req in batch_requests],
             'story_categories': story_categories,

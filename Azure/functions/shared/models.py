@@ -78,7 +78,8 @@ class RawArticle(BaseModel):
     
     class Config:
         json_encoders = {
-            datetime: lambda v: v.isoformat()
+            # Standardize on seconds precision (no microseconds) with explicit Z suffix
+            datetime: lambda v: v.strftime('%Y-%m-%dT%H:%M:%SZ') if v.tzinfo else v.strftime('%Y-%m-%dT%H:%M:%S')
         }
 
 
@@ -97,7 +98,8 @@ class SummaryVersion(BaseModel):
     
     class Config:
         json_encoders = {
-            datetime: lambda v: v.isoformat()
+            # Standardize on seconds precision (no microseconds) with explicit Z suffix
+            datetime: lambda v: v.strftime('%Y-%m-%dT%H:%M:%SZ') if v.tzinfo else v.strftime('%Y-%m-%dT%H:%M:%S')
         }
 
 
@@ -111,7 +113,8 @@ class VersionHistory(BaseModel):
     
     class Config:
         json_encoders = {
-            datetime: lambda v: v.isoformat()
+            # Standardize on seconds precision (no microseconds) with explicit Z suffix
+            datetime: lambda v: v.strftime('%Y-%m-%dT%H:%M:%SZ') if v.tzinfo else v.strftime('%Y-%m-%dT%H:%M:%S')
         }
 
 
@@ -149,7 +152,8 @@ class StoryCluster(BaseModel):
     
     class Config:
         json_encoders = {
-            datetime: lambda v: v.isoformat()
+            # Standardize on seconds precision (no microseconds) with explicit Z suffix
+            datetime: lambda v: v.strftime('%Y-%m-%dT%H:%M:%SZ') if v.tzinfo else v.strftime('%Y-%m-%dT%H:%M:%S')
         }
     
     @property
@@ -194,7 +198,8 @@ class Subscription(BaseModel):
     
     class Config:
         json_encoders = {
-            datetime: lambda v: v.isoformat()
+            # Standardize on seconds precision (no microseconds) with explicit Z suffix
+            datetime: lambda v: v.strftime('%Y-%m-%dT%H:%M:%SZ') if v.tzinfo else v.strftime('%Y-%m-%dT%H:%M:%S')
         }
 
 
@@ -206,7 +211,8 @@ class RateLimiting(BaseModel):
     
     class Config:
         json_encoders = {
-            datetime: lambda v: v.isoformat()
+            # Standardize on seconds precision (no microseconds) with explicit Z suffix
+            datetime: lambda v: v.strftime('%Y-%m-%dT%H:%M:%SZ') if v.tzinfo else v.strftime('%Y-%m-%dT%H:%M:%S')
         }
 
 
@@ -219,7 +225,8 @@ class DeviceToken(BaseModel):
     
     class Config:
         json_encoders = {
-            datetime: lambda v: v.isoformat()
+            # Standardize on seconds precision (no microseconds) with explicit Z suffix
+            datetime: lambda v: v.strftime('%Y-%m-%dT%H:%M:%SZ') if v.tzinfo else v.strftime('%Y-%m-%dT%H:%M:%S')
         }
 
 
@@ -240,7 +247,8 @@ class UserProfile(BaseModel):
     
     class Config:
         json_encoders = {
-            datetime: lambda v: v.isoformat()
+            # Standardize on seconds precision (no microseconds) with explicit Z suffix
+            datetime: lambda v: v.strftime('%Y-%m-%dT%H:%M:%SZ') if v.tzinfo else v.strftime('%Y-%m-%dT%H:%M:%S')
         }
 
 
@@ -259,7 +267,8 @@ class UserInteraction(BaseModel):
     
     class Config:
         json_encoders = {
-            datetime: lambda v: v.isoformat()
+            # Standardize on seconds precision (no microseconds) with explicit Z suffix
+            datetime: lambda v: v.strftime('%Y-%m-%dT%H:%M:%SZ') if v.tzinfo else v.strftime('%Y-%m-%dT%H:%M:%S')
         }
 
 
@@ -281,6 +290,7 @@ class RSSFeedConfig(BaseModel):
     
     class Config:
         json_encoders = {
-            datetime: lambda v: v.isoformat()
+            # Standardize on seconds precision (no microseconds) with explicit Z suffix
+            datetime: lambda v: v.strftime('%Y-%m-%dT%H:%M:%SZ') if v.tzinfo else v.strftime('%Y-%m-%dT%H:%M:%S')
         }
 

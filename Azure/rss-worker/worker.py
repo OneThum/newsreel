@@ -59,6 +59,17 @@ logging.basicConfig(
 logger = logging.getLogger('rss-worker')
 
 
+def format_iso_date(dt: datetime) -> str:
+    """Format datetime to ISO8601 with seconds precision (no microseconds).
+    
+    Standardizes all dates to: 2026-01-04T12:30:45Z
+    This ensures consistent parsing across all clients.
+    """
+    if dt.tzinfo:
+        return dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+    return dt.strftime('%Y-%m-%dT%H:%M:%S')
+
+
 # =============================================================================
 # FEED CONFIGURATIONS - Verified working feeds (excluding broken ones)
 # =============================================================================
@@ -384,10 +395,10 @@ class ArticleProcessor:
                 'article_url': url,
                 'title': title,
                 'description': description,
-                'published_at': published_at.isoformat(),
+                'published_at': format_iso_date(published_at),
                 'published_date': published_at.strftime('%Y-%m-%d'),
-                'fetched_at': datetime.now(timezone.utc).isoformat(),
-                'updated_at': datetime.now(timezone.utc).isoformat(),
+                'fetched_at': format_iso_date(datetime.now(timezone.utc)),
+                'updated_at': format_iso_date(datetime.now(timezone.utc)),
                 'category': feed_config.get('category') or self.categorize(title, description, url),
                 'embedding': embedding,
                 'processed': False,
@@ -412,7 +423,7 @@ class ArticleProcessor:
     def update_feed_state(self, feed_id: str, success: bool, articles_count: int, error: Optional[str] = None):
         """Update feed poll state in Cosmos DB"""
         try:
-            now = datetime.now(timezone.utc).isoformat()
+            now = format_iso_date(datetime.now(timezone.utc))
             state = {
                 'id': feed_id,
                 'last_poll': now,
@@ -495,7 +506,7 @@ class PollingWorker:
         
         await self.fetcher.start()
         
-        self.stats['start_time'] = datetime.now(timezone.utc).isoformat()
+        self.stats['start_time'] = format_iso_date(datetime.now(timezone.utc))
         self.is_running = True
         
         logger.info(f'WORKER_STARTED feeds_count={len(self.feeds)} feeds_per_cycle={FEEDS_PER_CYCLE} poll_interval={POLL_INTERVAL_SECONDS}s')
