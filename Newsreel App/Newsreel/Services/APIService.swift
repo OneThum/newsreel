@@ -686,7 +686,12 @@ extension AzureStoryResponse {
             case "entertainment": return .entertainment
             case "world", "international": return .world
             case "environment", "climate": return .environment
-            default: return .topStories
+            case "lifestyle": return .lifestyle
+            case "top_stories": return .topStories
+            // Regional categories -> world (they're still news, just not lifestyle)
+            case "us", "uk", "europe", "australia", "asia": return .world
+            // General/unknown -> world (safer default than topStories)
+            default: return .world
             }
         }()
         
