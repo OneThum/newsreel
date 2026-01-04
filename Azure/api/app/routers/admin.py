@@ -219,43 +219,70 @@ async def get_admin_metrics(user: Dict[str, Any] = Depends(require_admin)):
         # ==================================================================
 
         try:
-            # Calculate articles per hour (last 24 hours)
             twenty_four_hours_ago = datetime.now(timezone.utc) - timedelta(hours=24)
+            one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
+            
+            # Calculate articles per hour using fetched_at (ingestion time, not publication time)
             recent_articles_query = list(raw_articles_container.query_items(
-                query=f"SELECT VALUE COUNT(1) FROM c WHERE c.published_at >= '{twenty_four_hours_ago.isoformat()}'",
+                query=f"SELECT VALUE COUNT(1) FROM c WHERE c.fetched_at >= '{twenty_four_hours_ago.isoformat()}'",
                 enable_cross_partition_query=True
             ))
             articles_24h = recent_articles_query[0] if recent_articles_query else 0
             articles_per_hour = articles_24h // 24 if articles_24h > 0 else 0
-
-            # Get top sources by article count (last 7 days for better representation)
-            seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
-            top_sources_query = list(raw_articles_container.query_items(
-                query=f"""
-                    SELECT c.source, COUNT(1) as count
-                    FROM c
-                    WHERE c.published_at >= '{seven_days_ago.isoformat()}'
-                    GROUP BY c.source
-                    ORDER BY COUNT(1) DESC
-                """,
+            
+            # Get current hour rate for more accurate real-time metric
+            current_hour_query = list(raw_articles_container.query_items(
+                query=f"SELECT VALUE COUNT(1) FROM c WHERE c.fetched_at >= '{one_hour_ago.isoformat()}'",
                 enable_cross_partition_query=True
             ))
+            articles_current_hour = current_hour_query[0] if current_hour_query else 0
+            # Use higher of avg or current for better representation
+            articles_per_hour = max(articles_per_hour, articles_current_hour)
+            
+            # Get top sources (manual count to avoid GROUP BY issues)
+            all_sources = list(raw_articles_container.query_items(
+                query="SELECT c.source FROM c",
+                enable_cross_partition_query=True
+            ))
+            from collections import Counter
+            source_counts = Counter(s.get('source', 'Unknown') for s in all_sources)
             top_sources = [
-                SourceCount(source=item.get('source', 'Unknown'), count=item.get('count', 0))
-                for item in top_sources_query[:5]  # Top 5 sources
+                SourceCount(source=source, count=count)
+                for source, count in source_counts.most_common(5)
             ]
+            
+            # Get actual last run time from most recent article
+            latest_article = list(raw_articles_container.query_items(
+                query="SELECT TOP 1 c.fetched_at FROM c ORDER BY c.fetched_at DESC",
+                enable_cross_partition_query=True
+            ))
+            if latest_article and latest_article[0].get('fetched_at'):
+                last_run = datetime.fromisoformat(str(latest_article[0]['fetched_at']).replace('Z', '+00:00'))
+            else:
+                last_run = datetime.now(timezone.utc)
+                
         except Exception as rss_error:
             logger.warning(f"RSS stats error: {rss_error}")
             articles_per_hour = 0
             top_sources = []
+            last_run = datetime.now(timezone.utc)
 
         # Determine RSS feed count based on configuration
         # RSS_USE_ALL_FEEDS environment variable determines which set is active
         use_all_feeds = os.getenv("RSS_USE_ALL_FEEDS", "false").lower() == "true"
         total_feeds = 112 if use_all_feeds else 17  # 112 in rss_feeds.py, 17 in working_feeds.py
 
-        # Calculate success rate based on unique sources found vs configured feeds
-        success_rate = min(unique_sources / total_feeds, 1.0) if total_feeds > 0 else 0.0
+        # Calculate success rate based on processing rate (articles being processed successfully)
+        if total_articles > 0:
+            # Success rate = processed articles / total articles
+            processed_articles_count = list(raw_articles_container.query_items(
+                query="SELECT VALUE COUNT(1) FROM c WHERE c.processed = true",
+                enable_cross_partition_query=True
+            ))
+            processed_count = processed_articles_count[0] if processed_articles_count else 0
+            success_rate = min(processed_count / total_articles, 1.0)
+        else:
+            success_rate = 0.0
 
         # ==================================================================
         # CLUSTERING STATS (Enhanced with pipeline monitoring)
@@ -283,14 +310,14 @@ async def get_admin_metrics(user: Dict[str, Any] = Depends(require_admin)):
             ))
             processed_articles = processed_query[0] if processed_query else 0
 
-            # Calculate processing rate (articles processed in last hour)
+            # Calculate processing rate from stories UPDATED in last hour (not just created)
+            # This better reflects clustering activity - stories being updated with new sources
             one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
-            # Estimate from recent stories created
-            recent_processed = list(stories_container.query_items(
-                query=f"SELECT VALUE COUNT(1) FROM c WHERE c.first_seen >= '{one_hour_ago.isoformat()}'",
+            recent_updated = list(stories_container.query_items(
+                query=f"SELECT VALUE COUNT(1) FROM c WHERE c.last_updated >= '{one_hour_ago.isoformat()}'",
                 enable_cross_partition_query=True
             ))
-            processing_rate_per_hour = recent_processed[0] if recent_processed else 0
+            processing_rate_per_hour = recent_updated[0] if recent_updated else 0
 
             # Get oldest unprocessed article age
             oldest_unprocessed = list(raw_articles_container.query_items(
@@ -459,14 +486,86 @@ async def get_admin_metrics(user: Dict[str, Any] = Depends(require_admin)):
         categorization_confidence = 0.85  # Typical confidence with current rules
         
         # ==================================================================
-        # SYSTEM HEALTH - SIMPLIFIED
+        # SYSTEM HEALTH - COMPREHENSIVE CHECKS
         # ==================================================================
 
+        now = datetime.now(timezone.utc)
+        
         # Basic health checks
         database_health = "healthy" if total_stories > 0 else "degraded"
         api_health = "healthy"  # If we got here, API is working
-        functions_health = "unknown"  # Simplified
-        overall_status = database_health
+        
+        # Determine functions health from recent activity
+        # If we have recent articles and stories, functions are working
+        if articles_per_hour > 0 and processing_rate_per_hour > 0:
+            functions_health = "healthy"
+        elif articles_per_hour > 0 or processing_rate_per_hour > 0:
+            functions_health = "degraded"
+        else:
+            functions_health = "unknown"
+        
+        # Overall status
+        if database_health == "healthy" and functions_health == "healthy":
+            overall_status = "healthy"
+        elif database_health == "degraded" or functions_health == "degraded":
+            overall_status = "degraded"
+        else:
+            overall_status = database_health
+            
+        # Component Health objects
+        # RSS Ingestion health
+        rss_age_minutes = (now - last_run).total_seconds() / 60 if last_run else 999
+        if rss_age_minutes < 30 and articles_per_hour > 0:
+            rss_status = "healthy"
+            rss_message = f"Active: {articles_per_hour} articles/hour, last {int(rss_age_minutes)} min ago"
+        elif rss_age_minutes < 60:
+            rss_status = "degraded"
+            rss_message = f"Slow: last article {int(rss_age_minutes)} min ago"
+        else:
+            rss_status = "down"
+            rss_message = f"Stale: last article {int(rss_age_minutes)} min ago"
+        
+        rss_ingestion_health = ComponentHealth(
+            status=rss_status,
+            message=rss_message,
+            last_checked=now,
+            response_time_ms=None
+        )
+        
+        # Story Clustering health
+        if clustering_health == "healthy":
+            cluster_message = f"Active: {processing_rate_per_hour} stories/hour"
+        elif clustering_health == "degraded":
+            cluster_message = f"Processing: {unprocessed_articles} articles waiting"
+        elif clustering_health == "stalled":
+            cluster_message = f"Stalled: no activity in last hour"
+        else:
+            cluster_message = f"Error in clustering pipeline"
+            
+        story_clustering_health = ComponentHealth(
+            status=clustering_health if clustering_health != "error" else "down",
+            message=cluster_message,
+            last_checked=now,
+            response_time_ms=None
+        )
+        
+        # Summarization health (based on coverage)
+        if coverage > 0.95:
+            summary_status = "healthy"
+            summary_message = f"Coverage: {coverage*100:.1f}%, {summaries_24h} generated today"
+        elif coverage > 0.80:
+            summary_status = "degraded"
+            summary_message = f"Coverage: {coverage*100:.1f}% - some stories missing summaries"
+        else:
+            summary_status = "down"
+            summary_message = f"Low coverage: {coverage*100:.1f}%"
+            
+        summarization_health = ComponentHealth(
+            status=summary_status,
+            message=summary_message,
+            last_checked=now,
+            response_time_ms=None
+        )
         
         # ==================================================================
         # AZURE RESOURCE INFO
@@ -492,11 +591,11 @@ async def get_admin_metrics(user: Dict[str, Any] = Depends(require_admin)):
                 api_health=api_health,
                 functions_health=functions_health,
                 database_health=database_health,
-                rss_ingestion=None,
-                story_clustering=None,
-                summarization_changefeed=None,
-                summarization_backfill=None,
-                breaking_news_monitor=None
+                rss_ingestion=rss_ingestion_health,
+                story_clustering=story_clustering_health,
+                summarization_changefeed=summarization_health,
+                summarization_backfill=None,  # Backfill runs periodically, not continuously
+                breaking_news_monitor=None    # Breaking news monitor status would need separate tracking
             ),
             database=DatabaseStats(
                 total_articles=total_articles,
@@ -507,7 +606,7 @@ async def get_admin_metrics(user: Dict[str, Any] = Depends(require_admin)):
             ),
             rss_ingestion=RSSIngestionStats(
                 total_feeds=total_feeds,
-                last_run=datetime.now(timezone.utc),  # Would need to track this in DB for accuracy
+                last_run=last_run,  # Actual time of most recent article fetch
                 articles_per_hour=articles_per_hour,
                 success_rate=success_rate,
                 top_sources=top_sources
